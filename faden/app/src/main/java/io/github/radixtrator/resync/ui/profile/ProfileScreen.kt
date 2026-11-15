@@ -352,7 +352,7 @@ private fun ProfileAboutSheet(
                 HeaderChip(t("Trophies"), AppIcons.Trophy, onTrophies, container = chip)
                 onTag?.let { HeaderChip(t("Tag user"), AppIcons.TagUser, it, container = chip) }
             }
-            Surface(color = chip, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Surface(color = chip, shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Text(
                     user.description ?: t("This user has no public description"),
                     style = MaterialTheme.typography.bodyMedium,

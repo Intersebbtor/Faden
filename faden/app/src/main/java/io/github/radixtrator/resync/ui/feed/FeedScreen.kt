@@ -435,7 +435,7 @@ fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
         }
         append(" • ${Format.timeAgo(comment.createdUtc)} • ${comment.subreddit}")
     } }
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.combinedClickable(onClick = onOpen).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(comment.postTitle, style = MaterialTheme.typography.bodyMedium, fontStyle = FontStyle.Italic)
             Text(meta, style = MaterialTheme.typography.bodyMedium, color = muted, inlineContent = distinguishedMarks())

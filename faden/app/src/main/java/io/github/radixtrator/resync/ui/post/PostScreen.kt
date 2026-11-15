@@ -313,7 +313,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                     title = {
                         state.post?.let { post ->
                             Row(
-                                Modifier.clip(RoundedCornerShape(8.dp)).clickable { nav.push(FeedRoute(post.subreddit)) },
+                                Modifier.clip(MaterialTheme.shapes.small).clickable { nav.push(FeedRoute(post.subreddit)) },
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Avatar(subredditIcon, post.subreddit, 32.dp)
@@ -860,7 +860,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier
                     .padding(start = 8.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.tertiaryContainer)
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             )
@@ -872,7 +872,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier
                     .padding(start = 8.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.secondaryContainer)
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             )
@@ -1114,7 +1114,7 @@ private fun CommentSearchSheet(rows: List<VisibleNode>, onDismiss: () -> Unit, o
             Modifier
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(50))
+                .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,

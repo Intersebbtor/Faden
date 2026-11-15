@@ -124,7 +124,7 @@ fun SubredditInfoSheet(
             about.descriptionHtml?.takeIf { it.isNotBlank() }?.let { html ->
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 ) {
                     RedditBodyText(

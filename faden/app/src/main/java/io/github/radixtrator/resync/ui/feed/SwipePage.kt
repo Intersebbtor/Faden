@@ -191,7 +191,7 @@ private fun SwipeMedia(post: Post, onMedia: () -> Unit) {
                 color = Color.White,
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(if (post.over18) FadenColors.Nsfw else Color.Black.copy(alpha = 0.6f))
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             )

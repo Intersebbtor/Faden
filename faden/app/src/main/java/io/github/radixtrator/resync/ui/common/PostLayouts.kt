@@ -138,9 +138,9 @@ val PostLayout.spacing: Dp
 /** The item's outline, so the swipe panel behind a card has the card's corners. */
 val PostLayout.swipeShape: Shape
     @Composable get() = when (this) {
-        PostLayout.CARD -> if (fullWidthCards()) RectangleShape else RoundedCornerShape(8.dp)
-        PostLayout.SMALL_CARDS -> RoundedCornerShape(8.dp)
-        PostLayout.SMALLER_CARDS -> RoundedCornerShape(10.dp)
+        PostLayout.CARD -> if (fullWidthCards()) RectangleShape else MaterialTheme.shapes.medium
+        PostLayout.SMALL_CARDS -> MaterialTheme.shapes.medium
+        PostLayout.SMALLER_CARDS -> MaterialTheme.shapes.small
         PostLayout.LIST, PostLayout.COMPACT, PostLayout.SLIDES -> RectangleShape
     }
 
@@ -186,7 +186,7 @@ fun PostLayoutItem(layout: PostLayout, post: Post, showSubreddit: Boolean, actio
     when (layout) {
         PostLayout.LIST -> RowPost(post, showSubreddit, actions, options, flushThumbnail = true, inCard = false)
         PostLayout.COMPACT -> RowPost(post, showSubreddit, actions, options, flushThumbnail = false, inCard = false)
-        PostLayout.SMALLER_CARDS -> SyncCard(RoundedCornerShape(10.dp)) {
+        PostLayout.SMALLER_CARDS -> PostCard(MaterialTheme.shapes.small) {
             RowPost(post, showSubreddit, actions, options, flushThumbnail = false, inCard = true)
         }
         PostLayout.SMALL_CARDS -> SmallCardPost(post, showSubreddit, actions, options)
@@ -196,7 +196,7 @@ fun PostLayoutItem(layout: PostLayout, post: Post, showSubreddit: Boolean, actio
 }
 
 @Composable
-private fun SyncCard(shape: Shape, content: @Composable ColumnScope.() -> Unit) {
+private fun PostCard(shape: Shape, content: @Composable ColumnScope.() -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = shape, modifier = Modifier.fillMaxWidth()) {
         Column(content = content)
     }
@@ -213,7 +213,7 @@ private fun SyncCard(shape: Shape, content: @Composable ColumnScope.() -> Unit) 
 private fun CardPost(post: Post, showSubreddit: Boolean, actions: PostActions, options: ViewOptions) {
     val previewMaxHeight = if (options.cardFullHeight) null else CroppedPreviewHeight
     // Rounded, or square with "Full width cards" on.
-    SyncCard(PostLayout.CARD.swipeShape) {
+    PostCard(PostLayout.CARD.swipeShape) {
         Column(Modifier.combinedClickable(onClick = actions.onOpen, onLongClick = actions.onMore)) {
             if (options.imageAboveTitle) CardPreview(post, onClick = actions.onMedia, maxHeight = previewMaxHeight)
             Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
@@ -250,12 +250,12 @@ private fun CardPost(post: Post, showSubreddit: Boolean, actions: PostActions, o
  */
 @Composable
 private fun SmallCardPost(post: Post, showSubreddit: Boolean, actions: PostActions, options: ViewOptions) {
-    SyncCard(RoundedCornerShape(8.dp)) {
+    PostCard(MaterialTheme.shapes.medium) {
         Column(Modifier.combinedClickable(onClick = actions.onOpen, onLongClick = actions.onMore)) {
             Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
                 val hasThumbnail = post.thumbnail() != null
                 if (hasThumbnail && options.thumbnailLeft) {
-                    Thumbnail(post, 64.dp, RoundedCornerShape(8.dp), onClick = actions.onMedia)
+                    Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia)
                     Spacer(Modifier.width(12.dp))
                 }
                 Column(Modifier.weight(1f)) {
@@ -269,7 +269,7 @@ private fun SmallCardPost(post: Post, showSubreddit: Boolean, actions: PostActio
                 }
                 if (hasThumbnail && !options.thumbnailLeft) {
                     Spacer(Modifier.width(12.dp))
-                    Thumbnail(post, 64.dp, RoundedCornerShape(8.dp), onClick = actions.onMedia)
+                    Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia)
                 }
             }
             StatsFooter(post, actions, PostButtons(options.cardSaveButton, options.hideButton, options.shareButton, options.modButton))
@@ -351,7 +351,7 @@ private fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, op
                 Thumbnail(post, 72.dp, RectangleShape, onClick = actions.onMedia)
             } else {
                 val inset = if (right) Modifier.padding(end = 8.dp, top = 8.dp) else Modifier.padding(start = 8.dp, top = 8.dp)
-                Thumbnail(post, 64.dp, RoundedCornerShape(8.dp), onClick = actions.onMedia, modifier = inset)
+                Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia, modifier = inset)
             }
         }
         val text = @Composable {
@@ -400,7 +400,7 @@ private fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, op
         )
         if (expanded) {
             if (post.thumbnail() != null && !post.isSelf) {
-                CardPreview(post, onClick = actions.onMedia, modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp).clip(RoundedCornerShape(8.dp)))
+                CardPreview(post, onClick = actions.onMedia, modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp).clip(MaterialTheme.shapes.small))
             } else if (post.selfText.isNotBlank()) {
                 RedditBodyText(
                     post.selfTextHtml?.let { rememberRedditHtml(it) } ?: AnnotatedString(post.selfText),
@@ -508,7 +508,7 @@ private fun SlidePost(post: Post, actions: PostActions, options: ViewOptions) {
                     .then(
                         if (options.selftextBorder) {
                             Modifier
-                                .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(8.dp))
+                                .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), MaterialTheme.shapes.small)
                                 .padding(12.dp)
                         } else Modifier,
                     ),
@@ -558,7 +558,7 @@ private fun SlidePreview(post: Post, actions: PostActions, options: ViewOptions,
         modifier = if (options.slideFullWidth) {
             Modifier.padding(top = top)
         } else {
-            Modifier.padding(start = 16.dp, end = 16.dp, top = top).clip(RoundedCornerShape(12.dp))
+            Modifier.padding(start = 16.dp, end = 16.dp, top = top).clip(MaterialTheme.shapes.medium)
         },
         height = if (options.slideFullHeight) null else CroppedPreviewHeight,
     )
@@ -590,7 +590,7 @@ private fun VotePill(likes: Boolean?, score: Int, onVote: (Int) -> Unit) {
     }
     Row(
         Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(if (likes == null) MaterialTheme.colorScheme.surfaceContainerHighest else tint.copy(alpha = 0.25f)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -791,7 +791,7 @@ fun FlairChip(text: String, color: Int?, modifier: Modifier = Modifier) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(MaterialTheme.shapes.extraSmall)
             .background(bg)
             .padding(horizontal = 8.dp, vertical = 3.dp),
     )
@@ -916,7 +916,7 @@ fun CardPreview(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, 
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(if (post.over18) FadenColors.Nsfw else Color.Black.copy(alpha = 0.6f))
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             )
