@@ -39,23 +39,20 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +71,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -606,15 +605,13 @@ private fun emphasize(label: String, match: String?): AnnotatedString = buildAnn
 }
 
 /**
- * Sync's row ⋮: a small gray 18dp glyph in a 42dp square, under Material's 48dp minimum, which
- * would make every row taller.
+ * Sync's row ⋮: a small gray 18dp glyph in a 42dp square. The row stays 42dp; Material's 48dp minimum touch
+ * target extends past the button instead of making every row taller.
  */
 @Composable
 private fun RowMenuButton(description: String, onClick: () -> Unit) {
-    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-        IconButton(onClick = onClick, modifier = Modifier.size(ROW_HEIGHT)) {
-            Icon(Icons.Default.MoreVert, description, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
-        }
+    IconButton(onClick = onClick, modifier = Modifier.size(ROW_HEIGHT)) {
+        Icon(Icons.Default.MoreVert, description, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -719,7 +716,8 @@ private fun SearchField(
         Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(16.dp))
         Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) Text(t("Search..."), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+            val hint = t("Search...")
+            if (value.isEmpty()) Text(hint, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
             BasicTextField(
                 value = value,
                 onValueChange = onChange,
@@ -728,23 +726,19 @@ private fun SearchField(
                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = hint },
             )
         }
         if (value.isNotEmpty()) IconButton(onClick = { onChange("") }) { Icon(Icons.Outlined.Close, t("Clear")) } else menu()
     }
 }
 
-/** Sync's tonal dialog button (#293040 on the dark sheet): the FAB tone at half strength. */
+/** Sync's tonal dialog button. */
 @Composable
 private fun SearchButton(label: String, modifier: Modifier, onClick: () -> Unit) {
-    Button(
+    FilledTonalButton(
         onClick = onClick,
         shape = MaterialTheme.shapes.small,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
         contentPadding = PaddingValues(horizontal = 16.dp),
         modifier = modifier.height(40.dp),
     ) { Text(label, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis) }

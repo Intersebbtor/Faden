@@ -5,8 +5,6 @@ package io.github.radixtrator.resync.ui.post
 import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.tc
-import io.github.radixtrator.resync.i18n.tn
-import android.text.Html
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -102,6 +100,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -141,6 +141,7 @@ import io.github.radixtrator.resync.ui.navigation.SearchRoute
 import io.github.radixtrator.resync.ui.navigation.ImageRoute
 import io.github.radixtrator.resync.data.CommentNode
 import io.github.radixtrator.resync.data.SwipeAction
+import io.github.radixtrator.resync.data.plainText
 import io.github.radixtrator.resync.data.VisibleNode
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.CardPreview
@@ -792,7 +793,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
         }
         append(" ")
         withStyle(SpanStyle(color = scoreColor)) {
-            append(if (comment.scoreHidden) t("[score hidden]") else tn(comment.score, "{0} point", "{0} points", Format.count(comment.score)))
+            append(if (comment.scoreHidden) t("[score hidden]") else Format.points(comment.score, short = true))
         }
         withStyle(SpanStyle(color = muted)) {
             append(" • ${Format.timeAgo(comment.createdUtc)}")
@@ -1081,6 +1082,7 @@ private fun CommentSearchSheet(rows: List<VisibleNode>, onDismiss: () -> Unit, o
         onDismissRequest = onDismiss,
         sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        dragHandle = { SheetHandle() },
     ) {
         Row(
             Modifier
@@ -1094,14 +1096,15 @@ private fun CommentSearchSheet(rows: List<VisibleNode>, onDismiss: () -> Unit, o
             Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(16.dp))
             Box(Modifier.weight(1f)) {
-                if (query.isEmpty()) Text(t("Search comments"), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+                val hint = t("Search comments")
+                if (query.isEmpty()) Text(hint, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
                 BasicTextField(
                     value = query,
                     onValueChange = { query = it },
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = hint },
                 )
             }
         }
@@ -1146,10 +1149,6 @@ private fun commentActionExtras(post: Post, comments: List<CommentNode>, nav: Na
         nav.openExternal("https://translate.google.com/?sl=auto&op=translate&text=$text")
     })
 }
-
-/** A body's HTML as plain text for speech, or [fallback] when there's no HTML or it renders empty. */
-private fun plainText(html: String?, fallback: String): String =
-    html?.let { Html.fromHtml(it, Html.FROM_HTML_MODE_COMPACT).toString() }?.takeIf { it.isNotBlank() } ?: fallback
 
 // --- Bottom bars ---
 

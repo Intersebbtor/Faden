@@ -217,7 +217,6 @@ object Parser {
             flair = flair(d, "link"),
             media = media(d),
             flairColor = flairColor(d.string("link_flair_background_color")),
-            flairDarkText = d.string("link_flair_text_color") != "light",
             locked = d.bool("locked"),
             authorFlair = flair(d, "author"),
             upvoteRatio = (d["upvote_ratio"] as? JsonPrimitive)?.content?.toFloatOrNull(),
@@ -423,7 +422,6 @@ object Parser {
                 likes = d.boolOrNull("likes"),
                 flair = flair(d, "author"),
                 saved = d.bool("saved"),
-                editedUtc = d.long("edited"),
                 authorFullname = d.string("author_fullname"),
                 gifs = commentGifs(d),
             )
@@ -513,7 +511,6 @@ object Parser {
 
 private val HTML_COMMENT = Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL)
 private val HTML_BLOCK_BREAK = Regex("<br\\s*/?>|<hr\\s*/?>|</(?:p|div|li|h[1-6]|blockquote|pre|tr|ul|ol|table)\\s*>", RegexOption.IGNORE_CASE)
-private val HTML_TAG = Regex("<[^>]*>")
 private val HTML_ENTITY = Regex("&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);")
 private val HTML_SPACE = Regex("[ \\t\\r\\n\\u00a0]+")
 

@@ -6,7 +6,6 @@ data class WikiLink(val subreddit: String, val page: String)
 object Wiki {
     private val LINK = Regex("""^https?://(?:[\w-]+\.)?reddit\.com/r/([\w]+)/(?:wiki|w)(?:/([^?#]*))?(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
     private val HEADING = Regex("""<h([1-6])[^>]*>(.*?)</h\1>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-    private val TAG = Regex("<[^>]*>")
 
     fun parseLink(url: String): WikiLink? {
         val m = LINK.find(url) ?: return null
@@ -19,7 +18,7 @@ object Wiki {
 
     /** Reddit's own table of contents, rebuilt from the page's headings. */
     fun headings(html: String): List<Heading> = HEADING.findAll(html).mapNotNull { m ->
-        val text = TAG.replace(m.groupValues[2], "").replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&#39;", "'").replace("&quot;", "\"").trim()
+        val text = HTML_TAG.replace(m.groupValues[2], "").replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&#39;", "'").replace("&quot;", "\"").trim()
         text.takeIf { it.isNotEmpty() }?.let { Heading(m.groupValues[1].toInt(), it) }
     }.toList()
 }

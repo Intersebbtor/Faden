@@ -1,5 +1,6 @@
 package io.github.radixtrator.resync.ui.common
 
+import io.github.radixtrator.resync.data.HTML_TAG
 import android.util.LruCache
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
@@ -46,7 +47,6 @@ private val SPOILER = Regex("""<span class="md-spoiler-text">(.*?)</span>""", Re
 const val RULE = '\u2063'
 private val RELATIVE_LINK = Regex("""<a href="(/[^"]*)"([^>]*)>(.*?)</a>""", RegexOption.DOT_MATCHES_ALL)
 private val RULE_GAP = Regex("<p>$RULE</p><br>(?=<p>$RULE</p>)")
-private val TAG = Regex("<[^>]*>")
 
 /**
  * Renders the HTML Reddit generates from markdown (body_html / selftext_html).
@@ -102,7 +102,7 @@ fun redditMarkup(html: String, revealSpoilers: Boolean): String {
     // Sync spells out where such a link goes, "(/wiki/)", unless the text already is the path (/r/foo, u/bar).
     var source = RELATIVE_LINK.replace(html) { m ->
         val path = m.groupValues[1]
-        val label = m.groupValues[3].replace(TAG, "").trim()
+        val label = m.groupValues[3].replace(HTML_TAG, "").trim()
         val spelled = label.startsWith("/") || label.startsWith("r/") || label.startsWith("u/") || label.isEmpty()
         val link = "<a href=\"https://www.reddit.com$path\"${m.groupValues[2]}>${m.groupValues[3]}</a>"
         if (spelled || path.startsWith("//")) link else "$link ($path)"

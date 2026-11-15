@@ -32,8 +32,6 @@ class WatchStore(private val prefs: SharedPreferences) {
 
     val isEmpty: Boolean get() = _watched.value.isEmpty() && _posts.value.isEmpty()
 
-    fun isWatchingPost(id: String) = id in _posts.value
-
     fun watchPost(post: Post) = changePosts { it + (post.id to WatchedPost(post.id, post.title, post.subreddit, post.numComments)) }
 
     fun unwatchPost(id: String) = changePosts { it - id }

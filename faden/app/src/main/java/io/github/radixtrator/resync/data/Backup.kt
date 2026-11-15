@@ -62,7 +62,6 @@ data class BackupDocument(
     val accounts: JsonObject? = null,
 ) {
     val hasApiConfig: Boolean get() = Backup.API_CLIENT_ID in prefs
-    val apiClientId: String? get() = prefs[Backup.API_CLIENT_ID]
     /** Usernames of the backed-up accounts, stored in the clear so the restore dialog can name them. */
     val accountNames: List<String>
         get() = (accounts?.get("usernames") as? JsonArray)?.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content }.orEmpty()

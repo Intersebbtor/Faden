@@ -2,13 +2,16 @@ package io.github.radixtrator.resync.ui.common
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,11 +22,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -33,20 +39,33 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.theme.Motion
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /**
  * Sync's drop-down sheet: slides from the top edge over a scrim. Used for sort and More actions,
@@ -56,6 +75,11 @@ import io.github.radixtrator.resync.ui.theme.Motion
 fun TopSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val visible = remember { MutableTransitionState(false) }
     LaunchedEffect(Unit) { visible.targetState = true }
+    // Dragging the sheet up dismisses it. The offset is only read in the layout phase, so a drag never recomposes.
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    var sheetHeight by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    val dragState = rememberDraggableState { delta -> dragOffset = (dragOffset + delta).coerceIn(-sheetHeight.toFloat(), 0f) }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
@@ -75,6 +99,19 @@ fun TopSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit)
                     shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .onSizeChanged { sheetHeight = it.height }
+                        .offset { IntOffset(0, dragOffset.roundToInt()) }
+                        .draggable(
+                            state = dragState,
+                            orientation = Orientation.Vertical,
+                            onDragStopped = { velocity ->
+                                scope.launch {
+                                    val dismiss = dragOffset < -sheetHeight * 0.25f || velocity < -1500f
+                                    animate(dragOffset, if (dismiss) -sheetHeight.toFloat() else 0f, velocity) { v, _ -> dragOffset = v }
+                                    if (dismiss) onDismiss()
+                                }
+                            },
+                        )
                         // Swallow taps so only the scrim dismisses.
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
                 ) {
@@ -103,9 +140,11 @@ fun SheetTitle(title: String, modifier: Modifier = Modifier, topPadding: Dp = 16
 /** Sync's bottom sheet handle sits closer to the edge than Material's: 12dp above the pill, 8dp below. */
 @Composable
 fun SheetHandle() {
+    val description = t("Drag handle")
     Box(
         Modifier
             .padding(top = 12.dp, bottom = 8.dp)
+            .semantics { contentDescription = description }
             .size(width = 32.dp, height = 4.dp)
             .clip(RoundedCornerShape(50))
             .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
@@ -114,24 +153,35 @@ fun SheetHandle() {
 
 /**
  * A 48dp sheet row: icon (or a radio button when [radio] is set), label, optional trailing slot.
- * [selected] draws Sync's rounded highlight.
+ * A non-null [selected] makes the row a choice: it draws Sync's rounded highlight and exposes a radio-button
+ * role; a non-null [radio] does the same for rows led by a radio button. A non-null [toggled] makes it a switch
+ * (or a checkbox when [toggleRole] says so). With none of them set it is a plain action button.
  */
 @Composable
 fun OptionRow(
     label: String,
     icon: ImageVector?,
-    selected: Boolean = false,
+    selected: Boolean? = null,
     onClick: () -> Unit,
     radio: Boolean? = null,
+    toggled: Boolean? = null,
+    toggleRole: Role = Role.Switch,
     trailing: (@Composable () -> Unit)? = null,
 ) {
+    val choice = radio ?: selected
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(50))
-            .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent)
-            .clickable(onClick = onClick)
+            .background(if (selected == true) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent)
+            .then(
+                when {
+                    toggled != null -> Modifier.toggleable(toggled, role = toggleRole, onValueChange = { onClick() })
+                    choice != null -> Modifier.selectable(choice, role = Role.RadioButton, onClick = onClick)
+                    else -> Modifier.clickable(role = Role.Button, onClick = onClick)
+                },
+            )
             .padding(start = 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -150,13 +200,14 @@ fun OptionRow(
 }
 
 /**
- * One button in Sync's More actions grid. [active] marks a toggle that's on (e.g. Dark mode). [label] is shown as
+ * One button in Sync's More actions grid. [active] is null for a plain action and says whether a toggle is on
+ * (e.g. Dark mode), which also exposes it to accessibility as a switch. [label] is shown as
  * given (already translated); [key] names the action for settings that persist it, and stays English.
  */
 class QuickAction(
     val label: String,
     val icon: ImageVector,
-    val active: Boolean = false,
+    val active: Boolean? = null,
     val key: String = label,
     val onClick: () -> Unit,
 )
@@ -172,10 +223,19 @@ fun QuickActionGrid(actions: List<QuickAction>, onPicked: () -> Unit, modifier: 
                         Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(16.dp))
-                            .combinedClickable(onClick = {
-                                onPicked()
-                                action.onClick()
-                            })
+                            .then(
+                                if (action.active != null) {
+                                    Modifier.toggleable(action.active, role = Role.Switch, onValueChange = {
+                                        onPicked()
+                                        action.onClick()
+                                    })
+                                } else {
+                                    Modifier.clickable(role = Role.Button, onClick = {
+                                        onPicked()
+                                        action.onClick()
+                                    })
+                                },
+                            )
                             .padding(vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -184,7 +244,7 @@ fun QuickActionGrid(actions: List<QuickAction>, onPicked: () -> Unit, modifier: 
                                 .size(56.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (action.active) MaterialTheme.colorScheme.secondaryContainer
+                                    if (action.active == true) MaterialTheme.colorScheme.secondaryContainer
                                     else MaterialTheme.colorScheme.surfaceContainerHighest,
                                 ),
                             contentAlignment = Alignment.Center,

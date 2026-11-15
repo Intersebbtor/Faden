@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.radixtrator.resync.data.CommentGif
+import io.github.radixtrator.resync.data.HTML_TAG
 import io.github.radixtrator.resync.i18n.t
 
 /** A comment body with its GIFs and pictures taken out of the text, and the ones to show under it. */
@@ -26,7 +27,6 @@ data class GifBody(val html: String, val gifs: List<CommentGif>)
 
 private val ANCHOR = Regex("""<a\s+href="([^"]*)"[^>]*>(.*?)</a>""", RegexOption.DOT_MATCHES_ALL)
 private val IMG = Regex("""<img\b[^>]*>""")
-private val TAG = Regex("<[^>]*>")
 private val EMPTY_PARAGRAPH = Regex("""<p>\s*</p>""")
 
 /**
@@ -40,7 +40,7 @@ fun gifBody(html: String, gifs: List<CommentGif>): GifBody {
     val text = ANCHOR.replace(html) { m ->
         val href = m.groupValues[1].replace("&amp;", "&")
         val inner = m.groupValues[2]
-        val label = inner.replace(TAG, "").replace("&amp;", "&").trim()
+        val label = inner.replace(HTML_TAG, "").replace("&amp;", "&").trim()
         val own = gifs.any { g -> href == g.page || href == g.url || g.id in href || g.id == label }
         if (own) return@replace ""
         val gif = gifUrl(href) ?: imageUrl(href) ?: return@replace m.value

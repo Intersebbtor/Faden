@@ -7,8 +7,6 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
@@ -34,6 +33,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -44,6 +45,8 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -53,7 +56,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -411,36 +415,42 @@ private fun PlaybackClock(position: () -> Long, duration: () -> Long) {
     Text("${clock(position())} / ${clock(duration())}", color = Color.White, style = MaterialTheme.typography.bodySmall)
 }
 
-/** Sync's thin seek line with a round thumb; tap or drag to seek. */
+/**
+ * Sync's thin seek line with a round thumb; tap or drag to seek. A [Slider], so TalkBack can adjust it. Playback
+ * feeds [fraction] into the slider's own state from a snapshot flow rather than composition, so the bar moves
+ * by relaying out and redrawing alone, not by recomposing every poll. The seek happens when the touch ends.
+ */
 @Composable
 private fun SeekBar(fraction: () -> Float, onSeek: (Float) -> Unit) {
-    var dragging by remember { mutableStateOf<Float?>(null) }
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(24.dp)
-            .padding(horizontal = 16.dp)
-            .pointerInput(Unit) { detectTapGestures { onSeek((it.x / size.width).coerceIn(0f, 1f)) } }
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures(
-                    onDragStart = { dragging = (it.x / size.width).coerceIn(0f, 1f) },
-                    onDragEnd = {
-                        dragging?.let(onSeek)
-                        dragging = null
-                    },
-                    onDragCancel = { dragging = null },
-                ) { change, _ -> dragging = (change.position.x / size.width).coerceIn(0f, 1f) }
-            }
-            .drawBehind {
-                // Read here, so playback moves the bar by redrawing it alone.
-                val shown = (dragging ?: fraction()).coerceIn(0f, 1f)
-                val y = size.height / 2
-                val x = size.width * shown
-                drawLine(Color.White.copy(alpha = 0.35f), Offset(0f, y), Offset(size.width, y), 2.dp.toPx(), StrokeCap.Round)
-                drawLine(Color.White, Offset(0f, y), Offset(x, y), 2.dp.toPx(), StrokeCap.Round)
-                drawCircle(Color.White, 6.dp.toPx(), Offset(x, y))
+    val state = remember { SliderState(0f) }
+    val currentFraction by rememberUpdatedState(fraction)
+    LaunchedEffect(state) {
+        snapshotFlow { currentFraction().coerceIn(0f, 1f) }.collect { if (!state.isDragging) state.value = it }
+    }
+    val label = t("Seek bar")
+    // The slider insets its track by half the 12dp thumb, so 10dp padding puts the line's ends where they were (16dp).
+    Box(Modifier.fillMaxWidth().height(24.dp).padding(horizontal = 10.dp), contentAlignment = Alignment.Center) {
+        Slider(
+            state = state,
+            onValueChangeFinished = { onSeek(state.value) },
+            modifier = Modifier.semantics { contentDescription = label },
+            thumb = { Box(Modifier.size(12.dp).background(Color.White, CircleShape)) },
+            track = { sliderState ->
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(2.dp)
+                        .drawBehind {
+                            // Read here, so playback moves the bar by redrawing it alone.
+                            val x = size.width * sliderState.coercedValueAsFraction
+                            val y = size.height / 2
+                            drawLine(Color.White.copy(alpha = 0.35f), Offset(0f, y), Offset(size.width, y), 2.dp.toPx(), StrokeCap.Round)
+                            drawLine(Color.White, Offset(0f, y), Offset(x, y), 2.dp.toPx(), StrokeCap.Round)
+                        },
+                )
             },
-    )
+        )
+    }
 }
 
 /** Sync's "− 1x +". */

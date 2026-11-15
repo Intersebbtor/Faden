@@ -296,7 +296,6 @@ class ParserTest {
             ).jsonObject,
         )
         assertEquals(0xFF0DD3BB.toInt(), colored.flairColor)
-        assertEquals(false, colored.flairDarkText)
         assertTrue(colored.locked)
         assertEquals("SeraBeeves", colored.authorFlair)
 
