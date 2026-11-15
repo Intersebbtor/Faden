@@ -1,6 +1,7 @@
 package io.github.radixtrator.resync.data
 
 import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.ui.common.firstParagraph
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -223,6 +224,7 @@ object Parser {
             distinguished = d.string("distinguished"),
             // "edited" is false, or the edit timestamp.
             editedUtc = d.long("edited"),
+            previewText = d.string("selftext_html").let { html -> firstParagraph(if (html != null) htmlToPlainText(html) else d.string("selftext").orEmpty()) },
         )
     }
 
@@ -507,4 +509,32 @@ object Parser {
 
     private fun imageSource(o: JsonObject): ImageSource? =
         o.string("url")?.let { ImageSource(it, o.int("width") ?: 0, o.int("height") ?: 0) }
+}
+
+private val HTML_COMMENT = Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL)
+private val HTML_BLOCK_BREAK = Regex("<br\\s*/?>|<hr\\s*/?>|</(?:p|div|li|h[1-6]|blockquote|pre|tr|ul|ol|table)\\s*>", RegexOption.IGNORE_CASE)
+private val HTML_TAG = Regex("<[^>]*>")
+private val HTML_ENTITY = Regex("&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);")
+private val HTML_SPACE = Regex("[ \\t\\r\\n\\u00a0]+")
+
+/**
+ * The text of [html] with a line break where a paragraph, line break, list item or heading ends and all other
+ * whitespace collapsed, as Android's HTML parser reads it; enough for a preview that keeps only the first paragraph,
+ * and unlike `AnnotatedString.fromHtml` it needs no Android runtime.
+ */
+internal fun htmlToPlainText(html: String): String {
+    val broken = HTML_BLOCK_BREAK.replace(HTML_COMMENT.replace(html, ""), "\u0000")
+    val text = HTML_TAG.replace(broken, "")
+    val decoded = HTML_ENTITY.replace(text) { m ->
+        val name = m.groupValues[1]
+        when {
+            name.startsWith("#x") || name.startsWith("#X") -> name.drop(2).toIntOrNull(16)?.let { String(Character.toChars(it)) }
+            name.startsWith("#") -> name.drop(1).toIntOrNull()?.let { String(Character.toChars(it)) }
+            else -> when (name) {
+                "amp" -> "&"; "lt" -> "<"; "gt" -> ">"; "quot" -> "\""; "apos" -> "'"; "nbsp" -> " "
+                else -> null
+            }
+        } ?: m.value
+    }
+    return decoded.split('\u0000').joinToString("\n") { HTML_SPACE.replace(it, " ").trim() }
 }

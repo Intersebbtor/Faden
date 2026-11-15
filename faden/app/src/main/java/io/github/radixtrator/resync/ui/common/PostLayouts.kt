@@ -63,7 +63,6 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
@@ -1022,7 +1021,6 @@ private fun LetterAvatar(name: String, size: Dp) {
 @Composable
 private fun selfTextPreview(post: Post): String? {
     if (!post.isSelf) return null
-    return remember(post.selfTextHtml, post.selfText) {
-        firstParagraph(post.selfTextHtml?.let { AnnotatedString.fromHtml(it).text } ?: post.selfText)
-    }
+    // Made when the post was parsed; a post built by hand has none, so its plain text stands in.
+    return post.previewText ?: if (post.selfTextHtml == null) firstParagraph(post.selfText) else null
 }
