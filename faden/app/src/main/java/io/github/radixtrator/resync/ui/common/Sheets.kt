@@ -2,11 +2,15 @@ package io.github.radixtrator.resync.ui.common
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -18,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,7 +39,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +54,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -52,6 +64,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.theme.Motion
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /**
  * Sync's drop-down sheet: slides from the top edge over a scrim. Used for sort and More actions,
@@ -61,6 +75,11 @@ import io.github.radixtrator.resync.ui.theme.Motion
 fun TopSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
     val visible = remember { MutableTransitionState(false) }
     LaunchedEffect(Unit) { visible.targetState = true }
+    // Dragging the sheet up dismisses it. The offset is only read in the layout phase, so a drag never recomposes.
+    var dragOffset by remember { mutableFloatStateOf(0f) }
+    var sheetHeight by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    val dragState = rememberDraggableState { delta -> dragOffset = (dragOffset + delta).coerceIn(-sheetHeight.toFloat(), 0f) }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
@@ -80,6 +99,19 @@ fun TopSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit)
                     shape = RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .onSizeChanged { sheetHeight = it.height }
+                        .offset { IntOffset(0, dragOffset.roundToInt()) }
+                        .draggable(
+                            state = dragState,
+                            orientation = Orientation.Vertical,
+                            onDragStopped = { velocity ->
+                                scope.launch {
+                                    val dismiss = dragOffset < -sheetHeight * 0.25f || velocity < -1500f
+                                    animate(dragOffset, if (dismiss) -sheetHeight.toFloat() else 0f, velocity) { v, _ -> dragOffset = v }
+                                    if (dismiss) onDismiss()
+                                }
+                            },
+                        )
                         // Swallow taps so only the scrim dismisses.
                         .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
                 ) {
