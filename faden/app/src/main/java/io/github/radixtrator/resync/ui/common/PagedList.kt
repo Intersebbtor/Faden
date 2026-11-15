@@ -37,6 +37,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.radixtrator.resync.data.Post
+import io.github.radixtrator.resync.data.ProfileItem
 import io.github.radixtrator.resync.i18n.t
 
 /**
@@ -76,8 +78,8 @@ fun <T> PagedList(
 
     LazyColumn(state = listState, contentPadding = contentPadding, modifier = modifier.fillMaxSize()) {
         header?.invoke(this)
-        // Typed by class, so a post row is only ever reused for a post and a comment row for a comment.
-        items(state.items, key = key, contentType = { it?.let { row -> row::class } }) { item(it) }
+        // Typed by class, and for posts by their media, so a slot is only reused for a row of the same shape.
+        items(state.items, key = key, contentType = { rowContentType(it) }) { item(it) }
         item(key = "footer") {
             Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                 if (state.items.isEmpty()) {
@@ -163,8 +165,8 @@ fun <T> PagedGrid(
             modifier = modifier.fillMaxSize(),
         ) {
             item(key = "header", span = StaggeredGridItemSpan.FullLine) { Box(Modifier.fullBleed(gutter)) { header() } }
-            // Typed by class, so a post row is only ever reused for a post and a comment row for a comment.
-            items(state.items, key = key, contentType = { it?.let { row -> row::class } }) { item(it) }
+            // Typed by class, and for posts by their media, so a slot is only reused for a row of the same shape.
+            items(state.items, key = key, contentType = { rowContentType(it) }) { item(it) }
             item(key = "footer", span = StaggeredGridItemSpan.FullLine) {
                 Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                     if (state.items.isEmpty()) {
@@ -204,4 +206,15 @@ fun MessageEffect(message: String?, snackbar: SnackbarHostState, onShown: () -> 
             onShown()
         }
     }
+}
+
+/**
+ * What a row's composition looks like, for LazyList slot reuse: posts by their media kind (an image card, a text card
+ * and a gallery card lay out differently), everything else by its class.
+ */
+internal fun rowContentType(row: Any?): Any? = when (row) {
+    null -> null
+    is Post -> row.media::class
+    is ProfileItem.PostItem -> row.post.media::class
+    else -> row::class
 }
