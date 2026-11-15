@@ -118,7 +118,6 @@ import io.github.radixtrator.resync.ui.settings.SettingsCategory
 import kotlinx.coroutines.launch
 import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
-import io.github.radixtrator.resync.i18n.tn
 
 @Composable
 fun FeedScreen(route: FeedRoute, container: AppContainer) {
@@ -428,7 +427,7 @@ fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
             append(
                 when {
                     comment.scoreHidden -> t("[score hidden]")
-                    else -> tn(comment.score, "{0} point", "{0} points", Format.count(comment.score))
+                    else -> Format.points(comment.score, short = true)
                 },
             )
         }

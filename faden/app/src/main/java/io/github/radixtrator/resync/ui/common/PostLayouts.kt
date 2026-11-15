@@ -80,7 +80,6 @@ import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.PostMedia
 import io.github.radixtrator.resync.data.ViewOptions
 import io.github.radixtrator.resync.i18n.t
-import io.github.radixtrator.resync.i18n.tn
 import io.github.radixtrator.resync.ui.navigation.LocalAccount
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.LocalUserTagColors
@@ -357,7 +356,7 @@ private fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, op
                 val description = RowMeta.scaledBy(options.descriptionSize.scale)
                 PostMeta(post, showSubreddit, maxLines = 1, style = description, showAuthor = feedAuthors)
                 Text(
-                    "${points(post.score, short)} • ${comments(post.numComments, short)}",
+                    "${Format.points(post.score, short)} • ${Format.comments(post.numComments, short)}",
                     style = description,
                     color = muted,
                     maxLines = 1,
@@ -809,14 +808,10 @@ fun PostStats(post: Post, modifier: Modifier = Modifier, style: TextStyle = Card
     }
     val short = LocalFeedDisplay.current.shortScores
     Column(modifier) {
-        Text(points(post.score, short), style = style, color = pointsColor)
-        Text(comments(post.numComments, short), style = style, color = muted)
+        Text(Format.points(post.score, short), style = style, color = pointsColor)
+        Text(Format.comments(post.numComments, short), style = style, color = muted)
     }
 }
-
-/** [short]: Post options › "Display short scores" (10.6k, else 10,600). */
-private fun points(score: Int, short: Boolean) = tn(score, "{0} point", "{0} points", Format.count(score, short))
-private fun comments(n: Int, short: Boolean) = tn(n, "{0} comment", "{0} comments", Format.count(n, short))
 
 /** Whether [CardPreview] has a big image to show (links without one fall back to a link row). */
 fun Post.hasCardPreview(): Boolean = media.cardImage() != null

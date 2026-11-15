@@ -61,7 +61,6 @@ import io.github.radixtrator.resync.ui.home.FeedIcon
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.theme.FadenColors
 import io.github.radixtrator.resync.i18n.t
-import io.github.radixtrator.resync.i18n.tn
 
 // Sync's Swipe mode page (sync-reference/SYNC_PARITY_LOG.md §3.20): a header over media that fills the rest of
 // the page, with the post's actions in the screen's bottom bar ([SwipeBottomBar]) rather than on the page.
@@ -129,9 +128,9 @@ private fun SwipeHeader(post: Post, iconUrl: String?, modifier: Modifier) {
                             false -> FadenColors.Downvote
                             null -> muted
                         }
-                        withStyle(SpanStyle(color = pointsColor)) { append(pointsLabel(post.score, settings.shortScores)) }
+                        withStyle(SpanStyle(color = pointsColor)) { append(Format.points(post.score, settings.shortScores)) }
                         append(" • ")
-                        append(commentsLabel(post.numComments, settings.shortScores))
+                        append(Format.comments(post.numComments, settings.shortScores))
                     },
                     style = meta,
                     color = muted,
@@ -278,5 +277,3 @@ internal fun SwipeBottomBar(
     }
 }
 
-private fun pointsLabel(score: Int, short: Boolean) = tn(score, "{0} point", "{0} points", Format.count(score, short))
-private fun commentsLabel(n: Int, short: Boolean) = tn(n, "{0} comment", "{0} comments", Format.count(n, short))

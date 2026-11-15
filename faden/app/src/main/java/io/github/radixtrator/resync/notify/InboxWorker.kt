@@ -4,7 +4,6 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.text.Html
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -23,6 +22,7 @@ import io.github.radixtrator.resync.FadenApp
 import io.github.radixtrator.resync.data.InboxBox
 import io.github.radixtrator.resync.data.InboxItem
 import io.github.radixtrator.resync.data.MessageCheck
+import io.github.radixtrator.resync.data.plainText
 import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -88,7 +88,7 @@ class InboxWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         private fun notify(context: Context, item: InboxItem) {
             Notifications.channel(context, CHANNEL, t("Messages"), t("New messages and replies in your inbox"))
             val id = item.fullname.hashCode()
-            val body = Html.fromHtml(item.bodyHtml, Html.FROM_HTML_MODE_COMPACT).toString().trim().ifEmpty { item.body }
+            val body = plainText(item.bodyHtml, item.body).trim()
             val open = if (item.isComment && item.postId != null) {
                 Notifications.openPost(context, id, item.postId, item.commentId)
             } else {

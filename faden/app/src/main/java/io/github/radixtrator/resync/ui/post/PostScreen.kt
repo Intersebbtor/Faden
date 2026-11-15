@@ -5,8 +5,6 @@ package io.github.radixtrator.resync.ui.post
 import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.tc
-import io.github.radixtrator.resync.i18n.tn
-import android.text.Html
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -143,6 +141,7 @@ import io.github.radixtrator.resync.ui.navigation.SearchRoute
 import io.github.radixtrator.resync.ui.navigation.ImageRoute
 import io.github.radixtrator.resync.data.CommentNode
 import io.github.radixtrator.resync.data.SwipeAction
+import io.github.radixtrator.resync.data.plainText
 import io.github.radixtrator.resync.data.VisibleNode
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.CardPreview
@@ -794,7 +793,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
         }
         append(" ")
         withStyle(SpanStyle(color = scoreColor)) {
-            append(if (comment.scoreHidden) t("[score hidden]") else tn(comment.score, "{0} point", "{0} points", Format.count(comment.score)))
+            append(if (comment.scoreHidden) t("[score hidden]") else Format.points(comment.score, short = true))
         }
         withStyle(SpanStyle(color = muted)) {
             append(" • ${Format.timeAgo(comment.createdUtc)}")
@@ -1150,10 +1149,6 @@ private fun commentActionExtras(post: Post, comments: List<CommentNode>, nav: Na
         nav.openExternal("https://translate.google.com/?sl=auto&op=translate&text=$text")
     })
 }
-
-/** A body's HTML as plain text for speech, or [fallback] when there's no HTML or it renders empty. */
-private fun plainText(html: String?, fallback: String): String =
-    html?.let { Html.fromHtml(it, Html.FROM_HTML_MODE_COMPACT).toString() }?.takeIf { it.isNotBlank() } ?: fallback
 
 // --- Bottom bars ---
 

@@ -2,6 +2,7 @@ package io.github.radixtrator.resync.ui.common
 
 import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 import java.util.Locale
 import kotlin.math.abs
 
@@ -42,6 +43,12 @@ object Format {
 
     /** [count] when [short], else the whole number with grouping ("10,600"): Sync's "Display short scores". */
     fun count(n: Int, short: Boolean): String = if (short) count(n) else String.format(I18n.locale, "%,d", n)
+
+    /** "1 point" / "10,600 points"; [short]: Post options › "Display short scores" (10.6k, else 10,600). */
+    fun points(n: Int, short: Boolean): String = tn(n, "{0} point", "{0} points", count(n, short))
+
+    /** "1 comment" / "10,600 comments", counted like [points]. */
+    fun comments(n: Int, short: Boolean): String = tn(n, "{0} comment", "{0} comments", count(n, short))
 
     /** Community sizes, which Sync writes in capitals ("33.6M") unlike points ("4.3k"). */
     fun members(n: Int): String = count(n).uppercase(Locale.ROOT)
