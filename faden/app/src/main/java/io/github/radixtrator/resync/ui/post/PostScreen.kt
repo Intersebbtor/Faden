@@ -14,6 +14,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -64,6 +65,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,6 +90,8 @@ import io.github.radixtrator.resync.ui.common.PostActionsSheet
 import io.github.radixtrator.resync.ui.common.PostMeta
 import io.github.radixtrator.resync.ui.common.PostStats
 import io.github.radixtrator.resync.ui.common.PostTitle
+import io.github.radixtrator.resync.ui.common.ScoreChip
+import io.github.radixtrator.resync.ui.common.CommentsChip
 import io.github.radixtrator.resync.ui.common.QuickAction
 import io.github.radixtrator.resync.ui.common.QuickActionGrid
 import io.github.radixtrator.resync.ui.common.RedditBodyText
@@ -541,8 +545,7 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
             CardPreview(post, onClick = { nav.openMedia(post) }, maxHeight = if (cropped) 180.dp else null)
         }
         Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
-            // 16sp keeps the title as wide as Sync's Product Sans, which can't be bundled.
-            PostTitle(post, MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = TextUnit.Unspecified), dimWhenRead = false)
+            PostTitle(post, MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold), dimWhenRead = false)
             Spacer(Modifier.height(4.dp))
             PostMeta(post, showSubreddit = false, maxLines = 3, suffix = post.upvoteRatio?.let { t("{0}% upvoted", (it * 100).roundToInt()) })
             if (post.flair != null) {
@@ -561,7 +564,10 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
             }
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            PostStats(post, Modifier.weight(1f))
+            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ScoreChip(post, short = true)
+                CommentsChip(post, short = true)
+            }
             StateToggle(post.likes == true, { onVote(if (it) 1 else 0) }, AppIcons.ArrowUp, t("Upvote"), FadenColors.Upvote, muted)
             StateToggle(post.likes == false, { onVote(if (it) -1 else 0) }, AppIcons.ArrowDown, t("Downvote"), FadenColors.Downvote, muted)
             StateToggle(
