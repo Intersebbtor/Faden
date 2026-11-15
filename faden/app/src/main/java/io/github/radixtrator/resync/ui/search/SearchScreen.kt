@@ -87,6 +87,7 @@ import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.ChipMenu
 import io.github.radixtrator.resync.ui.common.Format
 import io.github.radixtrator.resync.ui.common.HeaderChip
+import io.github.radixtrator.resync.ui.common.HeaderFilterChip
 import io.github.radixtrator.resync.ui.common.LargeHeader
 import io.github.radixtrator.resync.ui.common.ListingViewModel
 import io.github.radixtrator.resync.ui.common.MessageEffect
@@ -277,15 +278,11 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                                         ChipMenu(sort.label, searchSortIcon(sort), SearchSort.entries, { it.label }, posts::setSort)
                                         HeaderChip(if (mode == SearchMode.SEARCH) t("Options") else "${mode.label}: $target", Icons.Outlined.Settings, { optionsOpen = true })
                                         if (subreddit != null && mode == SearchMode.SEARCH) {
-                                            HeaderChip(
-                                                t("Only in r/{0}", subreddit),
-                                                if (restrict) Icons.Outlined.Check else null,
-                                                { posts.setRestrict(!restrict) },
-                                                container = if (restrict) {
-                                                    MaterialTheme.colorScheme.secondaryContainer
-                                                } else {
-                                                    MaterialTheme.colorScheme.surfaceContainerLow
-                                                },
+                                            HeaderFilterChip(
+                                                label = t("Only in r/{0}", subreddit),
+                                                selected = restrict,
+                                                onClick = { posts.setRestrict(!restrict) },
+                                                icon = if (restrict) Icons.Outlined.Check else null,
                                             )
                                         }
                                     }
