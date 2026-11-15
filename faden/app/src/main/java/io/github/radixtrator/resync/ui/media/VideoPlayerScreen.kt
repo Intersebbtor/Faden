@@ -61,14 +61,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.currentStateAsState
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
-import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
@@ -204,11 +206,7 @@ private fun VideoPlayer(
             .setEnableDecoderFallback(true)
             .apply { if (softwareFirst) setMediaCodecSelector(SoftwareFirst) }
         ExoPlayer.Builder(context, renderers)
-            .apply {
-                if (userAgent != null) {
-                    setMediaSourceFactory(DefaultMediaSourceFactory(DefaultHttpDataSource.Factory().setUserAgent(userAgent)))
-                }
-            }
+            .setMediaSourceFactory(DefaultMediaSourceFactory(VideoCache.dataSourceFactory(context, userAgent)))
             .build().apply {
                 val item = MediaItem.Builder()
                     .setUri(playingUrl)
@@ -227,11 +225,29 @@ private fun VideoPlayer(
             if (size.width > 0 && size.height > 0) aspect = size.width * size.pixelWidthHeightRatio / size.height
         }
         updateAspect(player.videoSize)
+        fun updateState() {
+            playing = player.playWhenReady && player.playbackState != Player.STATE_ENDED
+            buffering = player.playWhenReady && player.playbackState == Player.STATE_BUFFERING
+            duration = player.duration.coerceAtLeast(0L)
+        }
+        updateState()
         val listener = object : Player.Listener {
             override fun onVideoSizeChanged(videoSize: VideoSize) = updateAspect(videoSize)
 
+            override fun onPlaybackStateChanged(playbackState: Int) = updateState()
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) = updateState()
+
+            override fun onTimelineChanged(timeline: Timeline, reason: Int) = updateState()
+
+            // Seeks and restarts while paused don't get a poll, so the bar and clock catch up here.
+            override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+                position = player.currentPosition
+            }
+
             override fun onPlayerError(e: PlaybackException) {
                 if (e.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED && !softwareFirst) {
+                    resumeAt[0] = player.currentPosition
                     softwareFirst = true
                 } else {
                     error = t("Can't play this video ({0})", e.errorCodeName)
@@ -255,14 +271,15 @@ private fun VideoPlayer(
             .setForceHighestSupportedBitrate(hd)
             .build()
     }
-    LaunchedEffect(player) {
-        while (true) {
-            playing = player.playWhenReady && player.playbackState != Player.STATE_ENDED
-            position = player.currentPosition
-            resumeAt[0] = position
-            duration = player.duration.coerceAtLeast(0L)
-            buffering = player.playWhenReady && player.playbackState == Player.STATE_BUFFERING
+    // The position only matters on screen: poll it while it's moving, the controls are showing and the app is in front.
+    val resumed = LocalLifecycleOwner.current.lifecycle.currentStateAsState().value.isAtLeast(Lifecycle.State.RESUMED)
+    val controlsShown = controls || panelOpen
+    LaunchedEffect(player, playing, controlsShown, resumed) {
+        if (!controlsShown || !resumed) return@LaunchedEffect
+        position = player.currentPosition
+        while (playing) {
             delay(200)
+            position = player.currentPosition
         }
     }
     BackHandler(enabled = panelOpen) { panelOpen = false }
@@ -324,13 +341,16 @@ private fun VideoPlayer(
                 ) {
                     if (settings.videoSeekBar) {
                         SeekBar(
-                            fraction = if (duration > 0) position.toFloat() / duration else 0f,
+                            fraction = { if (duration > 0) position.toFloat() / duration else 0f },
                             onSeek = { player.seekTo((it * duration).toLong()) },
                         )
                     }
                     // Sync packs the playback buttons 38dp apart from the left edge.
                     Row(Modifier.fillMaxWidth().padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                        if (adaptive || twoFiles) HdToggle(hd, onToggle = { hd = !hd })
+                        if (adaptive || twoFiles) HdToggle(hd, onToggle = {
+                            resumeAt[0] = player.currentPosition
+                            hd = !hd
+                        })
                         IconButton(onClick = {
                             player.seekTo(0)
                             player.play()
@@ -347,7 +367,7 @@ private fun VideoPlayer(
                             Icon(if (muted) AppIcons.VolumeOff else AppIcons.VolumeOn, if (muted) t("Unmute") else t("Mute"), tint = Color.White)
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text("${clock(position)} / ${clock(duration)}", color = Color.White, style = MaterialTheme.typography.bodySmall)
+                        PlaybackClock({ position }, { duration })
                         Spacer(Modifier.weight(1f))
                         // The file itself when there's one to hand (RedGifs' HD mp4), else the link as given.
                         IconButton(onClick = { download(hdStream ?: url) }) { Icon(AppIcons.Download, t("Download"), tint = Color.White) }
@@ -385,11 +405,16 @@ private fun HdToggle(hd: Boolean, onToggle: () -> Unit) {
     }
 }
 
+/** "00:05 / 01:30"; reads the position itself, so only this text recomposes as playback moves. */
+@Composable
+private fun PlaybackClock(position: () -> Long, duration: () -> Long) {
+    Text("${clock(position())} / ${clock(duration())}", color = Color.White, style = MaterialTheme.typography.bodySmall)
+}
+
 /** Sync's thin seek line with a round thumb; tap or drag to seek. */
 @Composable
-private fun SeekBar(fraction: Float, onSeek: (Float) -> Unit) {
+private fun SeekBar(fraction: () -> Float, onSeek: (Float) -> Unit) {
     var dragging by remember { mutableStateOf<Float?>(null) }
-    val shown = (dragging ?: fraction).coerceIn(0f, 1f)
     Box(
         Modifier
             .fillMaxWidth()
@@ -407,6 +432,8 @@ private fun SeekBar(fraction: Float, onSeek: (Float) -> Unit) {
                 ) { change, _ -> dragging = (change.position.x / size.width).coerceIn(0f, 1f) }
             }
             .drawBehind {
+                // Read here, so playback moves the bar by redrawing it alone.
+                val shown = (dragging ?: fraction()).coerceIn(0f, 1f)
                 val y = size.height / 2
                 val x = size.width * shown
                 drawLine(Color.White.copy(alpha = 0.35f), Offset(0f, y), Offset(size.width, y), 2.dp.toPx(), StrokeCap.Round)
