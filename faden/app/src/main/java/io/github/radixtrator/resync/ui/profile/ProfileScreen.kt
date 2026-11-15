@@ -47,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -172,6 +173,8 @@ class ProfileViewModel(container: AppContainer, val name: String, initialTab: Us
 fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) {
     val nav = LocalNavigator.current
     val vm = viewModel { ProfileViewModel(container, name, initialTab) }
+    val linkColor = MaterialTheme.colorScheme.primary
+    SideEffect { vm.setLinkColor(linkColor) }
     val state by vm.state.collectAsStateWithLifecycle()
     val tab by vm.tab.collectAsStateWithLifecycle()
     val sort by vm.sort.collectAsStateWithLifecycle()
