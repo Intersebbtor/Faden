@@ -148,7 +148,7 @@ class InboxWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                             container.api.markRead(listOf(fullname))
                         }
                     }
-                    container.refreshInboxCount()
+                    container.refreshInboxCount(force = true)
                 }
                 withContext(Dispatchers.Main) {
                     // Dismissing also ends the reply field's spinner.
