@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -42,6 +43,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import coil3.SingletonImageLoader
+import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
@@ -139,7 +141,7 @@ private fun ImageInfoSheet(url: String, postId: String?, downloads: MediaDownloa
     }
 }
 
-/** The original's resolution and file size from Coil's disk cache; the viewer itself decodes a smaller copy. */
+/** The original's resolution and file size, read from the downloaded file in Coil's disk cache (not from the decoded bitmap). */
 private suspend fun cachedImageInfo(context: Context, url: String): Pair<IntSize, Long>? = withContext(Dispatchers.IO) {
     runCatching {
         SingletonImageLoader.get(context).diskCache?.openSnapshot(url)?.use { snapshot ->
@@ -151,29 +153,50 @@ private suspend fun cachedImageInfo(context: Context, url: String): Pair<IntSize
     }.getOrNull()
 }
 
+/** Zoom past this and the full-resolution original is loaded on top of the screen-sized copy. */
+private const val FULL_RES_ZOOM = 2f
+
 /** Pinch/double-tap zoom that leaves single-finger swipes to the pager while not zoomed. */
 @Composable
 private fun ZoomableImage(url: String, onTap: () -> Unit, onZoomChange: (Boolean) -> Unit) {
     val context = LocalContext.current
     val zoom = remember { ZoomState(onZoomChange) }
-    // Original size, so deep zoom shows real pixels rather than a screen-sized downsample.
-    val request = remember(url) { coil3.request.ImageRequest.Builder(context).data(url).size(coil3.size.Size.ORIGINAL).build() }
-    SubcomposeAsyncImage(
-        model = request,
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier
-            .fillMaxSize()
-            .zoomGestures(zoom, onTap)
-            .zoomTransform(zoom),
-    ) {
-        val loadState by painter.state.collectAsState()
-        when (loadState) {
-            is AsyncImagePainter.State.Loading, AsyncImagePainter.State.Empty ->
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) }
-            is AsyncImagePainter.State.Error ->
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(t("Couldn't load image"), color = Color.White) }
-            is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
+    // About twice the screen, enough for 2x zoom to stay sharp; the pager keeps neighbours composed, so full-size
+    // bitmaps for three pages would be heavy.
+    val request = remember(url) {
+        val metrics = context.resources.displayMetrics
+        coil3.request.ImageRequest.Builder(context).data(url)
+            .size(coil3.size.Size(metrics.widthPixels * 2, metrics.heightPixels * 2)).build()
+    }
+    // The original is only requested once the user zooms in deep, and then stays; it's drawn over the screen-sized
+    // copy, which stays visible while it loads. Kept out of the memory cache so it doesn't evict feed thumbnails.
+    var fullRes by remember(url) { mutableStateOf(false) }
+    val deep by remember { derivedStateOf { zoom.scale > FULL_RES_ZOOM } }
+    if (deep) fullRes = true
+    Box(Modifier.fillMaxSize().zoomGestures(zoom, onTap).zoomTransform(zoom)) {
+        SubcomposeAsyncImage(
+            model = request,
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            val loadState by painter.state.collectAsState()
+            when (loadState) {
+                is AsyncImagePainter.State.Loading, AsyncImagePainter.State.Empty ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) }
+                is AsyncImagePainter.State.Error ->
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(t("Couldn't load image"), color = Color.White) }
+                is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
+            }
+        }
+        if (fullRes) {
+            val fullRequest = remember(url) {
+                coil3.request.ImageRequest.Builder(context).data(url)
+                    .size(coil3.size.Size.ORIGINAL)
+                    .memoryCachePolicy(coil3.request.CachePolicy.READ_ONLY)
+                    .build()
+            }
+            AsyncImage(model = fullRequest, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
         }
     }
 }
