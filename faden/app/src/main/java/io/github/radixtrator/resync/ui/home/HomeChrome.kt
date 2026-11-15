@@ -51,6 +51,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -721,14 +722,15 @@ private fun LazyListScope.drawerFeeds(
     }
 }
 
-/** Sync's FAB: a rounded square with ⋯. */
+/** The ⋯ FAB, a FAB look-alike (M3's has no long-press): FAB shape and elevation, tap and long-press. */
 @Composable
 private fun MoreFab(onClick: () -> Unit, onLongClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = FloatingActionButtonDefaults.shape,
         color = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shadowElevation = 3.dp,
+        // FloatingActionButtonDefaults.elevation()'s default (Level3); its shadowElevation accessor is internal.
+        shadowElevation = 6.dp,
         modifier = modifier.size(FabSize),
     ) {
         Box(Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick), contentAlignment = Alignment.Center) {
