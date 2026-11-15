@@ -3,7 +3,10 @@ package io.github.radixtrator.resync.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -15,19 +18,23 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import io.github.radixtrator.resync.R
 import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.data.ThemeMode
+import io.github.radixtrator.resync.data.ThemePalette
 import io.github.radixtrator.resync.data.Typeface
 
 // Sync builds its theme from Monet tonal palettes (N1/N2 neutrals, A1–A3 accents). These are the tones
@@ -94,19 +101,37 @@ object FadenColors {
     val Reply = Color(0xFF3ABF6D)
     val Hide = Color(0xFFB71C1C)
 
-    /** Comment thread rails, cycling by depth (Sync's order: blue, purple, green, orange, pink). */
+    /**
+     * Comment thread rails, cycling by depth: the red thread first (depth 0), then amber, teal, blue and violet. Amber
+     * and teal sit a little deeper than their usual brights so every rail keeps 3:1 against a card in light and dark.
+     */
     val Depth = listOf(
-        Color(0xFF4484F6),
-        Color(0xFF9C27B0),
-        Color(0xFF4CAF50),
-        Color(0xFFFF9800),
-        Color(0xFFE91E63),
+        Color(0xFFE0465A), // red thread
+        Color(0xFFB87A12), // amber
+        Color(0xFF239379), // teal
+        Color(0xFF4F7FE0), // blue
+        Color(0xFF9B6BD6), // violet
     )
 }
 
 /**
+ * Figtree, Faden's own typeface: res/font/figtree.ttf and figtree_italic.ttf are the variable fonts (wght 300-900,
+ * OFL, third_party/figtree), so one file serves every weight. It has nothing below 300, so lighter weights clamp to Light.
+ */
+private val Figtree = FontFamily(
+    (100..900 step 100).flatMap { weight ->
+        val axis = FontVariation.Settings(FontVariation.weight(weight.coerceAtLeast(300)))
+        listOf(
+            Font(R.font.figtree, FontWeight(weight), FontStyle.Normal, variationSettings = axis),
+            Font(R.font.figtree_italic, FontWeight(weight), FontStyle.Italic, variationSettings = axis),
+        )
+    },
+)
+
+/**
  * Sync bundles Roboto and draws everything in it rather than the device font (One UI's is wider, and
- * drew italics upright). res/font/roboto.ttf is Android's variable Roboto: one file, every weight.
+ * drew italics upright). res/font/roboto.ttf is Android's variable Roboto: one file, every weight. Kept for
+ * those who pick it.
  */
 private val Roboto = FontFamily(
     (100..900 step 100).flatMap { weight ->
@@ -118,81 +143,91 @@ private val Roboto = FontFamily(
 
 /**
  * Sync's TextViews set Roboto about 1.5% wider than Compose does at the same size (titles, bodies and the
- * 34sp header all measure so in sync-reference), so this stands in for Material's own letter spacing.
+ * 34sp header all measure so in sync-reference), so the Roboto and system families use this in place of
+ * Material's own letter spacing. Figtree keeps Material's.
  */
 private val SYNC_LETTER_SPACING = 0.015.em
 
-/** Material's roles in [family], spaced like Sync's text. */
-private fun typographyFor(family: FontFamily) = Typography().run {
+/** Material's roles in [family], with [spacing] in place of Material's letter spacing when given. */
+private fun typographyFor(family: FontFamily, spacing: TextUnit? = null) = Typography().run {
+    fun TextStyle.styled() = if (spacing == null) copy(fontFamily = family) else copy(fontFamily = family, letterSpacing = spacing)
     copy(
-        displayLarge = displayLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        displayMedium = displayMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        displaySmall = displaySmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        headlineLarge = headlineLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        headlineMedium = headlineMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        headlineSmall = headlineSmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        titleLarge = titleLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        titleMedium = titleMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        titleSmall = titleSmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        bodyLarge = bodyLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        bodyMedium = bodyMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        bodySmall = bodySmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        labelLarge = labelLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        labelMedium = labelMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        labelSmall = labelSmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
+        displayLarge = displayLarge.styled(),
+        displayMedium = displayMedium.styled(),
+        displaySmall = displaySmall.styled(),
+        headlineLarge = headlineLarge.styled(),
+        headlineMedium = headlineMedium.styled(),
+        headlineSmall = headlineSmall.styled(),
+        titleLarge = titleLarge.styled(),
+        titleMedium = titleMedium.styled(),
+        titleSmall = titleSmall.styled(),
+        bodyLarge = bodyLarge.styled(),
+        bodyMedium = bodyMedium.styled(),
+        bodySmall = bodySmall.styled(),
+        labelLarge = labelLarge.styled(),
+        labelMedium = labelMedium.styled(),
+        labelSmall = labelSmall.styled(),
     )
 }
 
 private val Typographies by lazy {
     mapOf(
-        Typeface.ROBOTO to typographyFor(Roboto),
-        Typeface.SANS to typographyFor(FontFamily.SansSerif),
-        Typeface.SERIF to typographyFor(FontFamily.Serif),
-        Typeface.MONOSPACE to typographyFor(FontFamily.Monospace),
+        Typeface.FIGTREE to typographyFor(Figtree),
+        Typeface.ROBOTO to typographyFor(Roboto, SYNC_LETTER_SPACING),
+        Typeface.SANS to typographyFor(FontFamily.SansSerif, SYNC_LETTER_SPACING),
+        Typeface.SERIF to typographyFor(FontFamily.Serif, SYNC_LETTER_SPACING),
+        Typeface.MONOSPACE to typographyFor(FontFamily.Monospace, SYNC_LETTER_SPACING),
+    )
+}
+
+/** A [ToneScheme] as Material roles. */
+private fun ToneScheme.toColorScheme(dark: Boolean): ColorScheme {
+    val base = if (dark) darkColorScheme() else lightColorScheme()
+    return base.copy(
+        primary = Color(primary), onPrimary = Color(onPrimary), primaryContainer = Color(primaryContainer), onPrimaryContainer = Color(onPrimaryContainer),
+        inversePrimary = Color(inversePrimary), secondary = Color(secondary), onSecondary = Color(onSecondary),
+        secondaryContainer = Color(secondaryContainer), onSecondaryContainer = Color(onSecondaryContainer),
+        tertiary = Color(tertiary), onTertiary = Color(onTertiary), tertiaryContainer = Color(tertiaryContainer), onTertiaryContainer = Color(onTertiaryContainer),
+        background = Color(background), onBackground = Color(onBackground), surface = Color(surface), onSurface = Color(onSurface),
+        surfaceVariant = Color(surfaceVariant), onSurfaceVariant = Color(onSurfaceVariant), surfaceTint = Color(primary),
+        inverseSurface = Color(inverseSurface), inverseOnSurface = Color(inverseOnSurface),
+        error = Color(error), onError = Color(onError), errorContainer = Color(errorContainer), onErrorContainer = Color(onErrorContainer),
+        outline = Color(outline), outlineVariant = Color(outlineVariant),
+        surfaceDim = Color(surfaceDim), surfaceBright = Color(surfaceBright),
+        surfaceContainerLowest = Color(surfaceContainerLowest), surfaceContainerLow = Color(surfaceContainerLow), surfaceContainer = Color(surfaceContainer),
+        surfaceContainerHigh = Color(surfaceContainerHigh), surfaceContainerHighest = Color(surfaceContainerHighest),
     )
 }
 
 /**
- * Tints [base] from a hand-picked [seed], standing in for Monet's tonal palettes: accents take the seed's hue at
- * the tones Sync uses for each role, neutrals take it at low saturation ([extra]: a lot more of it). [intensity]
- * is Sync's Color intensity: it scales every saturation, 0 giving greys and 2 twice the usual colour.
+ * Faden's shape scale, rounder than Sync's 6-16dp corners. Which role is for what:
+ *  - [Shapes.extraSmall] (6dp): tiny things inside other things: badges, flair tags, mini previews' inner blocks, tooltips.
+ *  - [Shapes.small] (10dp): chips and pills (header and filter chips, segmented buttons), menus, text fields, snackbars.
+ *  - [Shapes.medium] (16dp): cards and tiles: posts, comment cards, media, swipe rows, list groups.
+ *  - [Shapes.large] (24dp): sheets and panels that sit on an edge, large buttons and floating buttons.
+ *  - [Shapes.extraLarge] (32dp): dialogs and full-height modal surfaces.
+ * The "increased" and extra-extra-large steps sit between and beyond those, for the components that ask for them
+ * (expressive buttons, large app bars, bottom sheets).
  */
-private fun ColorScheme.tintedBy(seed: Color, dark: Boolean, extra: Boolean, intensity: Float): ColorScheme {
-    val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(seed.toArgb(), hsv)
-    val hue = hsv[0]
-    val scale = intensity.coerceIn(0f, Settings.COLOR_INTENSITY_MAX)
-    val sat = (hsv[1].coerceIn(0.25f, 0.9f) * scale).coerceIn(0f, 1f)
-    fun accent(l: Float, s: Float = sat) = Color.hsl(hue, s.coerceIn(0f, 1f), l)
-    val neutralSat = ((if (extra) 0.22f else 0.06f) * scale).coerceIn(0f, 0.5f)
-    fun neutral(l: Float) = Color.hsl(hue, neutralSat, l)
-    return if (dark) {
-        copy(
-            primary = accent(0.75f), onPrimary = accent(0.15f), primaryContainer = accent(0.30f), onPrimaryContainer = accent(0.90f),
-            secondary = accent(0.80f, sat * 0.4f), onSecondary = accent(0.18f, sat * 0.4f),
-            secondaryContainer = accent(0.28f, sat * 0.4f), onSecondaryContainer = accent(0.90f, sat * 0.4f),
-            tertiary = Color.hsl((hue + 60f) % 360f, sat * 0.5f, 0.80f), tertiaryContainer = Color.hsl((hue + 60f) % 360f, sat * 0.4f, 0.28f),
-            background = neutral(0.07f), surface = neutral(0.07f), surfaceContainerLowest = neutral(0.07f),
-            surfaceContainerLow = neutral(0.10f), surfaceContainer = neutral(0.14f), surfaceContainerHigh = neutral(0.17f),
-            surfaceContainerHighest = neutral(0.20f), surfaceVariant = neutral(0.16f), outlineVariant = neutral(0.20f),
-        )
-    } else {
-        copy(
-            primary = accent(0.38f), onPrimary = Color.White, primaryContainer = accent(0.38f), onPrimaryContainer = Color.White,
-            secondary = accent(0.40f, sat * 0.4f), onSecondary = Color.White,
-            secondaryContainer = accent(0.84f, sat * 0.4f), onSecondaryContainer = accent(0.12f, sat * 0.4f),
-            tertiary = Color.hsl((hue + 60f) % 360f, sat * 0.4f, 0.40f), tertiaryContainer = Color.hsl((hue + 60f) % 360f, sat * 0.6f, 0.90f),
-            background = neutral(0.94f), surface = neutral(0.94f), surfaceContainerLowest = neutral(0.94f),
-            surfaceContainerLow = neutral(0.99f), surfaceContainer = neutral(0.90f), surfaceContainerHigh = neutral(0.88f),
-            surfaceContainerHighest = neutral(0.86f), surfaceVariant = neutral(0.95f), outlineVariant = neutral(0.80f),
-        )
-    }
-}
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+val FadenShapes = Shapes(
+    extraSmall = RoundedCornerShape(6.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    largeIncreased = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(32.dp),
+    extraLargeIncreased = RoundedCornerShape(40.dp),
+    extraExtraLarge = RoundedCornerShape(48.dp),
+)
 
-/** The accent choices offered in Settings › Theme color, after "Default" (ARGB). */
+/**
+ * The accent choices offered in Settings › Theme color, after "Default" (Faden red, #B4233C) and "Classic" (ARGB):
+ * rust, ochre, moss, teal, blue, violet and plum.
+ */
 val THEME_SEEDS = listOf(
-    0xFF4484F6.toInt(), 0xFF9C27B0.toInt(), 0xFFE91E63.toInt(), 0xFFE5484D.toInt(),
-    0xFFFF9800.toInt(), 0xFF4CAF50.toInt(), 0xFF009688.toInt(), 0xFF795548.toInt(),
+    0xFFC2581C.toInt(), 0xFFA0841A.toInt(), 0xFF3E8E41.toInt(), 0xFF00897B.toInt(),
+    0xFF2F6FB5.toInt(), 0xFF6750A4.toInt(), 0xFF8E4585.toInt(),
 )
 
 /** Pure black surfaces for OLED screens; cards stay a hair lighter so they still read as cards. */
@@ -206,14 +241,26 @@ private fun ColorScheme.blackened() = copy(
 )
 
 /**
- * Faden's own palette (not Material You): Sync's sampled Monet colors, tinted from [seed] (ARGB) when one is
- * picked, [extra] colorful or not, at Color [intensity], and pure black when [black] (dark only). Theme management
- * draws its previews with this too.
+ * Faden's own palette (not Material You), and pure black when [black] (dark only). With a [seed] (ARGB) picked it is
+ * generated from it ([extra] colorful or not, at Color [intensity]), whichever [palette]; without one it is
+ * [palette]'s own: Faden's red thread, or Sync's sampled "Classic" colors, which are fixed. Theme management draws
+ * its previews with this too.
  */
-fun fadenColorScheme(dark: Boolean, black: Boolean, seed: Int?, extra: Boolean, intensity: Float = 1f): ColorScheme {
-    val base = if (dark) DarkColors else LightColors
-    val tinted = if (seed != null) base.tintedBy(Color(seed), dark, extra, intensity) else base
-    return if (black && dark) tinted.blackened() else tinted
+fun fadenColorScheme(
+    dark: Boolean,
+    black: Boolean,
+    seed: Int?,
+    extra: Boolean,
+    intensity: Float = 1f,
+    palette: ThemePalette = ThemePalette.FADEN,
+): ColorScheme {
+    val base = when {
+        seed != null -> ToneScheme.generate(seed, dark, extra, intensity).toColorScheme(dark)
+        palette == ThemePalette.CLASSIC -> if (dark) DarkColors else LightColors
+        // Extra colorful and the intensity only apply to a picked accent.
+        else -> ToneScheme.faden(dark).toColorScheme(dark)
+    }
+    return if (black && dark) base.blackened() else base
 }
 
 /**
@@ -242,15 +289,17 @@ data class ThemeSpec(
     val seedColor: Int? = null,
     val extraColorful: Boolean = false,
     val colorIntensity: Float = 1.0f,
-    val typeface: Typeface = Typeface.ROBOTO,
+    val palette: ThemePalette = ThemePalette.FADEN,
+    val typeface: Typeface = Typeface.FIGTREE,
 ) {
     companion object {
         fun of(settings: Settings) = ThemeSpec(
-            settings.theme, settings.dynamicColor, settings.seedColor, settings.extraColorful, settings.colorIntensity, settings.typeface,
+            settings.theme, settings.dynamicColor, settings.seedColor, settings.extraColorful, settings.colorIntensity, settings.palette, settings.typeface,
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun FadenTheme(spec: ThemeSpec, content: @Composable () -> Unit) {
     val dark = when (spec.theme) {
@@ -262,17 +311,19 @@ fun FadenTheme(spec: ThemeSpec, content: @Composable () -> Unit) {
     val black = spec.theme == ThemeMode.BLACK
     // MaterialTheme provides its colors through a static local and ColorScheme has no equals, so a fresh instance
     // on every call would recompose the whole app on any settings write.
-    val scheme = remember(dark, black, spec.dynamicColor, spec.seedColor, spec.extraColorful, spec.colorIntensity, context) {
+    val scheme = remember(dark, black, spec.dynamicColor, spec.seedColor, spec.extraColorful, spec.colorIntensity, spec.palette, context) {
         if (spec.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val dynamic = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             if (black) dynamic.blackened() else dynamic
         } else {
-            fadenColorScheme(dark, black, spec.seedColor, spec.extraColorful, spec.colorIntensity)
+            fadenColorScheme(dark, black, spec.seedColor, spec.extraColorful, spec.colorIntensity, spec.palette)
         }
     }
     CompositionLocalProvider(LocalDarkTheme provides dark) {
-        MaterialTheme(
+        MaterialExpressiveTheme(
             colorScheme = scheme,
+            motionScheme = MotionScheme.expressive(),
+            shapes = FadenShapes,
             typography = Typographies.getValue(spec.typeface),
             content = content,
         )

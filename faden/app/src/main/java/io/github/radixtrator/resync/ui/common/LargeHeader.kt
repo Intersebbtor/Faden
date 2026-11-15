@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AssistChip
@@ -33,6 +32,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,8 +59,8 @@ fun LargeHeader(
             }
             Column {
                 overline?.invoke()
-                // Sync's titles are a little smaller than M3's displaySmall, and sit lower.
-                Text(title, style = MaterialTheme.typography.displaySmall.copy(fontSize = 34.sp, lineHeight = 42.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // Faden's page titles: the theme's headlineLarge (Figtree) at semibold.
+                Text(title, style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Row(
@@ -73,7 +74,11 @@ fun LargeHeader(
     }
 }
 
-/** A filled, borderless chip like Sync's header chips. [dropdown] adds the ▾ for pickers. */
+/** The label of the header chips: the theme's labelLarge, a point larger so it stays readable at the app's dense base font size. */
+val HeaderChipLabel: TextStyle
+    @Composable get() = MaterialTheme.typography.labelLarge.copy(fontSize = 15.sp)
+
+/** A filled, borderless chip in the theme's small (pill) shape, 36dp tall. [dropdown] adds the ▾ for pickers. */
 @Composable
 fun HeaderChip(
     label: String,
@@ -84,12 +89,12 @@ fun HeaderChip(
 ) {
     AssistChip(
         onClick = onClick,
-        label = { Text(label, style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp)) },
+        label = { Text(label, style = HeaderChipLabel) },
         leadingIcon = icon?.let { { Icon(it, null, Modifier.size(AssistChipDefaults.IconSize)) } },
         trailingIcon = if (dropdown) {
             { Icon(Icons.Default.ArrowDropDown, null, Modifier.size(AssistChipDefaults.IconSize)) }
         } else null,
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         border = null,
         modifier = Modifier.height(36.dp),
         colors = AssistChipDefaults.assistChipColors(

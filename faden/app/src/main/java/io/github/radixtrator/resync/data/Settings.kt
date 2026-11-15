@@ -38,8 +38,18 @@ enum class BaseFontSize(private val en: String, val scale: Float) {
     val label: String get() = t(en)
 }
 
-/** Typeface choices. Roboto is bundled (Sync's default); Product Sans can't be, so the rest are the system's families. */
+/**
+ * The base palette when no accent is picked: Faden's own red thread, or Sync's sampled "Classic" colors. With an
+ * accent picked both generate the same way from it, so the choice only shows with Default color.
+ */
+enum class ThemePalette { FADEN, CLASSIC }
+
+/**
+ * Typeface choices. Figtree (Faden's own) and Roboto (Sync's) are bundled; Product Sans can't be, so the rest are the
+ * system's families.
+ */
 enum class Typeface(private val en: String) {
+    FIGTREE("Figtree"),
     ROBOTO("Roboto"),
     SANS("Sans serif (system)"),
     SERIF("Serif"),
@@ -277,7 +287,9 @@ enum class SwipeAction(private val en: String, val posts: Boolean, val comments:
 data class Settings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
-    /** A hand-picked accent (ARGB) the whole palette is tinted from, instead of Sync's blue. Ignored with Material You colors. */
+    /** Faden's red palette or Sync's Classic one; only matters while no [seedColor] is picked. */
+    val palette: ThemePalette = ThemePalette.FADEN,
+    /** A hand-picked accent (ARGB) the whole palette is generated from, instead of the [palette]. Ignored with Material You colors. */
     val seedColor: Int? = null,
     /** Sync's "extra colorful" tweak: backgrounds and cards take more of the accent's hue. */
     val extraColorful: Boolean = false,
@@ -332,7 +344,7 @@ data class Settings(
      */
     val drawerNavigation: Boolean = false,
     val baseFontSize: BaseFontSize = BaseFontSize.SMALLER,
-    val typeface: Typeface = Typeface.ROBOTO,
+    val typeface: Typeface = Typeface.FIGTREE,
     /** General › "Language": the app's text, applied at launch and when changed (see [io.github.radixtrator.resync.i18n.I18n]). */
     val language: io.github.radixtrator.resync.i18n.AppLanguage = io.github.radixtrator.resync.i18n.AppLanguage.SYSTEM,
     /** Sync's "Action visibility": labels of More actions buttons switched off. */

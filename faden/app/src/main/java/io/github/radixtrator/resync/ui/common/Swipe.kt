@@ -104,6 +104,8 @@ fun SwipeActions(
         return
     }
     val offset = remember { Animatable(0f) }
+    // The row's release spring: the motion scheme's effects spring, which settles without overshooting the row's edge.
+    val settle = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
@@ -131,7 +133,7 @@ fun SwipeActions(
                             haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                             currentOnAction(stages[stage])
                         }
-                        offset.animateTo(0f)
+                        offset.animateTo(0f, settle)
                     },
                 )
             },

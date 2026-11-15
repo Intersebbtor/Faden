@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -73,6 +72,7 @@ import io.github.radixtrator.resync.data.SavedTheme
 import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.data.ThemeCode
 import io.github.radixtrator.resync.data.ThemeMode
+import io.github.radixtrator.resync.data.ThemePalette
 import io.github.radixtrator.resync.data.withSavedTheme
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.SwipeBack
@@ -147,6 +147,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                     when {
                         dynamic -> t("Following your wallpaper's colors (Material You). Pick a color below to use it instead.")
                         manual -> t("Using the color you picked below.")
+                        settings.palette == ThemePalette.CLASSIC -> t("Using the Classic palette, Sync's own colors.")
                         canDynamic -> t("Using Faden's default palette. Automatic follows your wallpaper's colors instead.")
                         else -> t("Using Faden's default palette: this Android version has no wallpaper colors.")
                     },
@@ -175,12 +176,19 @@ fun ThemeManagementScreen(container: AppContainer) {
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
+                    // Default (Faden's red thread), Classic (Sync's own colors), then the generated accents.
+                    val choices = listOf<Pair<Int?, ThemePalette>>(null to ThemePalette.FADEN, null to ThemePalette.CLASSIC) +
+                        THEME_SEEDS.map { it to ThemePalette.FADEN }
+                    choices.forEach { (seed, palette) ->
                         ThemeSwatch(
-                            scheme = fadenColorScheme(swatchDark, black = settings.theme == ThemeMode.BLACK, seed = seed, extra = settings.extraColorful, intensity = previewSettings.colorIntensity),
-                            selected = !dynamic && settings.seedColor == seed,
-                            description = seed?.let { t("Theme color {0}", hex(it)) } ?: t("Default theme color"),
-                            onClick = { update { it.copy(seedColor = seed, dynamicColor = false) } },
+                            scheme = fadenColorScheme(swatchDark, black = settings.theme == ThemeMode.BLACK, seed = seed, extra = settings.extraColorful, intensity = previewSettings.colorIntensity, palette = palette),
+                            selected = !dynamic && settings.seedColor == seed && (seed != null || settings.palette == palette),
+                            description = when {
+                                seed != null -> t("Theme color {0}", hex(seed))
+                                palette == ThemePalette.CLASSIC -> t("Classic")
+                                else -> t("Default theme color")
+                            },
+                            onClick = { update { it.copy(seedColor = seed, palette = palette, dynamicColor = false) } },
                         )
                     }
                 }
@@ -217,7 +225,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                                 ThemeMode.DARK, ThemeMode.BLACK -> true
                             }
                             ThemeSwatch(
-                                scheme = fadenColorScheme(dark, theme.mode == ThemeMode.BLACK, theme.seedColor, theme.extraColorful),
+                                scheme = fadenColorScheme(dark, theme.mode == ThemeMode.BLACK, theme.seedColor, theme.extraColorful, palette = theme.palette),
                                 selected = inUse,
                                 description = null,
                                 onClick = null,
@@ -312,7 +320,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                                 ThemeMode.LIGHT -> false
                                 ThemeMode.DARK, ThemeMode.BLACK -> true
                             }
-                            ThemeSwatch(fadenColorScheme(dark, theme.mode == ThemeMode.BLACK, theme.seedColor, theme.extraColorful), false, null, null)
+                            ThemeSwatch(fadenColorScheme(dark, theme.mode == ThemeMode.BLACK, theme.seedColor, theme.extraColorful, palette = theme.palette), false, null, null)
                             Column {
                                 Text(theme.name.ifBlank { t("Unnamed theme") }, style = MaterialTheme.typography.titleSmall)
                                 Text(describe(theme), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -397,9 +405,9 @@ private fun PaletteRow(name: String, color: Color) {
         Box(
             Modifier
                 .size(36.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(MaterialTheme.shapes.small)
                 .background(color)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)),
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.small),
         )
         Column {
             Text(name, style = MaterialTheme.typography.bodyMedium)
@@ -458,14 +466,14 @@ private fun ThemeValueSlider(
 
 /** The preview for one side: Faden's palette for [settings], black in dark when the mode is Black. */
 private fun previewScheme(settings: Settings, dark: Boolean): ColorScheme =
-    fadenColorScheme(dark, black = settings.theme == ThemeMode.BLACK, seed = settings.seedColor, extra = settings.extraColorful, intensity = settings.colorIntensity)
+    fadenColorScheme(dark, black = settings.theme == ThemeMode.BLACK, seed = settings.seedColor, extra = settings.extraColorful, intensity = settings.colorIntensity, palette = settings.palette)
 
 private fun hex(argb: Int) = "#%06X".format(argb and 0xFFFFFF)
 
 /** "Dark · #4484F6 · Extra colorful". */
 private fun describe(theme: SavedTheme): String = buildList {
     add(theme.mode.label)
-    add(theme.seedColor?.let(::hex) ?: t("Default color"))
+    add(theme.seedColor?.let(::hex) ?: if (theme.palette == ThemePalette.CLASSIC) t("Classic") else t("Default color"))
     if (theme.seedColor != null && theme.extraColorful) add(t("Extra colorful"))
 }.joinToString(" · ")
 
@@ -506,15 +514,15 @@ private fun MiniPhone(scheme: ColorScheme, label: String, modifier: Modifier = M
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.55f)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(MaterialTheme.shapes.medium)
                 .background(scheme.background)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp)),
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium),
         ) {
             Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Bar(scheme.onBackground, widthFraction = 0.5f, height = 8.dp)
                 repeat(2) {
                     Column(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(scheme.surfaceContainerLow).padding(6.dp),
+                        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.extraSmall).background(scheme.surfaceContainerLow).padding(6.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Bar(scheme.primary, widthFraction = 0.4f)
@@ -528,7 +536,7 @@ private fun MiniPhone(scheme: ColorScheme, label: String, modifier: Modifier = M
                     .align(Alignment.BottomEnd)
                     .padding(end = 8.dp, bottom = 32.dp)
                     .size(18.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(scheme.primaryContainer),
             )
             Row(
