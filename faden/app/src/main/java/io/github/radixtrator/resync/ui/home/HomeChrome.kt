@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Checkbox
@@ -106,6 +105,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -212,7 +212,7 @@ fun ShellScaffold(
     // The rail pads itself by the system bars on its side (cutout, gesture inset), so the page clears that too.
     val layoutDirection = LocalLayoutDirection.current
     val sideInsets = WindowInsets.systemBars.asPaddingValues()
-    val railClearance = RailWidth + (if (railRight) sideInsets.calculateEndPadding(layoutDirection) else sideInsets.calculateStartPadding(layoutDirection))
+    val railClearance = RailWidth + ((if (railRight) layoutDirection == LayoutDirection.Rtl else layoutDirection == LayoutDirection.Ltr).let { left -> if (left) sideInsets.calculateLeftPadding(layoutDirection) else sideInsets.calculateRightPadding(layoutDirection) })
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -777,7 +777,7 @@ private fun AccountCard(container: AppContainer, onDismiss: () -> Unit) {
         Box(Modifier.fillMaxSize().clickable(onClick = onDismiss, indication = null, interactionSource = null)) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .statusBarsPadding()
                     .padding(start = 16.dp, end = 16.dp, top = 56.dp)
