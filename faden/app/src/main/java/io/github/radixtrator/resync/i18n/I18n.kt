@@ -56,6 +56,14 @@ object I18n {
 fun t(english: String, vararg args: Any?): String = fill(I18n.lookup(english), args)
 
 /**
+ * [english] in the current language where the same English has more than one meaning, told apart by [context]:
+ * `tc("noun", "Post")` is the Pfosten, while `t("Post")` is the button that posts. Translations are keyed
+ * "context:English".
+ */
+fun tc(context: String, english: String, vararg args: Any?): String =
+    fill(I18n.lookup("$context:$english").let { if (it == "$context:$english") english else it }, args)
+
+/**
  * The [one] or [other] form for [count], in the current language, with `{0}`, `{1}`, … replaced by [args].
  * Translations are keyed by [other]. English and German both use [one] only for exactly 1.
  */

@@ -1,6 +1,8 @@
 package io.github.radixtrator.resync.i18n
 
 internal fun germanPost(): Map<String, String> = mapOf(
+    // The noun, as tc("noun", "Post"); a plain t("Post") is the button that posts.
+    "noun:Post" to "Pfosten",
     // Post screen: top bar and comment navigation
     "Back" to "Zurück",
     "{0} · Live" to "{0} · Live",
@@ -161,8 +163,6 @@ internal fun germanPost(): Map<String, String> = mapOf(
 )
 
 internal fun germanPostPlurals(): Map<String, Pair<String, String>> = mapOf(
-    // The noun "Post" (tab, reader label), as tn(1, "Post", "Posts"): a plain t("Post") is the Pfostieren button.
-    "Posts" to ("Pfosten" to "Pfosten"),
     "{0} points" to ("{0} Punkt" to "{0} Punkte"),
     "{0} comments" to ("{0} Kommentar" to "{0} Kommentare"),
 )

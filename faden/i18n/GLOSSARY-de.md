@@ -120,3 +120,30 @@ The app's name is itself one of these words: a Reddit *thread* is a **Faden** on
 - Relative times: "now" → "jetzt", "5m" → "5 Min.", "3h" → "3 Std.", "2d" → "2 T.", "4mo" → "4 Mon.", "1y" →
   "1 J."; in sentences "vor 3 Stunden".
 - Decimal comma: "1,2k" (k for thousand stays, as on r/de).
+
+## Also settled while translating
+
+| English | German |
+|---|---|
+| Explore | Entdecken |
+| custom feed | Eigenes Futter |
+| swipe mode | Fingerfeger-Modus |
+| subscriptions / subs | Abos |
+| DMs | PNs |
+| submitted (profile tab) | Pfostiert |
+| upload | Hochlad (counterpart of Herablad) |
+| mod mail | Modpost |
+| modqueue | Mod-Warteschlange |
+| tag (a user) | markieren / Markierung |
+| favorite | Favorisieren |
+| recents | Zuletzt angesehen |
+| theme management | Themenverwaltung |
+| "Faden was updated" | Faden wurde aufdatiert |
+| "{0}% upvoted" | {0} % hochgewählt |
+| "(last edited {0})" | (Edith vor {0}) |
+
+## One English string, two meanings
+
+When the same English needs two German words, use `tc(context, english)` with the catalog key
+`"context:English"`. "Post" the button is `t("Post")` → Pfostieren; "Post" the thing is `tc("noun", "Post")` →
+Pfosten.

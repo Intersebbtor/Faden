@@ -22,6 +22,7 @@ I18N = ROOT / "i18n"
 
 STR = r'"((?:[^"\\]|\\.)*)"'
 T_CALL = re.compile(r'(?<![\w.])t\(\s*' + STR)
+TC_CALL = re.compile(r'(?<![\w.])tc\(\s*' + STR + r'\s*,\s*' + STR)
 TN_CALL = re.compile(r'(?<![\w.])tn\(\s*[^,]+?,\s*' + STR + r'\s*,\s*' + STR, re.S)
 ENTRY = re.compile(r'^\s*' + STR + r'\s+to\s+' + STR + r'\s*,?\s*$', re.M)
 PLURAL = re.compile(r'^\s*' + STR + r'\s+to\s+\(\s*' + STR + r'\s+to\s+' + STR + r'\s*\)\s*,?\s*$', re.M)
@@ -55,6 +56,8 @@ def main():
             if TEMPLATE.search(key):
                 problems.append(f"templates: {rel}: t(\"{key}\")")
             looked_up.setdefault(unescape(key), str(rel))
+        for m in TC_CALL.finditer(src):
+            looked_up.setdefault(unescape(m.group(1)) + ':' + unescape(m.group(2)), str(rel))
         # Enum labels looked up through a getter (`val label get() = t(en)`): the entries' literals are the keys.
         if re.search(r'get\(\)\s*=\s*t\(\w+\)', src):
             for line in src.splitlines():

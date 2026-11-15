@@ -50,7 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.data.LinkFlair
 import io.github.radixtrator.resync.i18n.t
-import io.github.radixtrator.resync.i18n.tn
+import io.github.radixtrator.resync.i18n.tc
 import io.github.radixtrator.resync.ui.feed.RulesSheet
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.PostRoute
@@ -135,7 +135,7 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
     }
     val editBody: (TextFieldValue) -> Unit = {
         body = it
-        container.drafts.save(SUBMIT_DRAFT, it.text, tn(1, "Post", "Posts"))
+        container.drafts.save(SUBMIT_DRAFT, it.text, tc("noun", "Post"))
     }
     val imageUpload = rememberComposerImageUpload(container) { uploaded -> editBody(body.insertImageLink(uploaded)) }
     var url by rememberSaveable { mutableStateOf("") }

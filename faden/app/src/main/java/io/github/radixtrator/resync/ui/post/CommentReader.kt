@@ -1,7 +1,7 @@
 package io.github.radixtrator.resync.ui.post
 
 import io.github.radixtrator.resync.i18n.t
-import io.github.radixtrator.resync.i18n.tn
+import io.github.radixtrator.resync.i18n.tc
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -31,7 +31,7 @@ fun readerQueue(
     replies: Boolean = false,
 ): List<ReaderItem> = buildList {
     val selfText = plain(post.selfTextHtml, post.selfText).trim()
-    add(ReaderItem(tn(1, "Post", "Posts"), if (selfText.isEmpty()) post.title else "${post.title}.\n$selfText"))
+    add(ReaderItem(tc("noun", "Post"), if (selfText.isEmpty()) post.title else "${post.title}.\n$selfText"))
     comments.forEach { node ->
         val comment = node as? Comment ?: return@forEach
         if (comment.depth != 0 && !replies) return@forEach

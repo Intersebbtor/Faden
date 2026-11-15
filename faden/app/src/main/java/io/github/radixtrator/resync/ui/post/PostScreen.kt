@@ -4,6 +4,7 @@ package io.github.radixtrator.resync.ui.post
 
 import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tc
 import io.github.radixtrator.resync.i18n.tn
 import android.text.Html
 import androidx.compose.foundation.background
@@ -490,7 +491,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 }
                 Column(Modifier.fillMaxSize()) {
                     PrimaryTabRow(selectedTabIndex = if (commentsTab) 1 else 0, containerColor = surface) {
-                        Tab(selected = !commentsTab, onClick = { commentsTab = false }, text = { Text(tn(1, "Post", "Posts")) })
+                        Tab(selected = !commentsTab, onClick = { commentsTab = false }, text = { Text(tc("noun", "Post")) })
                         Tab(
                             selected = commentsTab,
                             onClick = { commentsTab = true },
