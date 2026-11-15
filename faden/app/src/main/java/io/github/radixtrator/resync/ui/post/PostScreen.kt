@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.post
 
@@ -56,7 +56,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.VerticalFloatingToolbar
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -65,7 +69,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -358,25 +361,41 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 }
             },
             floatingActionButton = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.End,
-                    // With a bottom bar showing, the Scaffold already lifts the buttons above it.
-                    modifier = if (state.sportsMode || readerState.active) Modifier else Modifier.navigationBarsPadding(),
-                ) {
-                    if (settings.commentNavigation && showComments && topLevelRows.size > 1) {
-                        SmallFloatingActionButton(onClick = {
-                            val target = topLevelRows.lastOrNull { it < listState.firstVisibleItemIndex } ?: 0
-                            scope.launch { listState.animateScrollToItem(target) }
-                        }) { Icon(Icons.Default.KeyboardArrowUp, t("Previous comment")) }
-                        SmallFloatingActionButton(onClick = {
-                            topLevelRows.firstOrNull { it > listState.firstVisibleItemIndex }
-                                ?.let { scope.launch { listState.animateScrollToItem(it) } }
-                        }) { Icon(Icons.Default.KeyboardArrowDown, t("Next comment")) }
+                // With a bottom bar showing, the Scaffold already lifts the buttons above it.
+                val inset = if (state.sportsMode || readerState.active) Modifier else Modifier.navigationBarsPadding()
+                val showNavigation = settings.commentNavigation && showComments && topLevelRows.size > 1
+                val previous = {
+                    val target = topLevelRows.lastOrNull { it < listState.firstVisibleItemIndex } ?: 0
+                    scope.launch { listState.animateScrollToItem(target) }
+                    Unit
+                }
+                val next = {
+                    topLevelRows.firstOrNull { it > listState.firstVisibleItemIndex }
+                        ?.let { scope.launch { listState.animateScrollToItem(it) } }
+                    Unit
+                }
+                val post = state.post
+                if (showNavigation && post != null) {
+                    // Previous and next top-level comment, with the reply button docked under them.
+                    VerticalFloatingToolbar(
+                        expanded = true,
+                        modifier = inset,
+                        floatingActionButton = {
+                            FloatingToolbarDefaults.StandardFloatingActionButton(onClick = { reply(post.fullname, post.title) }) {
+                                Icon(AppIcons.Reply, t("Reply to post"))
+                            }
+                        },
+                    ) {
+                        IconButton(onClick = previous) { Icon(Icons.Default.KeyboardArrowUp, t("Previous comment")) }
+                        IconButton(onClick = next) { Icon(Icons.Default.KeyboardArrowDown, t("Next comment")) }
                     }
-                    state.post?.let { post ->
-                        FloatingActionButton(onClick = { reply(post.fullname, post.title) }) { Icon(AppIcons.Reply, t("Reply to post")) }
+                } else if (showNavigation) {
+                    VerticalFloatingToolbar(expanded = true, modifier = inset) {
+                        IconButton(onClick = previous) { Icon(Icons.Default.KeyboardArrowUp, t("Previous comment")) }
+                        IconButton(onClick = next) { Icon(Icons.Default.KeyboardArrowDown, t("Next comment")) }
                     }
+                } else if (post != null) {
+                    FloatingActionButton(onClick = { reply(post.fullname, post.title) }, modifier = inset) { Icon(AppIcons.Reply, t("Reply to post")) }
                 }
             },
         ) { padding ->
@@ -1214,7 +1233,7 @@ private fun CommunityAbout(container: AppContainer, name: String, onDismiss: () 
 @Composable
 private fun SportsBar(seconds: Int, onRefresh: () -> Unit, onStop: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().height(48.dp).padding(start = 16.dp, end = 4.dp),
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
@@ -1222,12 +1241,15 @@ private fun SportsBar(seconds: Int, onRefresh: () -> Unit, onStop: () -> Unit) {
         Text(
             t("Sports mode · new comments every {0}s", seconds),
             style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, t("Refresh now")) }
-        IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop sports mode")) }
+        Spacer(Modifier.width(8.dp))
+        HorizontalFloatingToolbar(expanded = true) {
+            IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, t("Refresh now")) }
+            IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop sports mode")) }
+        }
     }
 }
 
@@ -1254,59 +1276,69 @@ private fun ReaderBar(
     onSpeechRate: (Float) -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    Row(
-        Modifier.fillMaxWidth().height(56.dp).padding(start = 16.dp, end = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                state.current?.label.orEmpty(),
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                t("Reading {0} of {1}", state.index + 1, state.items.size),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop reading")) }
-        IconButton(onClick = onPrevious, enabled = state.index > 0) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Previous")) }
-        IconButton(onClick = onTogglePlay) {
-            if (state.playing) Icon(AppIcons.Pause, t("Pause")) else Icon(Icons.Default.PlayArrow, t("Play"))
-        }
-        IconButton(onClick = onNext, enabled = state.index < state.items.lastIndex) {
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, t("Next"))
-        }
-        Box {
-            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Reader options")) }
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(
-                    text = { Text(t("Read replies")) },
-                    leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (readReplies) MaterialTheme.colorScheme.primary else Color.Transparent) },
-                    onClick = {
-                        menuOpen = false
-                        onReadReplies(!readReplies)
-                    },
-                )
-                HorizontalDivider()
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().height(56.dp).padding(start = 16.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
                 Text(
-                    t("Speed"),
+                    state.current?.label.orEmpty(),
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    t("Reading {0} of {1}", state.index + 1, state.items.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 )
-                ReaderSpeeds.forEach { rate ->
+            }
+            Box {
+                IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Reader options")) }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(
-                        text = { Text(speedLabel(rate)) },
-                        leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (rate == speechRate) MaterialTheme.colorScheme.primary else Color.Transparent) },
+                        text = { Text(t("Read replies")) },
+                        leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (readReplies) MaterialTheme.colorScheme.primary else Color.Transparent) },
                         onClick = {
                             menuOpen = false
-                            onSpeechRate(rate)
+                            onReadReplies(!readReplies)
                         },
                     )
+                    HorizontalDivider()
+                    Text(
+                        t("Speed"),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                    ReaderSpeeds.forEach { rate ->
+                        DropdownMenuItem(
+                            text = { Text(speedLabel(rate)) },
+                            leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (rate == speechRate) MaterialTheme.colorScheme.primary else Color.Transparent) },
+                            onClick = {
+                                menuOpen = false
+                                onSpeechRate(rate)
+                            },
+                        )
+                    }
                 }
+            }
+        }
+        // Stop, Previous and Next in the toolbar with Play/Pause as its button.
+        HorizontalFloatingToolbar(
+            expanded = true,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
+            floatingActionButton = {
+                FloatingToolbarDefaults.StandardFloatingActionButton(onClick = onTogglePlay) {
+                    if (state.playing) Icon(AppIcons.Pause, t("Pause")) else Icon(Icons.Default.PlayArrow, t("Play"))
+                }
+            },
+        ) {
+            IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop reading")) }
+            IconButton(onClick = onPrevious, enabled = state.index > 0) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Previous")) }
+            IconButton(onClick = onNext, enabled = state.index < state.items.lastIndex) {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, t("Next"))
             }
         }
     }
