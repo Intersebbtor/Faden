@@ -162,6 +162,7 @@ import io.github.radixtrator.resync.ui.common.CommentGifs
 import io.github.radixtrator.resync.ui.common.GifBody
 import io.github.radixtrator.resync.ui.common.LinkCards
 import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
+import io.github.radixtrator.resync.ui.common.LocalMinuteClock
 import io.github.radixtrator.resync.ui.common.cachedGifBody
 import io.github.radixtrator.resync.ui.common.LinkRow
 import io.github.radixtrator.resync.ui.common.MessageEffect
@@ -792,7 +793,9 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
     val tag = LocalUserTags.current[comment.author.lowercase()]
     val tagStyle = userTagStyle(comment.author)
     val language = I18n.language
-    val text = remember(comment, nameColor, muted, scoreColor, flairBackground, tag, tagStyle, language) { buildAnnotatedString {
+    // The age ("4h") is part of the text, so it is rebuilt when the shared clock moves on a minute.
+    val minute = LocalMinuteClock.current.value
+    val text = remember(comment, nameColor, muted, scoreColor, flairBackground, tag, tagStyle, language, minute) { buildAnnotatedString {
         withStyle(SpanStyle(color = nameColor)) { append(comment.author) }
         tag?.let {
             append(" ")
