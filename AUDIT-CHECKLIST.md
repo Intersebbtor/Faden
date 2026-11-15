@@ -84,6 +84,18 @@ palette, and Sync's palette stays as a named built-in theme.
 - [x] **I11** *(39ae824, d6946ec: window colors match the generated background; tested)* Startup window backgrounds match the theme, so there's no color flash at launch (`res/values/`, `res/values-night/`).
 - [~] **I12** *(c12598b and per-agent edits: comments reworded where code no longer follows Sync; the many comments about behaviour that still follows Sync are kept on purpose)*
 
+## Bold pass (after the audit)
+
+The red palette made Faden look like Sync in a different colour, so a second pass changed what you see at a glance:
+
+- **Palette:** follows the launcher icon. Brand blue `#2F5BD3` with cool blue-tinted surfaces; upvote orange as the accent (FABs, the thread motif, the first comment rail). Red is now one of the swatches, and Classic is unchanged. Downvote moved to violet `#A07BFF`, clear of the blue and at 3:1 on light cards.
+- **Type:** SemiBold post titles, ExtraBold page titles, bold settings section headers.
+- **Header:** the page header is a rounded hero card. On communities and profiles it shows their banner behind a scrim; on Frontpage, Inbox and Search it's blue with an orange thread.
+- **Feed:** rounded cards with inset images, and score and comment-count pills (`StatChip`) in Cards, Small cards and List. Rows get rounded thumbnails and inset dividers; Slides get tonal vote and comment pills.
+- **Comments:** rails drawn as threads, with an elbow looping into each reply. Top-level threads become rounded panels. The OP badge is orange, and the selected comment's action bar is a pill.
+- **Settings › View type:** opens Customize view directly; the default layout and the media preview size are under "All layouts".
+- **Icon:** one orange string tracing an upvote and a downvote on a blue gradient.
+
 ## Owed / not verified
 
 - **Baseline profile** (`app/src/release/generated/baselineProfiles/`) still lists classes that were renamed, split or removed (`SyncCard`, the old feed/comment row classes, material-icons). Harmless, but first-launch performance is weaker until it's regenerated with `./gradlew :app:generateBaselineProfile`. Not run here: it installs on *every* connected device, and your phone was connected over wireless ADB.
