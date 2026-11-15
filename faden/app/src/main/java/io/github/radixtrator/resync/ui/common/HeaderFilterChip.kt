@@ -30,11 +30,11 @@ fun HeaderFilterChip(
         modifier = Modifier.height(36.dp),
         colors = FilterChipDefaults.filterChipColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
             labelColor = MaterialTheme.colorScheme.onSurface,
-            selectedLabelColor = MaterialTheme.colorScheme.onSurface,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
             iconColor = MaterialTheme.colorScheme.onSurface,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
         ),
     )
 }
