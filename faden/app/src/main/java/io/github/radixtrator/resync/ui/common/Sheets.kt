@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -39,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -114,24 +117,35 @@ fun SheetHandle() {
 
 /**
  * A 48dp sheet row: icon (or a radio button when [radio] is set), label, optional trailing slot.
- * [selected] draws Sync's rounded highlight.
+ * A non-null [selected] makes the row a choice: it draws Sync's rounded highlight and exposes a radio-button
+ * role; a non-null [radio] does the same for rows led by a radio button. A non-null [toggled] makes it a switch
+ * (or a checkbox when [toggleRole] says so). With none of them set it is a plain action button.
  */
 @Composable
 fun OptionRow(
     label: String,
     icon: ImageVector?,
-    selected: Boolean = false,
+    selected: Boolean? = null,
     onClick: () -> Unit,
     radio: Boolean? = null,
+    toggled: Boolean? = null,
+    toggleRole: Role = Role.Switch,
     trailing: (@Composable () -> Unit)? = null,
 ) {
+    val choice = radio ?: selected
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .clip(RoundedCornerShape(50))
-            .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent)
-            .clickable(onClick = onClick)
+            .background(if (selected == true) MaterialTheme.colorScheme.surfaceContainerHigh else Color.Transparent)
+            .then(
+                when {
+                    toggled != null -> Modifier.toggleable(toggled, role = toggleRole, onValueChange = { onClick() })
+                    choice != null -> Modifier.selectable(choice, role = Role.RadioButton, onClick = onClick)
+                    else -> Modifier.clickable(role = Role.Button, onClick = onClick)
+                },
+            )
             .padding(start = 16.dp, end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

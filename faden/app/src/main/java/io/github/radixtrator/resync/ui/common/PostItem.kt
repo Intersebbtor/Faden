@@ -213,8 +213,8 @@ fun PostActionsSheet(
                 // Sync's Share ⋮: what to share, optionally with the title in front.
                 SheetTitle(t("Share"), topPadding = 0.dp)
                 fun shareUrl(url: String) = act { nav.share(if (includeTitle) "${post.title}\n$url" else url, post.title) }
-                OptionRow(t("Include title"), null, onClick = { includeTitle = !includeTitle }, trailing = {
-                    androidx.compose.material3.Switch(checked = includeTitle, onCheckedChange = { includeTitle = it })
+                OptionRow(t("Include title"), null, onClick = { includeTitle = !includeTitle }, toggled = includeTitle, trailing = {
+                    androidx.compose.material3.Switch(checked = includeTitle, onCheckedChange = null)
                 })
                 val preview = when (val m = post.media) {
                     is PostMedia.Image -> m.url

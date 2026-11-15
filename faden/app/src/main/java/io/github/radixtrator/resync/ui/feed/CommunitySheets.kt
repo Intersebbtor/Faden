@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -113,7 +114,7 @@ fun AddToMultiSheet(container: AppContainer, subreddit: String, onDismiss: () ->
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         list.forEach { multi ->
                             val has = subreddit.lowercase() in multi.subreddits.map { it.lowercase() }
-                            OptionRow(multi.name, AppIcons.Gallery, selected = has, onClick = {
+                            OptionRow(multi.name, AppIcons.Gallery, selected = has, toggled = has, toggleRole = Role.Checkbox, onClick = {
                                 scope.launch {
                                     load {
                                         if (has) container.api.removeFromMulti(multi.path, subreddit) else container.api.addToMulti(multi.path, subreddit)
