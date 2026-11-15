@@ -324,7 +324,7 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                                 .size(32.dp)
                                 .clip(CircleShape)
                                 .background(Color(seed ?: ToneScheme.FADEN_SEED))
-                                .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, CircleShape)
+                                .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outlineVariant, CircleShape)
                                 .semantics { contentDescription = seed?.let { c -> t("Theme color {0}", "#%06X".format(c and 0xFFFFFF)) } ?: t("Default theme color") }
                                 .selectable(selected = selected, role = Role.RadioButton) {
                                     update { it.copy(seedColor = seed, palette = if (seed == null) ThemePalette.FADEN else it.palette) }

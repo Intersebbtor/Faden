@@ -126,7 +126,9 @@ fun ThemeManagementScreen(container: AppContainer) {
                 // Sync's Automatic / Manual selection buttons. Automatic is Material You where Android has it, else
                 // Faden's default palette; Manual is a hand-picked accent (the swatches below), with Color intensity.
                 val canDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-                val manual = !dynamic && settings.seedColor != null
+                // Where Material You exists, anything else is a manual pick: Faden's Default and Classic palettes are
+                // swatches of their own, not the absence of a choice.
+                val manual = if (canDynamic) !dynamic else settings.seedColor != null
                 val automatic = if (canDynamic) dynamic else settings.seedColor == null
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     SegmentedButton(
@@ -136,7 +138,9 @@ fun ThemeManagementScreen(container: AppContainer) {
                     ) { Text(t("Automatic"), maxLines = 1) }
                     SegmentedButton(
                         selected = manual,
-                        onClick = { update { it.copy(dynamicColor = false, seedColor = it.seedColor ?: THEME_SEEDS.first()) } },
+                        // With Material You available, Manual starts from Faden's Default palette (or the accent already
+                        // picked); without it, "Automatic" already is the Default palette, so Manual means an accent.
+                        onClick = { update { it.copy(dynamicColor = false, seedColor = if (canDynamic) it.seedColor else it.seedColor ?: THEME_SEEDS.first()) } },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
                     ) { Text(t("Manual selection"), maxLines = 1) }
                 }
