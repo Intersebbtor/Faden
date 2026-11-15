@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Faden's icons: Material Symbols Rounded (weight 400, grade 0, optical size 24), from
- * github.com/google/material-design-icons `symbols/web/*/materialsymbolsrounded/`, Apache License 2.0
+ * github.com/google/material-design-icons `symbols/web/<name>/materialsymbolsrounded/`, Apache License 2.0
  * (faden/third_party/material-symbols/LICENSE). `…Filled` is the FILL 1 variant, kept only where it differs from
  * the outline. Each vector is built on first use.
  */
