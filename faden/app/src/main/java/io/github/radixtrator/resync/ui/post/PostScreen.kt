@@ -161,6 +161,7 @@ import io.github.radixtrator.resync.ui.common.Format
 import io.github.radixtrator.resync.ui.common.CommentGifs
 import io.github.radixtrator.resync.ui.common.GifBody
 import io.github.radixtrator.resync.ui.common.LinkCards
+import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
 import io.github.radixtrator.resync.ui.common.cachedGifBody
 import io.github.radixtrator.resync.ui.common.LinkRow
 import io.github.radixtrator.resync.ui.common.MessageEffect
@@ -706,12 +707,12 @@ private fun CommentRow(
 ) {
     val depth = comment.depth.coerceAtMost(MAX_DEPTH)
     val nav = LocalNavigator.current
-    val settings = LocalSettings.current
+    val display = LocalFeedDisplay.current
     Column {
         if (separated) Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
         SwipeActions(
-            stages = settings.commentSwipeStages,
-            enabled = settings.commentSwipe,
+            stages = display.commentSwipeStages,
+            enabled = display.commentSwipe,
             onAction = { action ->
                 when (action) {
                     SwipeAction.UPVOTE -> onVote(if (comment.likes == true) 0 else 1)
@@ -731,8 +732,8 @@ private fun CommentRow(
                     .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow)
                     // Comment options › "Tap to collapse" swaps the two: by default hold collapses, tap opens the bar.
                     .combinedClickable(
-                        onClick = if (settings.tapToCollapse) onToggle else onSelect,
-                        onLongClick = if (settings.tapToCollapse) onSelect else onToggle,
+                        onClick = if (display.tapToCollapse) onToggle else onSelect,
+                        onLongClick = if (display.tapToCollapse) onSelect else onToggle,
                     )
                     .rails(depth)
                     .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
@@ -741,10 +742,10 @@ private fun CommentRow(
                 // Collapsing a reply chain keeps the comment itself readable (Sync's default); a lone
                 // comment folds to its header.
                 if (!collapsed || hiddenCount > 0) {
-                    val split = remember(comment.bodyHtml, comment.gifs, settings.commentGifs) {
-                        if (settings.commentGifs) cachedGifBody(comment.bodyHtml, comment.gifs) else GifBody(comment.bodyHtml, emptyList())
+                    val split = remember(comment.bodyHtml, comment.gifs, display.commentGifs) {
+                        if (display.commentGifs) cachedGifBody(comment.bodyHtml, comment.gifs) else GifBody(comment.bodyHtml, emptyList())
                     }
-                    val body = rememberRedditText(split.html, footnotes = settings.linkCards)
+                    val body = rememberRedditText(split.html, footnotes = display.linkCards)
                     if (body.text.isNotBlank()) {
                         Spacer(Modifier.height(6.dp))
                         RedditBodyText(body.text, CommentBody)
