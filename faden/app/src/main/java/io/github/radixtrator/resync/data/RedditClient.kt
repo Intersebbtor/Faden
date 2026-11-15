@@ -38,11 +38,14 @@ class RedditClient(
     private val tokens: AccountStore,
     private val assets: AssetManager,
 ) {
-    private val http = Http.base.newBuilder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .apply { if (BuildConfig.DEBUG) addInterceptor(::logExchange) }
-        .build()
+    // Lazy (and synchronized by default): AppContainer is built on the main thread in Application.onCreate.
+    private val http by lazy {
+        Http.base.newBuilder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .apply { if (BuildConfig.DEBUG) addInterceptor(::logExchange) }
+            .build()
+    }
     private val tokenLock = Mutex()
 
     private val config: ApiConfig
