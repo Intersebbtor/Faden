@@ -92,9 +92,9 @@ class ContrastTest {
             val mode = if (dark) "dark" else "light"
             val distance = Tones.deltaEOk(FadenColors.Downvote.argb(), s.primary.argb())
             assertTrue(distance >= 0.08, "downvote vs primary ($mode): ΔE_ok %.3f".format(distance))
-            // 4.5:1 on a dark card; on the light card it is the 2.6:1 Downvote always had, as a vote tint beside an icon.
+            // 4.5:1 on a dark card, 3:1 (non-text contrast: a vote tint beside an icon) on the light card.
             val onCard = ratio(FadenColors.Downvote, s.surfaceContainerLow)
-            assertTrue(onCard >= if (dark) 4.5 else 2.5, "downvote on $mode card: %.2f".format(onCard))
+            assertTrue(onCard >= if (dark) 4.5 else 3.0, "downvote on $mode card: %.2f".format(onCard))
         }
     }
 

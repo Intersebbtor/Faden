@@ -101,7 +101,7 @@ object FadenAccents {
 
 object FadenColors {
     val Upvote = Color(0xFFFF7500)
-    val Downvote = Color(0xFF9494FF)
+    val Downvote = Color(0xFFA07BFF) // violet, so a downvoted score never reads as the blue accent
     val Nsfw = Color(0xFFE5484D)
     val Moderator = Color(0xFF4CAF50)
     val Saved = Color(0xFFECC940)
