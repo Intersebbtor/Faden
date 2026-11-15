@@ -2,8 +2,6 @@ package io.github.radixtrator.resync.ui.common
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
@@ -105,6 +103,10 @@ fun DismissibleMedia(
     content: @Composable () -> Unit,
 ) {
     val offset = remember { Animatable(0f) }
+    // Springing back after a drag that didn't go far enough: the motion scheme's effects spring, not its spatial
+    // one. It doesn't bounce (a page or media that overshoots its rest position looks broken), it's quick, and it
+    // keeps the fling's momentum.
+    val settle = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val scope = rememberCoroutineScope()
     var height by remember { mutableIntStateOf(1) }
     val swipeUp by rememberUpdatedState(onSwipeUp)
@@ -134,11 +136,11 @@ fun DismissibleMedia(
                         when {
                             up != null && offset.value < 0f -> {
                                 if (offset.value < -height * 0.03f || velocity < -1500f) up()
-                                offset.animateTo(0f, SettleSpec)
+                                offset.animateTo(0f, settle)
                             }
-                            !dismissOnDrag -> offset.animateTo(0f, SettleSpec, initialVelocity = velocity)
+                            !dismissOnDrag -> offset.animateTo(0f, settle, initialVelocity = velocity)
                             abs(offset.value) > height * 0.18f || abs(velocity) > 2500f -> onDismiss()
-                            else -> offset.animateTo(0f, SettleSpec, initialVelocity = velocity)
+                            else -> offset.animateTo(0f, settle, initialVelocity = velocity)
                         }
                     },
                 )
@@ -234,6 +236,10 @@ private fun GestureSwipeBack(dispatcher: NavigationEventDispatcher, content: @Co
 private fun PaneSwipeBack(previous: (@Composable () -> Unit)?, onBack: () -> Unit, content: @Composable () -> Unit) {
     // Bounded so springing back with the finger's leftward momentum can't carry the page past its place.
     val offset = remember { Animatable(0f).apply { updateBounds(lowerBound = 0f) } }
+    // Springing back after a drag that didn't go far enough: the motion scheme's effects spring, not its spatial
+    // one. It doesn't bounce (a page or media that overshoots its rest position looks broken), it's quick, and it
+    // keeps the fling's momentum.
+    val settle = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
     val scope = rememberCoroutineScope()
     var width by remember { mutableIntStateOf(1) }
     // Only whether a drag is under way is read in composition; how far it's got is read while drawing.
@@ -257,7 +263,7 @@ private fun PaneSwipeBack(previous: (@Composable () -> Unit)?, onBack: () -> Uni
                             SwipeBackState.popping = true
                             onBack()
                         } else {
-                            offset.animateTo(0f, SettleSpec, initialVelocity = velocity)
+                            offset.animateTo(0f, settle, initialVelocity = velocity)
                         }
                     },
                 )
@@ -285,6 +291,3 @@ private const val SwipeBackDistance = 0.15f
 
 /** A rightward fling at least this fast (px/s) goes back however short the drag was. */
 private const val SwipeBackVelocity = 1000f
-
-/** Springing back after a drag that didn't go far enough: no bounce, quick, and it keeps the fling's momentum. */
-private val SettleSpec = spring<Float>(stiffness = Spring.StiffnessMedium)
