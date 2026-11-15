@@ -299,13 +299,14 @@ private class PostButtons(val save: Boolean, val hide: Boolean, val share: Boole
 private fun PostButtonIcons(post: Post, actions: PostActions, buttons: PostButtons, tint: Color) {
     val nav = LocalNavigator.current
     if (buttons.save) {
-        IconButton(onClick = actions.onToggleSave) {
-            Icon(
-                if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-                if (post.saved) t("Unsave") else t("Save"),
-                tint = if (post.saved) FadenColors.Saved else tint,
-            )
-        }
+        StateToggle(
+            post.saved,
+            { actions.onToggleSave() },
+            if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
+            if (post.saved) t("Unsave") else t("Save"),
+            FadenColors.Saved,
+            tint,
+        )
     }
     if (buttons.hide) {
         actions.onHide?.let { hide -> IconButton(onClick = hide) { Icon(Icons.Default.Close, t("Hide"), tint = tint) } }
@@ -591,13 +592,9 @@ private fun VotePill(likes: Boolean?, score: Int, onVote: (Int) -> Unit) {
             .background(if (likes == null) MaterialTheme.colorScheme.surfaceContainerHighest else tint.copy(alpha = 0.25f)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = { onVote(if (likes == true) 0 else 1) }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.KeyboardArrowUp, t("Upvote"), tint = tint)
-        }
+        StateToggle(likes == true, { onVote(if (it) 1 else 0) }, Icons.Default.KeyboardArrowUp, t("Upvote"), tint, tint, Modifier.size(40.dp))
         Text(Format.count(score, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge, color = tint)
-        IconButton(onClick = { onVote(if (likes == false) 0 else -1) }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.KeyboardArrowDown, t("Downvote"), tint = tint)
-        }
+        StateToggle(likes == false, { onVote(if (it) -1 else 0) }, Icons.Default.KeyboardArrowDown, t("Downvote"), tint, tint, Modifier.size(40.dp))
     }
 }
 

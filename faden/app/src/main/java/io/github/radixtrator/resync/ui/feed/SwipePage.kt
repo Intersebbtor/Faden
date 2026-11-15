@@ -47,6 +47,7 @@ import coil3.compose.AsyncImage
 import io.github.radixtrator.resync.data.ImageSource
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostMedia
+import io.github.radixtrator.resync.ui.common.StateToggle
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.CARD_BLUR_WIDTH
 import io.github.radixtrator.resync.ui.common.Format
@@ -255,19 +256,16 @@ internal fun SwipeBottomBar(
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { onVote(if (post.likes == true) 0 else 1) }) {
-                Icon(AppIcons.ArrowUp, t("Upvote"), tint = if (post.likes == true) FadenColors.Upvote else muted)
-            }
-            IconButton(onClick = { onVote(if (post.likes == false) 0 else -1) }) {
-                Icon(AppIcons.ArrowDown, t("Downvote"), tint = if (post.likes == false) FadenColors.Downvote else muted)
-            }
-            IconButton(onClick = onToggleSave) {
-                Icon(
-                    if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-                    if (post.saved) t("Unsave") else t("Save"),
-                    tint = if (post.saved) FadenColors.Saved else muted,
-                )
-            }
+            StateToggle(post.likes == true, { onVote(if (it) 1 else 0) }, AppIcons.ArrowUp, t("Upvote"), FadenColors.Upvote, muted)
+            StateToggle(post.likes == false, { onVote(if (it) -1 else 0) }, AppIcons.ArrowDown, t("Downvote"), FadenColors.Downvote, muted)
+            StateToggle(
+                post.saved,
+                { onToggleSave() },
+                if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
+                if (post.saved) t("Unsave") else t("Save"),
+                FadenColors.Saved,
+                muted,
+            )
             IconButton(onClick = onComments) { Icon(AppIcons.Comment, t("Comments"), tint = muted) }
             IconButton(onClick = onDownload, enabled = canDownload) {
                 Icon(AppIcons.Download, t("Download"), tint = if (canDownload) muted else muted.copy(alpha = 0.38f))

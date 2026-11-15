@@ -60,6 +60,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
@@ -165,6 +166,7 @@ import io.github.radixtrator.resync.ui.common.QuickActionGrid
 import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.ReportSheet
 import io.github.radixtrator.resync.ui.common.SheetHandle
+import io.github.radixtrator.resync.ui.common.StateToggle
 import io.github.radixtrator.resync.ui.common.SheetTitle
 import io.github.radixtrator.resync.ui.common.SwipeActions
 import io.github.radixtrator.resync.ui.common.SwipeBack
@@ -609,19 +611,16 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             PostStats(post, Modifier.weight(1f))
-            IconButton(onClick = { onVote(if (post.likes == true) 0 else 1) }) {
-                Icon(AppIcons.ArrowUp, t("Upvote"), tint = if (post.likes == true) FadenColors.Upvote else muted)
-            }
-            IconButton(onClick = { onVote(if (post.likes == false) 0 else -1) }) {
-                Icon(AppIcons.ArrowDown, t("Downvote"), tint = if (post.likes == false) FadenColors.Downvote else muted)
-            }
-            IconButton(onClick = onToggleSave) {
-                Icon(
-                    if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-                    if (post.saved) t("Unsave") else t("Save"),
-                    tint = if (post.saved) FadenColors.Saved else muted,
-                )
-            }
+            StateToggle(post.likes == true, { onVote(if (it) 1 else 0) }, AppIcons.ArrowUp, t("Upvote"), FadenColors.Upvote, muted)
+            StateToggle(post.likes == false, { onVote(if (it) -1 else 0) }, AppIcons.ArrowDown, t("Downvote"), FadenColors.Downvote, muted)
+            StateToggle(
+                post.saved,
+                { onToggleSave() },
+                if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
+                if (post.saved) t("Unsave") else t("Save"),
+                FadenColors.Saved,
+                muted,
+            )
             IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, t("Post options"), tint = muted) }
         }
         Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
@@ -883,14 +882,15 @@ private fun CommentActionBar(
             .rails(depth),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BarButton(AppIcons.ArrowUp, t("Upvote"), if (comment.likes == true) FadenColors.Upvote else normal) { onVote(if (comment.likes == true) 0 else 1) }
-        BarButton(AppIcons.ArrowDown, t("Downvote"), if (comment.likes == false) FadenColors.Downvote else normal) { onVote(if (comment.likes == false) 0 else -1) }
-        BarButton(
+        BarToggle(AppIcons.ArrowUp, t("Upvote"), comment.likes == true, FadenColors.Upvote, normal) { onVote(if (it) 1 else 0) }
+        BarToggle(AppIcons.ArrowDown, t("Downvote"), comment.likes == false, FadenColors.Downvote, normal) { onVote(if (it) -1 else 0) }
+        BarToggle(
             if (comment.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
             if (comment.saved) t("Unsave") else t("Save"),
-            if (comment.saved) FadenColors.Saved else normal,
-            onToggleSave,
-        )
+            comment.saved,
+            FadenColors.Saved,
+            normal,
+        ) { onToggleSave() }
         BarButton(Icons.Outlined.Person, t("Profile"), normal) { if (comment.author != "[deleted]") nav.push(UserRoute(comment.author)) }
         BarButton(AppIcons.Reply, t("Reply"), normal, onReply)
         BarButton(Icons.Default.KeyboardArrowUp, t("Go to parent"), normal, onParent)
@@ -900,9 +900,21 @@ private fun CommentActionBar(
 
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.BarButton(icon: ImageVector, description: String, tint: Color, onClick: () -> Unit) {
-    Box(Modifier.weight(1f).fillMaxSize().clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Icon(icon, description, tint = tint)
+    IconButton(onClick = onClick, modifier = Modifier.weight(1f).fillMaxSize(), colors = IconButtonDefaults.iconButtonColors(contentColor = tint)) {
+        Icon(icon, description)
     }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.BarToggle(
+    icon: ImageVector,
+    description: String,
+    checked: Boolean,
+    checkedColor: Color,
+    color: Color,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    StateToggle(checked, onCheckedChange, icon, description, checkedColor, color, Modifier.weight(1f).fillMaxSize())
 }
 
 @Composable
