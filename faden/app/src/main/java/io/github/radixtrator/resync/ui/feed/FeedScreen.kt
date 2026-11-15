@@ -1,7 +1,10 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.feed
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -216,8 +219,17 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
             showSearch = true,
             searchSubreddit = subreddit.takeIf { vm.isCommunity },
         ) { padding ->
+            val pullState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = state.refreshing,
+                state = pullState,
+                indicator = {
+                    PullToRefreshDefaults.LoadingIndicator(
+                        state = pullState,
+                        isRefreshing = state.refreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                    )
+                },
                 onRefresh = vm::refresh,
                 modifier = Modifier.padding(top = padding.calculateTopPadding()).fillMaxSize(),
             ) {

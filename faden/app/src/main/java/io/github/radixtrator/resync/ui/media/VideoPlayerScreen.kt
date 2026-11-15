@@ -1,5 +1,9 @@
+@file:kotlin.OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package io.github.radixtrator.resync.ui.media
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ContainedLoadingIndicator
 import android.content.Context
 import android.net.ConnectivityManager
 import android.view.TextureView
@@ -28,7 +32,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -135,7 +138,7 @@ fun VideoPlayerScreen(url: String, loop: Boolean, postId: String?, downloads: Me
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 val message = failure
                 if (message == null) {
-                    CircularProgressIndicator(color = Color.White)
+                    ContainedLoadingIndicator()
                 } else {
                     val nav = LocalNavigator.current
                     Column(
@@ -312,7 +315,7 @@ private fun VideoPlayer(
                 )
             }
             if (buffering && error == null) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.align(Alignment.Center))
+                ContainedLoadingIndicator(modifier = Modifier.align(Alignment.Center))
             }
             Box(
                 Modifier

@@ -1,5 +1,9 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package io.github.radixtrator.resync.ui.common
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +24,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -85,7 +88,7 @@ fun <T> PagedList(
                 if (state.items.isEmpty()) {
                     EmptyState(state, emptyText, onRetry)
                 } else when {
-                    state.loading -> CircularProgressIndicator()
+                    state.loading -> LoadingIndicator()
                     state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(state.error, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                         TextButton(onClick = onRetry) { Text(t("Retry")) }
@@ -100,7 +103,7 @@ fun <T> PagedList(
 @Composable
 internal fun EmptyState(state: ListingState<*>, emptyText: String, onRetry: () -> Unit) {
     when {
-        state.loading || state.refreshing -> CircularProgressIndicator()
+        state.loading || state.refreshing -> LoadingIndicator()
         state.error != null -> Column(
             Modifier.padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -172,7 +175,7 @@ fun <T> PagedGrid(
                     if (state.items.isEmpty()) {
                         EmptyState(state, emptyText, onRetry)
                     } else when {
-                        state.loading -> CircularProgressIndicator()
+                        state.loading -> LoadingIndicator()
                         state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(state.error, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                             TextButton(onClick = onRetry) { Text(t("Retry")) }

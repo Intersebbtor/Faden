@@ -1,5 +1,9 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package io.github.radixtrator.resync.ui.common
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -14,7 +18,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
@@ -130,7 +133,7 @@ fun MediaPeekHost(content: @Composable () -> Unit) {
                     model = request,
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
-                    loading = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) } },
+                    loading = { Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ContainedLoadingIndicator() } },
                     modifier = Modifier.fillMaxSize(),
                 )
             }

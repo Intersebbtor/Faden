@@ -1,7 +1,9 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.login
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import android.annotation.SuppressLint
 import android.net.Uri
 import android.webkit.CookieManager
@@ -16,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -96,7 +97,7 @@ fun LoginScreen(container: AppContainer, onFinished: () -> Unit) {
                     Text(error!!, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.error)
                     Button(onClick = onFinished) { Text(t("Back")) }
                 }
-                busy -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                busy -> LoadingIndicator(Modifier.align(Alignment.Center))
                 url != null -> AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { context ->

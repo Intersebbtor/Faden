@@ -1,5 +1,9 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package io.github.radixtrator.resync.ui.common
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,7 +27,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -63,7 +66,7 @@ fun ReportSheet(fullname: String, subreddit: String, comment: Boolean, onDismiss
         Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
             SheetTitle(t("Report reasons"), topPadding = 0.dp)
             when (val result = reasons) {
-                null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
                 else -> Column(Modifier.verticalScroll(rememberScrollState())) {
                     // Without the rules (a private community, say), Other still works.
                     result.onFailure {

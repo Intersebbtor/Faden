@@ -1,7 +1,11 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.profile
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.LoadingIndicator
 import io.github.radixtrator.resync.ui.common.AvatarKind
 import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
@@ -29,7 +33,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -208,8 +211,17 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
             // Sync has the sort in the toolbar as well as on its chip.
             actions = { SortMenu(vm::setSort) },
         ) { padding ->
+            val pullState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = state.refreshing,
+                state = pullState,
+                indicator = {
+                    PullToRefreshDefaults.LoadingIndicator(
+                        state = pullState,
+                        isRefreshing = state.refreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                    )
+                },
                 onRefresh = vm::refresh,
                 modifier = Modifier.padding(top = padding.calculateTopPadding()).fillMaxSize(),
             ) {
@@ -324,7 +336,7 @@ private fun ProfileAboutSheet(
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = null) {
         if (user == null) {
             SheetHandle()
-            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
             return@ModalBottomSheet
         }
         AboutHeader(user.bannerUrl, user.iconUrl, user.name.ifEmpty { name }) {
@@ -361,7 +373,7 @@ private fun TrophiesSheet(container: AppContainer, name: String, onDismiss: () -
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             SheetTitle(t("Trophies"), topPadding = 0.dp)
             when (val result = trophies) {
-                null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
                 else -> {
                     val list = result.getOrDefault(emptyList())
                     val note = result.exceptionOrNull()?.let { t("Couldn't load trophies: {0}", it.message) } ?: t("No trophies yet").takeIf { list.isEmpty() }

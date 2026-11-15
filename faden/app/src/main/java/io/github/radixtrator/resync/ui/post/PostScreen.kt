@@ -2,6 +2,9 @@
 
 package io.github.radixtrator.resync.ui.post
 
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.LoadingIndicator
 import io.github.radixtrator.resync.ui.common.AvatarKind
 import io.github.radixtrator.resync.ui.common.Avatar
 import io.github.radixtrator.resync.i18n.I18n
@@ -401,8 +404,17 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 }
             },
         ) { padding ->
+            val pullState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = state.refreshing,
+                state = pullState,
+                indicator = {
+                    PullToRefreshDefaults.LoadingIndicator(
+                        state = pullState,
+                        isRefreshing = state.refreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                    )
+                },
                 onRefresh = { vm.load(refresh = true) },
                 modifier = Modifier.padding(padding).fillMaxSize(),
             ) {
@@ -410,7 +422,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 if (state.post == null) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (state.loading) {
-                            CircularProgressIndicator()
+                            LoadingIndicator()
                         } else if (state.error != null) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(state.error!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
@@ -490,7 +502,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                         item(key = "status") {
                             Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                                 when {
-                                    state.loading -> CircularProgressIndicator()
+                                    state.loading -> LoadingIndicator()
                                     state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(state.error!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                                         TextButton(onClick = { vm.load(refresh = false) }) { Text(t("Retry")) }

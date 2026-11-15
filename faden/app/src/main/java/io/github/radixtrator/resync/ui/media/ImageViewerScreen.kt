@@ -1,5 +1,9 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package io.github.radixtrator.resync.ui.media
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ContainedLoadingIndicator
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.activity.compose.BackHandler
@@ -20,7 +24,6 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -183,7 +186,7 @@ private fun ZoomableImage(url: String, onTap: () -> Unit, onZoomChange: (Boolean
             val loadState by painter.state.collectAsState()
             when (loadState) {
                 is AsyncImagePainter.State.Loading, AsyncImagePainter.State.Empty ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) }
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ContainedLoadingIndicator() }
                 is AsyncImagePainter.State.Error ->
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(t("Couldn't load image"), color = Color.White) }
                 is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
