@@ -87,6 +87,7 @@ object SettingsIndex {
             row(SettingsCategory.COMMENT_OPTIONS, "Default comment sort", keywords = "best top new"),
             row(SettingsCategory.COMMENT_OPTIONS, "Collapse all threads by default", "The first time you open a post", "fold"),
             row(SettingsCategory.COMMENT_OPTIONS, "Initial comment count", keywords = "load"),
+            row(SettingsCategory.COMMENT_OPTIONS, "Tap to collapse", "Tap a comment to collapse it and hold it for options, instead of the other way round", "hold long press fold"),
             row(SettingsCategory.COMMENT_OPTIONS, "Comment navigation buttons", "Jump between top-level comments", "next previous"),
             row(SettingsCategory.COMMENT_OPTIONS, "Remember comment position", "Reopen posts where you left off, threads folded as you left them", "scroll"),
             row(SettingsCategory.COMMENT_OPTIONS, "Swipe comments", "Drag a comment left; drag further for the next action", "gesture"),

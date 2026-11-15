@@ -186,8 +186,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 // Sync's comment page (sync-reference/SYNC_PARITY_LOG.md §3.8): one surface for toolbar, post and
-// comments; colored rails for every ancestor level; tap collapses a thread, long-press opens an
-// inline action bar.
+// comments; colored rails for every ancestor level; hold collapses a thread and tap opens an
+// inline action bar (Comment options › "Tap to collapse" swaps them).
 
 @Composable
 fun PostScreen(route: PostRoute, container: AppContainer) {
@@ -700,7 +700,11 @@ private fun CommentRow(
                     .fillMaxWidth()
                     // Opaque, so the swipe panel only shows where the row has moved away.
                     .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow)
-                    .combinedClickable(onClick = onToggle, onLongClick = onSelect)
+                    // Comment options › "Tap to collapse" swaps the two: by default hold collapses, tap opens the bar.
+                    .combinedClickable(
+                        onClick = if (settings.tapToCollapse) onToggle else onSelect,
+                        onLongClick = if (settings.tapToCollapse) onSelect else onToggle,
+                    )
                     .rails(depth)
                     .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
             ) {

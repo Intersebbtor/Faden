@@ -306,6 +306,8 @@ data class Settings(
     val profilePictures: Boolean = true,
     /** A "New" label on comments posted since you last opened the thread. */
     val markNewComments: Boolean = true,
+    /** Off: hold a comment to collapse it, tap it for its action bar. On: tap collapses, hold opens the bar. */
+    val tapToCollapse: Boolean = false,
     val messageCheck: MessageCheck = MessageCheck.HOUR,
     /** Sync's extended swipe: drag left, and each further step arms the next of these three. */
     val postSwipe: Boolean = true,

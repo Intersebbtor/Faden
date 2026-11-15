@@ -353,6 +353,11 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
             Choice("Default comment sort", CommentSort.entries, settings.commentSort, CommentSort::label) { v -> update { it.copy(commentSort = v) } }
             Toggle("Collapse all threads by default", "The first time you open a post", settings.collapseAllByDefault) { v -> update { it.copy(collapseAllByDefault = v) } }
             Choice("Initial comment count", CommentCount.entries, settings.commentCount, CommentCount::label) { v -> update { it.copy(commentCount = v) } }
+            Toggle(
+                "Tap to collapse",
+                if (settings.tapToCollapse) "Tap a comment to collapse it; hold it for options" else "Hold a comment to collapse it; tap it for options",
+                settings.tapToCollapse,
+            ) { v -> update { it.copy(tapToCollapse = v) } }
             Toggle("Comment navigation buttons", "Jump between top-level comments", settings.commentNavigation) { v -> update { it.copy(commentNavigation = v) } }
             Toggle("Remember comment position", "Reopen posts where you left off, threads folded as you left them", settings.rememberCommentPosition) { v -> update { it.copy(rememberCommentPosition = v) } }
             Section("Swipe actions")
