@@ -1,16 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The red thread ("der rote Faden"): one thread with a single loop, running in from the left edge and out past the
-     top right, so it reads as passing through the icon. 108dp adaptive canvas; the loop sits inside the 66dp safe
-     zone and the ends are allowed to be cut by the launcher's mask. -->
+<!-- One orange thread (the upvote orange, #FF7500) laid down like a real piece of string: it comes in from the bottom
+     edge, traces the outline of an upvote arrow, crosses over and traces the outline of a downvote arrow, then runs off
+     the top right. Shaded to look physical: a soft navy shadow cast on the blue, a darker orange rim, the orange body
+     nudged up and left, and a thin highlight. 108dp adaptive canvas; both arrows sit inside the 66dp safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <group
+        android:translateX="1.3"
+        android:translateY="1.7">
+        <path
+            android:pathData="M-4,86 C14,86 30,84 32,72 L32,46 L26.5,46 Q25,46 26,44.7 L35,29.3 Q36,28 37,29.3 L46,44.7 Q47,46 45.5,46 L40,46 L40,70 C40,84 66,24 68,36 L68,62 L62.5,62 Q61,62 62,63.3 L71,78.7 Q72,80 73,78.7 L82,63.3 Q83,62 81.5,62 L76,62 L76,38 C76,28 92,24 112,22"
+            android:strokeWidth="4.8"
+            android:strokeColor="#800A1640"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
     <path
-        android:pathData="M2,78 C24,80 42,72 50,62 C58,51 55,39 46.5,40.5 C38,42 39.5,57 54,61 C70,65 84,50 106,26"
-        android:strokeWidth="7"
-        android:strokeColor="#FFFFFF"
+        android:pathData="M-4,86 C14,86 30,84 32,72 L32,46 L26.5,46 Q25,46 26,44.7 L35,29.3 Q36,28 37,29.3 L46,44.7 Q47,46 45.5,46 L40,46 L40,70 C40,84 66,24 68,36 L68,62 L62.5,62 Q61,62 62,63.3 L71,78.7 Q72,80 73,78.7 L82,63.3 Q83,62 81.5,62 L76,62 L76,38 C76,28 92,24 112,22"
+        android:strokeWidth="4.2"
+        android:strokeColor="#FFC95800"
         android:strokeLineCap="round"
         android:strokeLineJoin="round" />
+    <group
+        android:translateX="-0.35"
+        android:translateY="-0.35">
+        <path
+            android:pathData="M-4,86 C14,86 30,84 32,72 L32,46 L26.5,46 Q25,46 26,44.7 L35,29.3 Q36,28 37,29.3 L46,44.7 Q47,46 45.5,46 L40,46 L40,70 C40,84 66,24 68,36 L68,62 L62.5,62 Q61,62 62,63.3 L71,78.7 Q72,80 73,78.7 L82,63.3 Q83,62 81.5,62 L76,62 L76,38 C76,28 92,24 112,22"
+            android:strokeWidth="3.3"
+            android:strokeColor="#FFFF7500"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
+    <group
+        android:translateX="-0.8"
+        android:translateY="-0.8">
+        <path
+            android:pathData="M-4,86 C14,86 30,84 32,72 L32,46 L26.5,46 Q25,46 26,44.7 L35,29.3 Q36,28 37,29.3 L46,44.7 Q47,46 45.5,46 L40,46 L40,70 C40,84 66,24 68,36 L68,62 L62.5,62 Q61,62 62,63.3 L71,78.7 Q72,80 73,78.7 L82,63.3 Q83,62 81.5,62 L76,62 L76,38 C76,28 92,24 112,22"
+            android:strokeWidth="1"
+            android:strokeColor="#73FFC58C"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+    </group>
 </vector>
