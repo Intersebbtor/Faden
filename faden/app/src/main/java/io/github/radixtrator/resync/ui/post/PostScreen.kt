@@ -310,7 +310,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
             topBar = {
                 TopAppBar(
                     scrollBehavior = scrollBehavior,
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = surface, scrolledContainerColor = surface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = surface, scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer),
                     navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {
                         state.post?.let { post ->
