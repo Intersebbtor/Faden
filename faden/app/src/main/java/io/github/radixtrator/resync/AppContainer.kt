@@ -15,7 +15,9 @@ import io.github.radixtrator.resync.data.RestoreResult
 import io.github.radixtrator.resync.data.Comment
 import io.github.radixtrator.resync.data.DraftStore
 import io.github.radixtrator.resync.data.ExploreStore
+import io.github.radixtrator.resync.data.DeferredWrites
 import io.github.radixtrator.resync.data.FilterStore
+import io.github.radixtrator.resync.data.HistoryPrefs
 import io.github.radixtrator.resync.data.MediaDownloads
 import io.github.radixtrator.resync.data.NotifiedMessages
 import io.github.radixtrator.resync.data.Post
@@ -59,10 +61,16 @@ class AppContainer(context: Context) {
     private val prefs = context.getSharedPreferences("resync", Context.MODE_PRIVATE)
     val configStore = ApiConfigStore(prefs)
     val settings = SettingsStore(prefs)
-    val visited = VisitedStore(prefs)
+    // The high-churn stores (read posts, comment positions, thread visits, recents, explore) have their own file;
+    // moved here from "resync" on the first launch of the version that split them.
+    private val history = context.getSharedPreferences(HistoryPrefs.FILE, Context.MODE_PRIVATE).also { HistoryPrefs.migrate(prefs, it) }
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    // Their writes are coalesced and flushed to disk shortly after the last change, and whenever an activity stops.
+    private val historyWrites = DeferredWrites(scope)
+    val visited = VisitedStore(history, historyWrites)
     // Stores no screen needs for the first frame load (and parse) when first used, not at launch.
-    val postMemory by lazy { PostMemoryStore(prefs) }
-    val threadVisits by lazy { ThreadVisits(prefs) }
+    val postMemory by lazy { PostMemoryStore(history, historyWrites) }
+    val threadVisits by lazy { ThreadVisits(history, historyWrites) }
     val appUpdates by lazy { AppUpdates(prefs) }
 
     /** Whether this install has been updated in place, rather than installed fresh at this version. */
@@ -76,13 +84,13 @@ class AppContainer(context: Context) {
     val whatsNew: List<VersionNotes> by lazy {
         runCatching { appContext.assets.open("whats-new.md").bufferedReader().use { WhatsNew.parse(it.readText()) } }.getOrDefault(emptyList())
     }
-    val explore = ExploreStore(prefs)
+    val explore = ExploreStore(history, historyWrites)
     val downloads by lazy { MediaDownloads(appContext) }
     val watch = WatchStore(prefs)
     val notifiedMessages by lazy { NotifiedMessages(prefs) }
     val tags = UserTags(prefs)
     val filters = FilterStore(prefs)
-    val recentPosts by lazy { RecentPostsStore(prefs) }
+    val recentPosts by lazy { RecentPostsStore(history, historyWrites) }
     val drafts by lazy { DraftStore(prefs) }
     val readAloud by lazy { ReadAloud(appContext) }
     private val appContext = context.applicationContext
@@ -121,7 +129,19 @@ class AppContainer(context: Context) {
 
     val isConfigured: Boolean get() = configStore.load() != null || configStore.demoMode
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    init {
+        (context.applicationContext as? android.app.Application)?.registerActivityLifecycleCallbacks(
+            object : android.app.Application.ActivityLifecycleCallbacks {
+                override fun onActivityStopped(activity: android.app.Activity) = historyWrites.flush()
+                override fun onActivityCreated(activity: android.app.Activity, savedInstanceState: android.os.Bundle?) = Unit
+                override fun onActivityStarted(activity: android.app.Activity) = Unit
+                override fun onActivityResumed(activity: android.app.Activity) = Unit
+                override fun onActivityPaused(activity: android.app.Activity) = Unit
+                override fun onActivitySaveInstanceState(activity: android.app.Activity, outState: android.os.Bundle) = Unit
+                override fun onActivityDestroyed(activity: android.app.Activity) = Unit
+            },
+        )
+    }
 
     /** Reports [fullname] in the background (the sheet that asked is gone by then) and says how it went. */
     fun report(fullname: String, reason: ReportReason?, other: String? = null) {
@@ -149,7 +169,7 @@ class AppContainer(context: Context) {
     }
 
     /** Settings › Backup now: the backed-up preferences, plus the accounts encrypted with [accountsPassword] if given. */
-    fun exportBackup(accountsPassword: CharArray? = null): String = Backup.export(prefs, accountsPassword = accountsPassword)
+    fun exportBackup(accountsPassword: CharArray? = null): String = Backup.export(prefs, accountsPassword = accountsPassword, history = history)
 
     /** Whether there are signed-in accounts Backup now could include. */
     val hasBackupAccounts: Boolean get() = Backup.accountsIn(prefs) != null
@@ -171,13 +191,17 @@ class AppContainer(context: Context) {
         parts: Set<BackupPart>,
         accounts: AccountsBackup?,
     ): RestoreResult {
-        writeAtomically(preRestoreFile, Backup.snapshot(prefs))
-        return Backup.restore(prefs, doc, includeApiConfig, parts, accounts)
+        historyWrites.flush() // so the saved copy has what's in memory
+        writeAtomically(preRestoreFile, Backup.snapshot(prefs, history = history))
+        val result = Backup.restore(prefs, doc, includeApiConfig, parts, accounts, history)
+        historyWrites.cancel() // the stores still hold the old data; it mustn't overwrite what was just restored
+        return result
     }
 
     /** Puts everything back as it was before the last restore. The caller must restart the app straight away. */
     fun undoRestore() {
-        Backup.restoreSnapshot(prefs, preRestoreFile.readText())
+        Backup.restoreSnapshot(prefs, preRestoreFile.readText(), history)
+        historyWrites.cancel()
         preRestoreFile.delete()
     }
 

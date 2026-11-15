@@ -1,7 +1,6 @@
 package io.github.radixtrator.resync.data
 
 import android.content.SharedPreferences
-import androidx.core.content.edit
 import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -56,7 +55,7 @@ data class ExploreState(
     fun mostVisited(limit: Int = 20): List<Visits> = visits.values.sortedByDescending { it.count }.take(limit)
 }
 
-class ExploreStore(private val prefs: SharedPreferences) {
+class ExploreStore(private val prefs: SharedPreferences, private val writes: DeferredWrites = DeferredWrites()) {
     private val json = Json { ignoreUnknownKeys = true }
     private val _state = MutableStateFlow(load())
     val state: StateFlow<ExploreState> = _state.asStateFlow()
@@ -77,14 +76,14 @@ class ExploreStore(private val prefs: SharedPreferences) {
     }
 
     /** [name] null = front page. */
-    fun recordVisit(name: String?) = update { s ->
+    fun recordVisit(name: String?) = update(deferred = true) { s ->
         val feed = name.orEmpty()
         val key = feed.lowercase()
         val visits = s.visits[key]?.let { it.copy(count = it.count + 1) } ?: Visits(feed, 1)
         s.copy(visits = s.visits + (key to visits), recents = remember(s.recents, Recent(subreddit = feed)))
     }
 
-    fun recordSearch(query: String, subreddit: String?) = update { s ->
+    fun recordSearch(query: String, subreddit: String?) = update(deferred = true) { s ->
         s.copy(recents = remember(s.recents, Recent(subreddit = subreddit, query = query.trim())))
     }
 
@@ -108,10 +107,12 @@ class ExploreStore(private val prefs: SharedPreferences) {
         return (listOf(entry) + recents.filterNot(same)).take(MAX_RECENTS)
     }
 
-    private fun update(change: (ExploreState) -> ExploreState) {
+    /** Visits and searches (written on every feed open) are deferred; deliberate edits like favorites write at once. */
+    private fun update(deferred: Boolean = false, change: (ExploreState) -> ExploreState) {
         val next = change(_state.value)
         _state.value = next
-        prefs.edit { putString(KEY, json.encodeToString(ExploreState.serializer(), next)) }
+        writes.put(prefs, KEY) { json.encodeToString(ExploreState.serializer(), next) }
+        if (!deferred) writes.flush()
     }
 
     private fun load(): ExploreState = prefs.getString(KEY, null)

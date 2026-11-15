@@ -16,6 +16,11 @@ import io.github.radixtrator.resync.data.columnsFor
 import io.github.radixtrator.resync.data.isCoverScreen
 import io.github.radixtrator.resync.data.BackupFormatException
 import io.github.radixtrator.resync.data.Draft
+import io.github.radixtrator.resync.data.DeferredWrites
+import io.github.radixtrator.resync.data.HistoryPrefs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import io.github.radixtrator.resync.data.DraftStore
 import io.github.radixtrator.resync.data.ExploreSection
 import io.github.radixtrator.resync.data.ExploreStore
@@ -554,5 +559,156 @@ class BackupTest {
         val theme = search("theme")
         assertTrue(theme.indexOf("Theme color") in 0 until theme.indexOf("Material You colors"))
         assertTrue(search("zzzz").isEmpty())
+    }
+}
+
+class HistorySplitTest {
+    /** What the previous version left on a device: everything, history included, in the one "resync" file. */
+    private fun oldLayout(): FakePrefs {
+        val prefs = FakePrefs()
+        val post = Parser.post(RedditClient.JSON.parseToJsonElement("""{"id":"p1","title":"Hello","subreddit":"pics","num_comments":5}""").jsonObject)
+        SettingsStore(prefs).update { it.copy(hideRead = true) }
+        ExploreStore(prefs).recordVisit("pics")
+        VisitedStore(prefs).markAll(listOf("p1", "p2"))
+        PostMemoryStore(prefs).saveScroll("p1", 3, 40)
+        ThreadVisits(prefs).record("p1", 1234)
+        RecentPostsStore(prefs).record(post)
+        DraftStore(prefs).save("submit", "draft body", "Post")
+        return prefs
+    }
+
+    @Test
+    fun `migration moves exactly the history keys and keeps every value`() {
+        val old = oldLayout()
+        val before = HashMap(old.values)
+        val history = FakePrefs()
+        HistoryPrefs.migrate(old, history)
+
+        assertEquals(HistoryPrefs.KEYS, history.values.keys)
+        HistoryPrefs.KEYS.forEach { key ->
+            assertEquals(before[key], history.values[key])
+            assertTrue(key !in old.values, "$key left behind in the old file")
+        }
+        assertEquals(before.filterKeys { it !in HistoryPrefs.KEYS }, old.values)
+        // The stores read it all back from the new file.
+        assertEquals(setOf("p1", "p2"), VisitedStore(history).ids.value)
+        assertEquals(3, PostMemoryStore(history)["p1"]!!.index)
+        assertEquals(1234L, ThreadVisits(history)["p1"])
+        assertEquals(listOf("p1"), RecentPostsStore(history).posts.value.map { it.id })
+        assertEquals(1, ExploreStore(history).state.value.mostVisited().single().count)
+    }
+
+    @Test
+    fun `migration is idempotent and a no-op on a fresh install`() {
+        val old = oldLayout()
+        val history = FakePrefs()
+        HistoryPrefs.migrate(old, history)
+        val oldAfter = HashMap(old.values)
+        val historyAfter = HashMap(history.values)
+        HistoryPrefs.migrate(old, history)
+        assertEquals(oldAfter, old.values)
+        assertEquals(historyAfter, history.values)
+
+        val freshOld = FakePrefs()
+        val freshHistory = FakePrefs()
+        HistoryPrefs.migrate(freshOld, freshHistory)
+        assertTrue(freshOld.values.isEmpty() && freshHistory.values.isEmpty())
+    }
+
+    @Test
+    fun `migration never overwrites newer history and finishes an interrupted move`() {
+        val old = FakePrefs().apply { values["visited.v1"] = "stale"; values["explore.v1"] = "{}" }
+        val history = FakePrefs().apply { values["visited.v1"] = "fresh" } // copied, then died before removing from old
+        HistoryPrefs.migrate(old, history)
+        assertEquals("fresh", history.values["visited.v1"])
+        assertEquals("{}", history.values["explore.v1"])
+        assertTrue(old.values.isEmpty())
+    }
+
+    @Test
+    fun `a backup from the single-file version restores into the right files`() {
+        val doc = Backup.decode(Backup.export(oldLayout(), createdMillis = 0))
+        val main = FakePrefs()
+        val history = FakePrefs()
+        Backup.restore(main, doc, includeApiConfig = false, history = history)
+        assertEquals(setOf("p1", "p2"), VisitedStore(history).ids.value)
+        assertEquals(3, PostMemoryStore(history)["p1"]!!.index)
+        assertEquals(listOf("p1"), RecentPostsStore(history).posts.value.map { it.id })
+        assertTrue(ExploreStore(history).state.value.visits.isNotEmpty())
+        assertTrue(HistoryPrefs.KEYS.none { it in main.values })
+        assertTrue(main.values.containsKey("settings.v1") && main.values.containsKey("drafts.v1"))
+    }
+
+    @Test
+    fun `a split-layout backup holds the same data as the single-file one and round-trips`() {
+        val oldPrefs = oldLayout()
+        val main = FakePrefs().apply { values.putAll(oldPrefs.values) }
+        val history = FakePrefs()
+        HistoryPrefs.migrate(main, history)
+
+        val single = Backup.decode(Backup.export(oldPrefs, createdMillis = 0))
+        val split = Backup.decode(Backup.export(main, createdMillis = 0, history = history))
+        assertEquals(single.prefs, split.prefs)
+        assertTrue(HistoryPrefs.KEYS.filter { it != "thread_visits.v1" }.all { it in split.prefs })
+
+        val main2 = FakePrefs()
+        val history2 = FakePrefs()
+        Backup.restore(main2, split, includeApiConfig = false, history = history2)
+        assertEquals(Backup.filter(history.values), Backup.filter(history2.values))
+        assertEquals(Backup.filter(main.values), Backup.filter(main2.values))
+    }
+
+    @Test
+    fun `snapshots cover both files and old snapshots restore into the right ones`() {
+        val oldPrefs = oldLayout()
+        val oldSnapshot = Backup.snapshot(oldPrefs, createdMillis = 0)
+        val main = FakePrefs().apply { values["junk"] = "x" }
+        val history = FakePrefs().apply { values["visited.v1"] = "zzz" }
+        Backup.restoreSnapshot(main, oldSnapshot, history)
+        assertEquals(oldPrefs.values.filterKeys { it !in HistoryPrefs.KEYS }, main.values)
+        assertEquals(oldPrefs.values.filterKeys { it in HistoryPrefs.KEYS }, history.values)
+
+        assertEquals(oldSnapshot, Backup.snapshot(main, createdMillis = 0, history = history))
+    }
+
+    @Test
+    fun `deferred writes coalesce, flush, and can be cancelled`() {
+        val prefs = FakePrefs()
+        val scope = CoroutineScope(Dispatchers.Default)
+        val writes = DeferredWrites(scope, delayMs = 100)
+        val visited = VisitedStore(prefs, writes)
+        visited.mark("a")
+        visited.mark("b")
+        visited.mark("c")
+        assertEquals(setOf("a", "b", "c"), visited.ids.value) // in memory at once
+        assertNull(prefs.values["visited.v1"]) // not yet on disk
+
+        val deadline = System.currentTimeMillis() + 5000
+        while ("visited.v1" !in prefs.values && System.currentTimeMillis() < deadline) Thread.sleep(10)
+        assertEquals("a,b,c", prefs.values["visited.v1"])
+
+        visited.mark("d")
+        writes.flush()
+        assertEquals("a,b,c,d", prefs.values["visited.v1"])
+
+        visited.mark("e")
+        writes.cancel()
+        Thread.sleep(300)
+        assertEquals("a,b,c,d", prefs.values["visited.v1"])
+        scope.cancel()
+    }
+
+    @Test
+    fun `explore edits other than visits write at once`() {
+        val prefs = FakePrefs()
+        val scope = CoroutineScope(Dispatchers.Default)
+        val writes = DeferredWrites(scope, delayMs = 60_000)
+        val explore = ExploreStore(prefs, writes)
+        explore.recordVisit("pics")
+        assertNull(prefs.values["explore.v1"])
+        explore.toggleFavorite("pics")
+        assertTrue((prefs.values["explore.v1"] as String).contains("favorites"))
+        assertTrue(ExploreStore(prefs).state.value.visits.containsKey("pics")) // flushed along with it
+        scope.cancel()
     }
 }

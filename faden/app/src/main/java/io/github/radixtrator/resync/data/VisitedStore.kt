@@ -1,7 +1,6 @@
 package io.github.radixtrator.resync.data
 
 import android.content.SharedPreferences
-import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,13 +9,13 @@ import kotlinx.coroutines.flow.asStateFlow
  * Post ids the user has opened, so feeds can dim them as Sync does ("Mark posts as read").
  * Local only; keeps the most recent [MAX].
  */
-class VisitedStore(private val prefs: SharedPreferences) {
+class VisitedStore(private val prefs: SharedPreferences, private val writes: DeferredWrites = DeferredWrites()) {
     private val _ids = MutableStateFlow(load())
     val ids: StateFlow<Set<String>> = _ids.asStateFlow()
 
     fun mark(postId: String) = markAll(listOf(postId))
 
-    /** Marks several at once (Mark posts as read on scroll), with one update and one write. */
+    /** Marks several at once (Mark posts as read on scroll), with one update and one (deferred) write. */
     fun markAll(postIds: List<String>) {
         val current = _ids.value
         if (postIds.all { it in current }) return
@@ -25,7 +24,7 @@ class VisitedStore(private val prefs: SharedPreferences) {
             while (size > MAX) remove(first())
         }
         _ids.value = next
-        prefs.edit { putString(KEY, next.joinToString(",")) }
+        writes.put(prefs, KEY) { next.joinToString(",") }
     }
 
     private fun load(): Set<String> =

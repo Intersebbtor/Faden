@@ -26,7 +26,7 @@ import kotlinx.serialization.json.put
 
 /**
  * One group of saved data a backup carries, as the restore dialog names it. The keys copy each store's private KEY
- * constant (the stores all share the "resync" preferences file); the store tests round-trip every store through a
+ * constant (the stores share the "resync" preferences file, except the [HistoryPrefs] ones, which have their own); the store tests round-trip every store through a
  * backup to keep them in step.
  */
 enum class BackupPart(private val en: String, val keys: List<String>) {
@@ -87,6 +87,10 @@ class BackupPasswordException : Exception(t("Wrong password, or the backup is da
  * included; they expire within the hour anyway. Older Faden versions ignore the `accounts` section.
  *
  * The stores cache in memory, so the app must restart after [restore].
+ *
+ * Data lives in two preference files (the main one, and [HistoryPrefs]' for the high-churn stores), but a backup
+ * always holds one flat map, so files from before the split restore into the right file. Functions that read or
+ * write preferences take the main file plus an optional `history` file, which defaults to the main one.
  */
 object Backup {
     // Kept from the app's old name, Resync, so backups and restores work across versions.
@@ -171,7 +175,12 @@ object Backup {
         prefs: SharedPreferences,
         createdMillis: Long = System.currentTimeMillis(),
         accountsPassword: CharArray? = null,
-    ): String = encode(filter(prefs.all), createdMillis, accountsPassword?.let { accountsIn(prefs) }, accountsPassword)
+        history: SharedPreferences = prefs,
+    ): String = encode(filter(allOf(prefs, history)), createdMillis, accountsPassword?.let { accountsIn(prefs) }, accountsPassword)
+
+    /** Both files' entries as one map (the history file's keys win; the two never share a key once migrated). */
+    private fun allOf(prefs: SharedPreferences, history: SharedPreferences): Map<String, *> =
+        if (history === prefs) prefs.all else prefs.all + history.all
 
     /** Parses and checks a backup file; throws [BackupFormatException] with a message for the user. */
     fun decode(text: String): BackupDocument {
@@ -221,6 +230,7 @@ object Backup {
         includeApiConfig: Boolean,
         parts: Set<BackupPart> = BackupPart.entries.toSet(),
         accounts: AccountsBackup? = null,
+        history: SharedPreferences = prefs,
     ): RestoreResult {
         val values = filter(doc.prefs)
         // What's on the device now, read before any edit is queued.
@@ -229,9 +239,11 @@ object Backup {
         val currentAccounts = readAccounts(prefs)
         val currentActive = prefs.getString(AUTH_ACTIVE, null)
         val editor = prefs.edit()
+        val historyEditor = if (history === prefs) editor else history.edit()
         parts.flatMap { it.keys }.forEach { key ->
             val value = values[key]
-            if (value != null) editor.putString(key, value) else editor.remove(key)
+            val target = if (HistoryPrefs.isHistoryKey(key)) historyEditor else editor
+            if (value != null) target.putString(key, value) else target.remove(key)
         }
 
         val clientId = values[API_CLIENT_ID]
@@ -260,6 +272,8 @@ object Backup {
             // The cached access token may belong to another account now; a fresh one is fetched on first use.
             SESSION_KEYS.forEach { editor.remove(it) }
         }
+        // History first: if the second commit fails, the first is the less important data.
+        if (historyEditor !== editor && !historyEditor.commit()) throw IllegalStateException(t("couldn't write the restored data"))
         if (!editor.commit()) throw IllegalStateException(t("couldn't write the restored data"))
         return RestoreResult(signedOut, restoreAccounts?.accounts?.size ?: 0)
     }
@@ -268,7 +282,7 @@ object Backup {
      * Everything in [prefs], accounts included, for the automatic copy taken before a restore. It never leaves the
      * app's private storage, so it's no less safe than the preferences file itself.
      */
-    fun snapshot(prefs: SharedPreferences, createdMillis: Long = System.currentTimeMillis()): String = json.encodeToString(
+    fun snapshot(prefs: SharedPreferences, createdMillis: Long = System.currentTimeMillis(), history: SharedPreferences = prefs): String = json.encodeToString(
         JsonObject.serializer(),
         buildJsonObject {
             put("format", "$FORMAT-snapshot")
@@ -276,7 +290,7 @@ object Backup {
             put(
                 "prefs",
                 JsonObject(
-                    prefs.all.entries.sortedBy { it.key }.mapNotNull { (key, value) ->
+                    allOf(prefs, history).entries.sortedBy { it.key }.mapNotNull { (key, value) ->
                         when (value) {
                             is String -> key to JsonPrimitive(value)
                             is Boolean -> key to JsonPrimitive(value)
@@ -296,21 +310,24 @@ object Backup {
             ?.let { it.string("created") ?: "" }
 
     /** Puts [prefs] back exactly as [snapshot] [text] had it. Throws [BackupFormatException] if it isn't one. */
-    fun restoreSnapshot(prefs: SharedPreferences, text: String) {
+    fun restoreSnapshot(prefs: SharedPreferences, text: String, history: SharedPreferences = prefs) {
         val root = runCatching { Json.parseToJsonElement(text) as JsonObject }.getOrNull()
             ?.takeIf { it.string("format") == "$FORMAT-snapshot" }
             ?: throw BackupFormatException(t("The saved copy is damaged"))
         val values = root.obj("prefs") ?: throw BackupFormatException(t("The saved copy is damaged"))
-        val editor = prefs.edit().clear()
+        val mainEditor = prefs.edit().clear()
+        val historyEditor = if (history === prefs) mainEditor else history.edit().clear()
         values.forEach { (key, value: JsonElement) ->
             val p = value as? JsonPrimitive ?: return@forEach
+            val editor = if (HistoryPrefs.isHistoryKey(key)) historyEditor else mainEditor
             when {
                 p.isString -> editor.putString(key, p.content)
                 p.booleanOrNull != null -> editor.putBoolean(key, p.booleanOrNull!!)
                 p.longOrNull != null -> editor.putLong(key, p.longOrNull!!)
             }
         }
-        if (!editor.commit()) throw IllegalStateException(t("couldn't write the saved copy"))
+        if (historyEditor !== mainEditor && !historyEditor.commit()) throw IllegalStateException(t("couldn't write the saved copy"))
+        if (!mainEditor.commit()) throw IllegalStateException(t("couldn't write the saved copy"))
     }
 
     /** The file name Backup now suggests: faden-backup-YYYY-MM-DD.json. */
