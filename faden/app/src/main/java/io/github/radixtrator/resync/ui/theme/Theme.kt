@@ -109,15 +109,15 @@ object FadenColors {
     val Hide = Color(0xFFB71C1C)
 
     /**
-     * Comment thread rails, cycling by depth: the orange thread first (depth 0), then amber, teal, blue and violet. Amber
-     * and teal sit a little deeper than their usual brights so every rail keeps 3:1 against a card in light and dark.
+     * Comment thread rails, cycling by depth: the orange thread first (depth 0, the upvote orange a little deeper), then
+     * teal, blue, violet and rose. Each keeps 3:1 against a card and against the window, in light and dark.
      */
     val Depth = listOf(
-        Color(0xFFE0465A), // red thread
-        Color(0xFFB87A12), // amber
+        Color(0xFFE36000), // orange thread
         Color(0xFF239379), // teal
         Color(0xFF4F7FE0), // blue
         Color(0xFF9B6BD6), // violet
+        Color(0xFFD4478A), // rose
     )
 }
 

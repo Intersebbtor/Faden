@@ -99,15 +99,31 @@ class ContrastTest {
     }
 
     @Test
-    fun depthRailsStandOutOnCards() {
+    fun depthRailsStandOutOnCardsAndWindow() {
         for (dark in listOf(false, true)) {
-            val card = fadenColorScheme(dark, black = false, seed = null, extra = false).surfaceContainerLow
+            val scheme = fadenColorScheme(dark, black = false, seed = null, extra = false)
+            val mode = if (dark) "dark" else "light"
             FadenColors.Depth.forEachIndexed { depth, rail ->
-                val ratio = ratio(rail, card)
-                assertTrue(ratio >= 3.0, "rail $depth vs ${if (dark) "dark" else "light"} card: %.2f".format(ratio))
+                for ((name, ground) in listOf("card" to scheme.surfaceContainerLow, "window" to scheme.background)) {
+                    val ratio = ratio(rail, ground)
+                    assertTrue(ratio >= 3.0, "rail $depth vs $mode $name: %.2f".format(ratio))
+                }
             }
         }
         assertTrue(FadenColors.Depth.size == 5)
+    }
+
+    @Test
+    fun depthRailsAreDistinct() {
+        val rails = FadenColors.Depth
+        for (i in rails.indices) for (j in i + 1 until rails.size) {
+            val d = Tones.deltaEOk(rails[i].argb(), rails[j].argb())
+            assertTrue(d >= 0.08, "rails $i and $j: ΔE_ok %.3f".format(d))
+        }
+        // The first rail is the upvote orange's hue.
+        val first = Tones.lchOf(rails[0].argb()).hue
+        val orange = Tones.lchOf(FadenColors.Upvote.argb()).hue
+        assertTrue(kotlin.math.abs(first - orange) < 10f, "first rail hue $first vs upvote $orange")
     }
 
     @Test
