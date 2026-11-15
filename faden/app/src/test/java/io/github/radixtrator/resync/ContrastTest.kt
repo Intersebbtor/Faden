@@ -3,6 +3,7 @@ package io.github.radixtrator.resync
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import io.github.radixtrator.resync.data.ThemePalette
+import io.github.radixtrator.resync.ui.theme.FadenColors
 import io.github.radixtrator.resync.ui.theme.THEME_SEEDS
 import io.github.radixtrator.resync.ui.theme.ToneScheme
 import io.github.radixtrator.resync.ui.theme.Tones
@@ -63,6 +64,18 @@ class ContrastTest {
         // Classic is Sync's fixed palette: its failures are how Sync shipped, so they're printed, not asserted.
         if (classic.isNotEmpty()) println("Classic (Sync's palette) contrast shortfalls:\n" + classic.joinToString("\n"))
         assertTrue(bad.isEmpty(), "Contrast failures:\n" + bad.joinToString("\n"))
+    }
+
+    @Test
+    fun depthRailsStandOutOnCards() {
+        for (dark in listOf(false, true)) {
+            val card = fadenColorScheme(dark, black = false, seed = null, extra = false).surfaceContainerLow
+            FadenColors.Depth.forEachIndexed { depth, rail ->
+                val ratio = ratio(rail, card)
+                assertTrue(ratio >= 3.0, "rail $depth vs ${if (dark) "dark" else "light"} card: %.2f".format(ratio))
+            }
+        }
+        assertTrue(FadenColors.Depth.size == 5)
     }
 
     @Test
