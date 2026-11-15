@@ -47,14 +47,12 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -607,15 +605,13 @@ private fun emphasize(label: String, match: String?): AnnotatedString = buildAnn
 }
 
 /**
- * Sync's row ⋮: a small gray 18dp glyph in a 42dp square, under Material's 48dp minimum, which
- * would make every row taller.
+ * Sync's row ⋮: a small gray 18dp glyph in a 42dp square. The row stays 42dp; Material's 48dp minimum touch
+ * target extends past the button instead of making every row taller.
  */
 @Composable
 private fun RowMenuButton(description: String, onClick: () -> Unit) {
-    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-        IconButton(onClick = onClick, modifier = Modifier.size(ROW_HEIGHT)) {
-            Icon(Icons.Default.MoreVert, description, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
-        }
+    IconButton(onClick = onClick, modifier = Modifier.size(ROW_HEIGHT)) {
+        Icon(Icons.Default.MoreVert, description, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
     }
 }
 
