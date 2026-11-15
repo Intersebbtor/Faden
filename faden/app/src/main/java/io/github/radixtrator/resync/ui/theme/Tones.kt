@@ -175,10 +175,13 @@ class ToneScheme(
                     secondary.tone(40), secondary.tone(100), secondary.tone(90), secondary.tone(10),
                     tertiary.tone(40), tertiary.tone(100), tertiary.tone(90), tertiary.tone(10),
                     error.tone(40), error.tone(100), error.tone(90), error.tone(10),
-                    neutral.tone(98), neutral.tone(10), neutral.tone(98), neutral.tone(10),
+                    // The app's surfaces are a window with lighter cards on it (cards, sheets and chips are
+                    // surfaceContainerLow), then the nav bar and selected rows a step darker than the window. M3's
+                    // usual light ladder (window 98, cards 96) would sink cards and chips into the window.
+                    neutral.tone(95), neutral.tone(10), neutral.tone(95), neutral.tone(10),
                     variant.tone(90), variant.tone(30), variant.tone(50), variant.tone(80),
-                    neutral.tone(87), neutral.tone(98),
-                    neutral.tone(100), neutral.tone(96), neutral.tone(94), neutral.tone(92), neutral.tone(90),
+                    neutral.tone(87), neutral.tone(99),
+                    neutral.tone(95), neutral.tone(99), neutral.tone(92), neutral.tone(90), neutral.tone(87),
                     neutral.tone(20), neutral.tone(95), accent.tone(80),
                 )
             }
