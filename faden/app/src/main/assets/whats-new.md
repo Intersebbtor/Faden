@@ -6,6 +6,9 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.8.1
+- Comment threads are rounded at both ends, so a collapsed comment is a neat rounded panel instead of square at the bottom
+
 ## 0.8.0
 - Faden has its own look: blue with orange accents, the Figtree typeface, rounder cards and a new app icon. Prefer the old colors? Pick Classic in Settings › Theme management
 - Communities and profiles show their banner at the top of the page
