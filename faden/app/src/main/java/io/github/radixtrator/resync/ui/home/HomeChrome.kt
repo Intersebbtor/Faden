@@ -3,7 +3,6 @@
 package io.github.radixtrator.resync.ui.home
 
 import io.github.radixtrator.resync.ui.common.Symbols
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -26,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -80,12 +78,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -94,12 +90,13 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.BuildConfig
 import io.github.radixtrator.resync.data.ThemeMode
 import io.github.radixtrator.resync.data.UserWhere
 import io.github.radixtrator.resync.ui.common.AppIcons
+import io.github.radixtrator.resync.ui.common.Avatar
+import io.github.radixtrator.resync.ui.common.AvatarKind
 import io.github.radixtrator.resync.ui.common.QuickAction
 import io.github.radixtrator.resync.ui.common.QuickActionGrid
 import io.github.radixtrator.resync.ui.common.SheetHandle
@@ -618,7 +615,7 @@ private fun HomeDrawer(
                     Modifier.fillMaxWidth().clickable(onClick = onAccount).padding(horizontal = 28.dp, vertical = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Avatar(avatar, size = 48)
+                    AccountAvatar(avatar, size = 48)
                     Spacer(Modifier.width(16.dp))
                     Text(
                         me ?: t("Anonymous"),
@@ -725,21 +722,12 @@ private fun MoreFab(onClick: () -> Unit, onLongClick: () -> Unit, modifier: Modi
 @Composable
 private fun AccountButton(container: AppContainer, onClick: () -> Unit) {
     val avatar by container.avatar.collectAsStateWithLifecycle()
-    IconButton(onClick = onClick) { Avatar(avatar, size = 30) }
+    IconButton(onClick = onClick) { AccountAvatar(avatar, size = 30) }
 }
 
 @Composable
-private fun Avatar(url: String?, size: Int) {
-    Box(
-        Modifier.size(size.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (url != null) {
-            AsyncImage(model = url, contentDescription = t("Account"), contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-        } else {
-            Icon(Symbols.AccountCircle, t("Account"), modifier = Modifier.size((size * 0.8f).dp))
-        }
-    }
+private fun AccountAvatar(url: String?, size: Int) {
+    Avatar(url, "", size.dp, kind = AvatarKind.User, fallbackIcon = Symbols.AccountCircle, contentDescription = t("Account"))
 }
 
 /** The account switcher Sync shows under the avatar: accounts, add account, then profile and settings. */
@@ -769,7 +757,7 @@ private fun AccountCard(container: AppContainer, onDismiss: () -> Unit) {
             ) {
                 Column {
                     Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Avatar(avatar, size = 48)
+                        AccountAvatar(avatar, size = 48)
                         Spacer(Modifier.width(16.dp))
                         Text(
                             me ?: t("Anonymous"),
