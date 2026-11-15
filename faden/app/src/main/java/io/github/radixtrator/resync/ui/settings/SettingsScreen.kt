@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.settings
 
@@ -43,6 +43,10 @@ import androidx.compose.material.icons.outlined.Settings as SettingsGlyph
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -174,17 +178,30 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
     BackHandler(enabled = query != null) { query = null }
 
     SwipeBack(enabled = settings.swipeBack, onBack = nav::pop) {
+        // The title collapses as the page scrolls; while searching, the bar is a plain one holding the field.
+        val collapsing = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+        val pinned = TopAppBarDefaults.pinnedScrollBehavior()
+        val scrollBehavior = if (query != null) pinned else collapsing
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                TopAppBar(
-                    navigationIcon = {
-                        IconButton(onClick = { if (query != null) query = null else nav.pop() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
-                    },
-                    title = {
-                        val q = query
-                        if (q == null) {
-                            Text(category?.title ?: t("Settings"))
-                        } else {
+                val back: @Composable () -> Unit = {
+                    IconButton(onClick = { if (query != null) query = null else nav.pop() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
+                }
+                val q = query
+                if (q == null) {
+                    LargeFlexibleTopAppBar(
+                        title = { Text(category?.title ?: t("Settings")) },
+                        navigationIcon = back,
+                        actions = {
+                            if (category == null) IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Search, t("Search settings")) }
+                        },
+                        scrollBehavior = collapsing,
+                    )
+                } else {
+                    TopAppBar(
+                        navigationIcon = back,
+                        title = {
                             TextField(
                                 value = q,
                                 onValueChange = { query = it },
@@ -200,16 +217,13 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                                 modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = t("Search settings") },
                             )
                             LaunchedEffect(Unit) { focus.requestFocus() }
-                        }
-                    },
-                    actions = {
-                        when {
-                            category != null -> Unit
-                            query == null -> IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Search, t("Search settings")) }
-                            query!!.isNotEmpty() -> IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, t("Clear")) }
-                        }
-                    },
-                )
+                        },
+                        actions = {
+                            if (q.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, t("Clear")) }
+                        },
+                        scrollBehavior = pinned,
+                    )
+                }
             },
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
