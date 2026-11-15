@@ -102,7 +102,7 @@ class RedditApi(private val client: RedditClient) {
         return parsed { Parser.moreChildren(json) }
     }
 
-    suspend fun me(): Me = Parser.me(client.get("/api/v1/me"))
+    suspend fun me(): Me = client.get("/api/v1/me").let { json -> parsed { Parser.me(json) } }
 
     /** The account's subscribed communities, A–Z, with icons for Explore. */
     suspend fun subscriptions(): List<Subreddit> = mine("subscriber")
@@ -140,7 +140,8 @@ class RedditApi(private val client: RedditClient) {
         val subs = mutableListOf<Subreddit>()
         var after: String? = null
         do {
-            val page = Parser.subredditListing(client.get("/subreddits/mine/$where", mapOf("limit" to "100", "after" to after)))
+            val json = client.get("/subreddits/mine/$where", mapOf("limit" to "100", "after" to after))
+            val page = parsed { Parser.subredditListing(json) }
             subs += page.items
             after = page.after
         } while (after != null && subs.size < 1000)
@@ -205,7 +206,7 @@ class RedditApi(private val client: RedditClient) {
         return Parser.subreddit(data)
     }
 
-    suspend fun user(name: String): UserProfile = Parser.user(client.get("/user/$name/about"))
+    suspend fun user(name: String): UserProfile = client.get("/user/$name/about").let { json -> parsed { Parser.user(json) } }
 
     suspend fun trophies(name: String): List<Trophy> = Parser.trophies(client.get("/api/v1/user/$name/trophies"))
 
@@ -222,9 +223,11 @@ class RedditApi(private val client: RedditClient) {
         return parsed { Parser.profileListing(json) }
     }
 
-    suspend fun inbox(box: InboxBox, after: String?): Listing<InboxItem> =
+    suspend fun inbox(box: InboxBox, after: String?): Listing<InboxItem> {
         // mark=false: opening a box shouldn't silently mark everything read.
-        Parser.inbox(client.get("/message/${box.path}", mapOf("after" to after, "limit" to "50", "mark" to "false")))
+        val json = client.get("/message/${box.path}", mapOf("after" to after, "limit" to "50", "mark" to "false"))
+        return parsed { Parser.inbox(json) }
+    }
 
     /** [multi] ("user/feedname") searches inside a custom feed instead of a community. */
     suspend fun searchPosts(query: String, subreddit: String?, sort: SearchSort, after: String?, multi: String? = null): Listing<Post> {
@@ -248,12 +251,16 @@ class RedditApi(private val client: RedditClient) {
         return parsed { Parser.postListing(json) }.also { PostCache.putAll(it.items) }
     }
 
-    suspend fun searchSubreddits(query: String, after: String?): Listing<Subreddit> =
-        Parser.subredditListing(client.get("/subreddits/search", mapOf("q" to query, "after" to after, "limit" to "25")))
+    suspend fun searchSubreddits(query: String, after: String?): Listing<Subreddit> {
+        val json = client.get("/subreddits/search", mapOf("q" to query, "after" to after, "limit" to "25"))
+        return parsed { Parser.subredditListing(json) }
+    }
 
     /** A mod section's posts and comments (needs the "modposts" scope and moderator rights). */
-    suspend fun modListing(subreddit: String, section: ModSection, after: String?): Listing<ProfileItem> =
-        Parser.profileListing(client.get("/r/$subreddit/about/${section.path}", mapOf("after" to after, "limit" to "25", "only" to null)))
+    suspend fun modListing(subreddit: String, section: ModSection, after: String?): Listing<ProfileItem> {
+        val json = client.get("/r/$subreddit/about/${section.path}", mapOf("after" to after, "limit" to "25", "only" to null))
+        return parsed { Parser.profileListing(json) }
+    }
 
     suspend fun approve(fullname: String) {
         client.post("/api/approve", mapOf("id" to fullname))

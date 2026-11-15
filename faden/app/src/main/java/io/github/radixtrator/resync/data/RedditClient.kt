@@ -8,9 +8,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.jsonObject
 import okhttp3.Credentials
 import okhttp3.FormBody
@@ -146,9 +148,8 @@ class RedditClient(
             // Parsed off the main thread as well: a big comment thread is megabytes of JSON.
             val (code, json) = withContext(Dispatchers.IO) {
                 http.newCall(request).execute().use { response ->
-                    val body = response.body.string()
                     val ok = response.code in 200..299
-                    response.code to if (ok && body.isNotBlank()) JSON.parseToJsonElement(body) else null
+                    response.code to if (ok) decodeBody(response) else null
                 }
             }
             if (code == 401 && attempt == 0) {
@@ -159,6 +160,15 @@ class RedditClient(
             return json ?: JsonObject(emptyMap())
         }
         throw RedditException(httpError(401), 401)
+    }
+
+    /** Decodes straight from the stream (no multi-MB String); null for an empty or blank body. */
+    @OptIn(ExperimentalSerializationApi::class)
+    private fun decodeBody(response: Response): JsonElement? {
+        val source = response.body.source()
+        while (!source.exhausted() && source.peek().readByte().toInt().toChar().isWhitespace()) source.skip(1)
+        if (source.exhausted()) return null
+        return JSON.decodeFromStream(JsonElement.serializer(), source.inputStream())
     }
 
     private suspend fun accessToken(forceRefresh: Boolean): String = tokenLock.withLock {
