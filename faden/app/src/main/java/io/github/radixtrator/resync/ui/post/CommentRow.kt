@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +41,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -97,13 +105,44 @@ internal val CommentBody: TextStyle
 
 private fun railColor(level: Int) = FadenColors.Depth[(level - 1) % FadenColors.Depth.size]
 
-/** Draws a rail for every ancestor level 1..[depth], so threads read as continuous colored lines. */
-private fun Modifier.rails(depth: Int) = drawBehind {
-    val width = 2.dp.toPx()
-    for (level in 1..depth) {
-        val x = (INDENT * level).toPx()
-        drawRect(railColor(level), topLeft = Offset(x, 0f), size = Size(width, size.height))
+/**
+ * Draws a thread for every ancestor level 1..[depth] as a straight line. With [branchY] (the header's vertical centre), the
+ * comment's own level also loops into the content: the thread leaves the vertical in a quarter-circle elbow at that height and
+ * ends in a round cap just before the avatar. Verticals run butt-capped edge to edge so threads stay continuous across rows;
+ * the strokes, path and radii are built once per size.
+ */
+private fun Modifier.rails(depth: Int, branchY: Dp? = null) = if (depth < 1) this else drawWithCache {
+    val width = 2.5.dp.toPx()
+    val butt = Stroke(width)
+    val round = Stroke(width, cap = StrokeCap.Round)
+    val r = 10.dp.toPx()
+    val end = INDENT.toPx() - 2.dp.toPx() - width
+    val branch = branchY?.let { y ->
+        val cy = y.toPx()
+        // Quarter circle from the rail heading down to level heading right, then straight to the avatar.
+        Path().apply {
+            moveTo(0f, cy - r)
+            cubicTo(0f, cy - r * 0.4477f, r * 0.4477f, cy, r, cy)
+            lineTo(end.coerceAtLeast(r), cy)
+        }
     }
+    onDrawBehind {
+        for (level in 1..depth) {
+            val x = (INDENT * level).toPx() + width / 2
+            drawLine(railColor(level), Offset(x, 0f), Offset(x, size.height), strokeWidth = width)
+            if (level == depth && branch != null) {
+                translate(left = x) { drawPath(branch, railColor(level), style = round) }
+            }
+        }
+    }
+}
+
+/** The header row is 12dp down and as tall as its 22dp avatar or one line of text, whichever is more; this is its centre. */
+@Composable
+private fun headerCentre(lineHeight: TextUnit, minHeight: Dp = 22.dp): Dp {
+    val density = LocalDensity.current
+    val line = if (lineHeight.isSp) with(density) { lineHeight.toDp() } else 0.dp
+    return 12.dp + maxOf(minHeight, line) / 2
 }
 
 private fun contentStart(depth: Int): Dp = INDENT * (depth + 1)
@@ -129,11 +168,17 @@ internal fun CommentRow(
     val depth = comment.depth.coerceAtMost(MAX_DEPTH)
     val nav = LocalNavigator.current
     val display = LocalFeedDisplay.current
-    Column {
-        if (separated) Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
+    val headerY = headerCentre(MaterialTheme.typography.bodyMedium.lineHeight)
+    // A top-level thread starts as a panel: the window shows in the 8dp gap above it and in its rounded top corners.
+    val cardTop = MaterialTheme.shapes.large.copy(bottomStart = CornerSize(0.dp), bottomEnd = CornerSize(0.dp))
+    Column(if (separated) Modifier.background(MaterialTheme.colorScheme.background) else Modifier) {
+        if (separated) Spacer(Modifier.height(8.dp))
         SwipeActions(
             stages = display.commentSwipeStages,
             enabled = display.commentSwipe,
+            // Also as a modifier: with swipe off the shape isn't applied.
+            modifier = if (separated) Modifier.clip(cardTop) else Modifier,
+            shape = if (separated) cardTop else RectangleShape,
             onAction = { action ->
                 when (action) {
                     SwipeAction.UPVOTE -> onVote(if (comment.likes == true) 0 else 1)
@@ -156,7 +201,7 @@ internal fun CommentRow(
                         onClick = if (display.tapToCollapse) onToggle else onSelect,
                         onLongClick = if (display.tapToCollapse) onSelect else onToggle,
                     )
-                    .rails(depth)
+                    .rails(depth, headerY)
                     .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
             ) {
                 CommentHeader(comment, avatarUrl, collapsed, hiddenCount, isNew)
@@ -201,13 +246,14 @@ internal fun CommentRow(
 @Composable
 private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boolean, hiddenCount: Int, isNew: Boolean) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    val nameColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+    // OP's name sits on its orange pill, so it takes the pill's own content colour.
+    val nameColor = if (comment.isSubmitter) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
     val scoreColor = when (comment.likes) {
         true -> FadenColors.Upvote
         false -> FadenColors.Downvote
         null -> muted
     }
-    val opPill = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+    val opPill = MaterialTheme.colorScheme.tertiaryContainer
     val flairBackground = MaterialTheme.colorScheme.surfaceVariant
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val tag = LocalUserTags.current[comment.author.lowercase()]
@@ -281,11 +327,11 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
             Text(
                 t("New"),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier
                     .padding(start = 8.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiaryContainer)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             )
         }
@@ -308,11 +354,12 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
 @Composable
 private fun commentMarks(): Map<String, InlineTextContent> {
     val accent = MaterialTheme.colorScheme.primary
+    val op = MaterialTheme.colorScheme.tertiary
     val base = distinguishedMarks()
     val language = I18n.language
-    return remember(base, accent, language) {
+    return remember(base, accent, op, language) {
         base + mapOf(
-            "op" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Speaker, "OP", tint = accent) },
+            "op" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Speaker, "OP", tint = op) },
             "pin" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Pin, t("Pinned"), tint = accent) },
         )
     }
@@ -331,12 +378,20 @@ private fun CommentActionBar(
 ) {
     val nav = LocalNavigator.current
     val normal = MaterialTheme.colorScheme.onSurface
+    // The pill sits inset from where the comment's content starts, on the row's own panel colour, with the threads running past it.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .rails(depth)
+            .padding(start = contentStart(depth), end = 12.dp, top = 2.dp, bottom = 8.dp),
+    ) {
     Row(
         Modifier
             .fillMaxWidth()
             .height(48.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .rails(depth),
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BarToggle(AppIcons.ArrowUp, t("Upvote"), comment.likes == true, FadenColors.Upvote, normal) { onVote(if (it) 1 else 0) }
@@ -352,6 +407,7 @@ private fun CommentActionBar(
         BarButton(AppIcons.Reply, t("Reply"), normal, onReply)
         BarButton(Symbols.KeyboardArrowUp, t("Go to parent"), normal, onParent)
         BarButton(Symbols.MoreVert, t("Comment options"), normal, onMore)
+    }
     }
 }
 
@@ -377,13 +433,14 @@ private fun androidx.compose.foundation.layout.RowScope.BarToggle(
 @Composable
 internal fun MoreRow(more: MoreComments, separated: Boolean, loading: Boolean, onClick: () -> Unit) {
     val depth = more.depth.coerceAtMost(MAX_DEPTH)
+    val lineY = headerCentre(MaterialTheme.typography.bodyMedium.lineHeight, minHeight = 20.dp)
     Column {
         if (separated) Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
         Row(
             Modifier
                 .fillMaxWidth()
                 .combinedClickable(onClick = onClick)
-                .rails(depth)
+                .rails(depth, lineY)
                 .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
