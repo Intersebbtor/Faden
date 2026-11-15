@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -160,13 +162,13 @@ private fun CommentsPill(count: Int, onOpen: () -> Unit) {
     FilledTonalButton(
         onClick = onOpen,
         modifier = Modifier.height(40.dp),
-        shape = MaterialTheme.shapes.small,
-        colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest, contentColor = MaterialTheme.colorScheme.onSurface),
-        contentPadding = PaddingValues(horizontal = 12.dp),
+        shape = CircleShape,
+        colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, contentColor = MaterialTheme.colorScheme.onSurfaceVariant),
+        contentPadding = PaddingValues(horizontal = 16.dp),
     ) {
         Icon(AppIcons.Comment, t("Comments"), modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(Format.count(count, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge)
+        Spacer(Modifier.width(6.dp))
+        Text(Format.count(count, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -176,16 +178,16 @@ private fun VotePill(likes: Boolean?, score: Int, onVote: (Int) -> Unit) {
     val tint = when (likes) {
         true -> FadenColors.Upvote
         false -> FadenColors.Downvote
-        null -> MaterialTheme.colorScheme.onSurface
+        null -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     Row(
         Modifier
-            .clip(MaterialTheme.shapes.small)
-            .background(if (likes == null) MaterialTheme.colorScheme.surfaceContainerHighest else tint.copy(alpha = 0.25f)),
+            .clip(CircleShape)
+            .background(if (likes == null) MaterialTheme.colorScheme.surfaceContainerHigh else tint.copy(alpha = 0.16f)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StateToggle(likes == true, { onVote(if (it) 1 else 0) }, Symbols.KeyboardArrowUp, t("Upvote"), tint, tint, Modifier.size(40.dp))
-        Text(Format.count(score, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge, color = tint)
+        Text(Format.count(score, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = tint)
         StateToggle(likes == false, { onVote(if (it) -1 else 0) }, Symbols.KeyboardArrowDown, t("Downvote"), tint, tint, Modifier.size(40.dp))
     }
 }
