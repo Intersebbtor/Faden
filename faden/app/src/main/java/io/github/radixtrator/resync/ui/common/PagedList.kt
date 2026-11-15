@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.radixtrator.resync.i18n.t
 
 /**
  * A paged LazyColumn with loading/error/empty states and load-more near the end.
@@ -54,7 +55,7 @@ fun <T> PagedList(
     modifier: Modifier = Modifier,
     listState: LazyListState = rememberLazyListState(),
     contentPadding: PaddingValues = PaddingValues(vertical = 6.dp),
-    emptyText: String = "Nothing here yet",
+    emptyText: String = t("Nothing here yet"),
     header: (LazyListScope.() -> Unit)? = null,
     item: @Composable (T) -> Unit,
 ) {
@@ -85,9 +86,9 @@ fun <T> PagedList(
                     state.loading -> CircularProgressIndicator()
                     state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(state.error, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                        TextButton(onClick = onRetry) { Text("Retry") }
+                        TextButton(onClick = onRetry) { Text(t("Retry")) }
                     }
-                    state.endReached -> Text("You've reached the end", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    state.endReached -> Text(t("You've reached the end"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -103,11 +104,11 @@ internal fun EmptyState(state: ListingState<*>, emptyText: String, onRetry: () -
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text("Couldn't load this", style = MaterialTheme.typography.titleMedium)
+            Text(t("Couldn't load this"), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(8.dp))
             Text(state.error, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(16.dp))
-            Button(onClick = onRetry) { Text("Retry") }
+            Button(onClick = onRetry) { Text(t("Retry")) }
         }
         else -> Text(emptyText, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(32.dp))
     }
@@ -129,7 +130,7 @@ fun <T> PagedGrid(
     gridState: LazyStaggeredGridState,
     modifier: Modifier = Modifier,
     bottomPadding: Dp = 0.dp,
-    emptyText: String = "Nothing here yet",
+    emptyText: String = t("Nothing here yet"),
     preloadsOf: ((T) -> List<ImagePreload>)? = null,
     header: @Composable () -> Unit,
     item: @Composable (T) -> Unit,
@@ -172,9 +173,9 @@ fun <T> PagedGrid(
                         state.loading -> CircularProgressIndicator()
                         state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(state.error, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                            TextButton(onClick = onRetry) { Text("Retry") }
+                            TextButton(onClick = onRetry) { Text(t("Retry")) }
                         }
-                        state.endReached -> Text("You've reached the end", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        state.endReached -> Text(t("You've reached the end"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

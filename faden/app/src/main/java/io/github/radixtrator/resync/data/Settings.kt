@@ -2,12 +2,12 @@ package io.github.radixtrator.resync.data
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import io.github.radixtrator.resync.i18n.t
 
 enum class ThemeMode(private val en: String) {
     SYSTEM("Follow system"), LIGHT("Light"), DARK("Dark"), BLACK("Black (AMOLED)");

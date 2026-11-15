@@ -170,12 +170,7 @@ internal enum class ViewOption(
     SLIDE_FULL_HEIGHT("Preview full height", null, { it.slideFullHeight }, { o, v -> o.copy(slideFullHeight = v) }),
     SLIDE_FULL_WIDTH("Preview full width", null, { it.slideFullWidth }, { o, v -> o.copy(slideFullWidth = v) }),
     SLIDE_IMAGE_TOP("Preview before title", null, { it.slideImageTop }, { o, v -> o.copy(slideImageTop = v) }),
-    THICK_DIVIDER(
-        "Show a thick divider between posts",
-        "Recommended as this improves post viewability",
-        { it.thickDivider },
-        { o, v -> o.copy(thickDivider = v) },
-    ),
+    THICK_DIVIDER("Show a thick divider between posts", "Recommended as this improves post viewability", { it.thickDivider }, { o, v -> o.copy(thickDivider = v) }),
     CARD_FULL_WIDTH("Full width cards", "Single column only", { it.cardFullWidth }, { o, v -> o.copy(cardFullWidth = v) }),
     CARD_FULL_HEIGHT("Full height", null, { it.cardFullHeight }, { o, v -> o.copy(cardFullHeight = v) }),
     SAVE_BUTTON("Save", null, { it.saveButton }, { o, v -> o.copy(saveButton = v) }),

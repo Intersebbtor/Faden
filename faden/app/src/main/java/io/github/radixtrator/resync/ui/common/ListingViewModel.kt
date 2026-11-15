@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import io.github.radixtrator.resync.i18n.t
 
 data class ListingState<T>(
     val items: List<T> = emptyList(),
@@ -89,7 +90,7 @@ abstract class ListingViewModel<T>(protected val container: AppContainer) : View
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            _state.update { it.copy(loading = false, refreshing = false, error = e.message ?: "Something went wrong") }
+            _state.update { it.copy(loading = false, refreshing = false, error = e.message ?: t("Something went wrong")) }
         }
     }
 
@@ -101,7 +102,7 @@ abstract class ListingViewModel<T>(protected val container: AppContainer) : View
 
     protected fun requireLogin(): Boolean {
         if (container.username.value != null) return true
-        showMessage("Log in first")
+        showMessage(t("Log in first"))
         return false
     }
 
@@ -117,7 +118,7 @@ abstract class ListingViewModel<T>(protected val container: AppContainer) : View
         viewModelScope.launch {
             runCatching { container.api.vote(post.fullname, direction) }.onFailure { e ->
                 updatePost(post.fullname) { it.copy(likes = post.likes, score = post.score) }
-                showMessage("Vote failed: ${e.message}")
+                showMessage(t("Vote failed: {0}", e.message))
             }
         }
     }
@@ -128,7 +129,7 @@ abstract class ListingViewModel<T>(protected val container: AppContainer) : View
         viewModelScope.launch {
             runCatching { container.api.setSaved(post.fullname, !post.saved) }.onFailure { e ->
                 updatePost(post.fullname) { it.copy(saved = post.saved) }
-                showMessage("Save failed: ${e.message}")
+                showMessage(t("Save failed: {0}", e.message))
             }
         }
     }
@@ -139,10 +140,10 @@ abstract class ListingViewModel<T>(protected val container: AppContainer) : View
         updateItems { list -> list.filterNot { postOf(it)?.fullname == post.fullname } }
         viewModelScope.launch {
             runCatching { container.api.setHidden(post.fullname, true) }
-                .onSuccess { showMessage("Post hidden") }
+                .onSuccess { showMessage(t("Post hidden")) }
                 .onFailure { e ->
                     updateItems { before }
-                    showMessage("Hide failed: ${e.message}")
+                    showMessage(t("Hide failed: {0}", e.message))
                 }
         }
     }
@@ -153,7 +154,7 @@ abstract class ListingViewModel<T>(protected val container: AppContainer) : View
         viewModelScope.launch {
             runCatching { container.api.delete(post.fullname) }
                 .onSuccess { container.emit(ContentEvent.Deleted(post.fullname)) }
-                .onFailure { e -> showMessage("Delete failed: ${e.message}") }
+                .onFailure { e -> showMessage(t("Delete failed: {0}", e.message)) }
         }
     }
 }

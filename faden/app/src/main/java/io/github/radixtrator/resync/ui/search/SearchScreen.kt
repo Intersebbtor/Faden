@@ -101,6 +101,8 @@ import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.UserRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 
 class SearchPostsViewModel(container: AppContainer, query: String, private val subreddit: String?) :
     ListingViewModel<Post>(container) {
@@ -229,17 +231,17 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surface,
                 ),
-                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                 title = {
                     TextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text(if (subreddit != null && restrict) "Search r/$subreddit" else "Search Reddit") },
+                        placeholder = { Text(if (subreddit != null && restrict) t("Search r/{0}", subreddit) else t("Search Reddit")) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { submit() }),
                         trailingIcon = {
-                            if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Clear, "Clear") }
+                            if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Clear, t("Clear")) }
                         },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -256,8 +258,8 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
     ) { padding ->
         Column(Modifier.padding(padding)) {
             PrimaryTabRow(selectedTabIndex = tab) {
-                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Posts") })
-                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Communities") })
+                Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(t("Posts")) })
+                Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(t("Communities")) })
             }
             Box(Modifier.fillMaxSize()) {
                 if (tab == 0) {
@@ -266,17 +268,17 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                         key = { it.fullname },
                         onLoadMore = posts::loadMore,
                         onRetry = posts::retry,
-                        emptyText = if (searched.isBlank()) "Search for posts" else "No posts found",
+                        emptyText = if (searched.isBlank()) t("Search for posts") else t("No posts found"),
                         // Sync's large title is the quoted query, so there's no header until something is searched.
                         header = if (searched.isBlank()) null else {
                             {
                                 item(key = "header") {
-                                    LargeHeader("\"$searched\"") {
+                                    LargeHeader(t("\"{0}\"", searched)) {
                                         ChipMenu(sort.label, searchSortIcon(sort), SearchSort.entries, { it.label }, posts::setSort)
-                                        HeaderChip(if (mode == SearchMode.SEARCH) "Options" else "${mode.label}: $target", Icons.Outlined.Settings, { optionsOpen = true })
+                                        HeaderChip(if (mode == SearchMode.SEARCH) t("Options") else "${mode.label}: $target", Icons.Outlined.Settings, { optionsOpen = true })
                                         if (subreddit != null && mode == SearchMode.SEARCH) {
                                             HeaderChip(
-                                                "Only in r/$subreddit",
+                                                t("Only in r/{0}", subreddit),
                                                 if (restrict) Icons.Outlined.Check else null,
                                                 { posts.setRestrict(!restrict) },
                                                 container = if (restrict) {
@@ -297,7 +299,7 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                         key = { it.fullname },
                         onLoadMore = communities::loadMore,
                         onRetry = communities::retry,
-                        emptyText = if (query.isBlank()) "Search for communities" else "No communities found",
+                        emptyText = if (query.isBlank()) t("Search for communities") else t("No communities found"),
                     ) { sub -> CommunityRow(sub) { nav.push(FeedRoute(sub.name)) } }
                 }
             }
@@ -342,7 +344,7 @@ private fun CommunityRow(sub: Subreddit, onClick: () -> Unit) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text("r/${sub.name}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
             Text(
-                "${Format.count(sub.subscribers)} members" + if (sub.isSubscribed) " · Joined" else "",
+                tn(sub.subscribers, "{0} member", "{0} members", Format.count(sub.subscribers)) + if (sub.isSubscribed) " · " + t("Joined") else "",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -358,7 +360,7 @@ private fun CommunityRow(sub: Subreddit, onClick: () -> Unit) {
 private fun SearchSortMenu(onPick: (SearchSort) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { open = true }) { Icon(AppIcons.Sort, "Sort") }
+        IconButton(onClick = { open = true }) { Icon(AppIcons.Sort, t("Sort")) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             SearchSort.entries.forEach { sort -> DropdownMenuItem(text = { Text(sort.label) }, onClick = { open = false; onPick(sort) }) }
         }
@@ -374,13 +376,17 @@ private fun searchSortIcon(sort: SearchSort): ImageVector = when (sort) {
 }
 
 /** The modes of Sync's search Options ("Edit current") sheet. */
-private enum class OptionsMode(val label: String, val hint: String) {
+private enum class OptionsMode(private val en: String, private val enHint: String) {
     SEARCH("Search", "Search Reddit"),
     SUBREDDIT("Subreddit", "Subreddit name"),
     CUSTOM_FEED("Custom feed", "username/feedname"),
     SEARCH_SUBS("Search subs", "Search communities"),
     PROFILE("Profile", "Username"),
     DOMAIN("Domain", "example.com"),
+    ;
+
+    val label: String get() = t(en)
+    val hint: String get() = t(enHint)
 }
 
 /**
@@ -397,7 +403,7 @@ private fun SearchOptionsSheet(initial: String, onDismiss: () -> Unit, onChange:
     }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = { SheetHandle() }) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-            SheetTitle("Edit current", topPadding = 0.dp)
+            SheetTitle(t("Edit current"), topPadding = 0.dp)
             Row(
                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -416,8 +422,8 @@ private fun SearchOptionsSheet(initial: String, onDismiss: () -> Unit, onChange:
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             )
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
-                Button(onClick = { change() }, enabled = text.isNotBlank(), modifier = Modifier.weight(1f)) { Text("Change") }
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(t("Cancel")) }
+                Button(onClick = { change() }, enabled = text.isNotBlank(), modifier = Modifier.weight(1f)) { Text(t("Change")) }
             }
         }
     }

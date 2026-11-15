@@ -2,13 +2,13 @@ package io.github.radixtrator.resync.data
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import io.github.radixtrator.resync.i18n.t
 
 /**
  * What Sync's "Filter…" hides from feeds: communities, users and link domains, all lowercase, plus

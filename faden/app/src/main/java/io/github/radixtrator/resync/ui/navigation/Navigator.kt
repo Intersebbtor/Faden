@@ -26,6 +26,7 @@ import io.github.radixtrator.resync.data.ShareLinks
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import io.github.radixtrator.resync.ui.media.ScreenSnapshot
+import io.github.radixtrator.resync.i18n.t
 
 /**
  * Screen-to-screen navigation plus link handling. Provided as both LocalNavigator and LocalUriHandler,
@@ -116,7 +117,7 @@ class Navigator(
                 )
             }
         } catch (_: ActivityNotFoundException) {
-            Toast.makeText(context, "No app can open $uri", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, t("No app can open {0}", uri), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -144,7 +145,7 @@ class Navigator(
     suspend fun openRandomCommunity(api: RedditApi, nsfw: Boolean = false) {
         val pick = runCatching { api.randomCommunityPool(nsfw) }.getOrNull()?.randomOrNull()
         if (pick == null) {
-            Toast.makeText(context, "Couldn't find a random community", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, t("Couldn't find a random community"), Toast.LENGTH_SHORT).show()
         } else {
             push(FeedRoute(pick))
         }

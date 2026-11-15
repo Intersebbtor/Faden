@@ -111,6 +111,7 @@ import io.github.radixtrator.resync.ui.theme.LocalBaseFontScale
 import io.github.radixtrator.resync.ui.theme.FullSizeText
 import io.github.radixtrator.resync.ui.theme.Motion
 import io.github.radixtrator.resync.ui.theme.FadenTheme
+import io.github.radixtrator.resync.i18n.t
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -259,14 +260,14 @@ private fun FadenNavHost(
             var neverAsk by remember { mutableStateOf(false) }
             AlertDialog(
                 onDismissRequest = { confirmingExit = false },
-                title = { Text("Exit Faden?") },
+                title = { Text(t("Exit Faden?")) },
                 text = {
                     Row(
                         Modifier.clickable { neverAsk = !neverAsk },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Checkbox(checked = neverAsk, onCheckedChange = { neverAsk = it })
-                        Text("Don't ask again")
+                        Text(t("Don't ask again"))
                     }
                 },
                 confirmButton = {
@@ -274,9 +275,9 @@ private fun FadenNavHost(
                         confirmingExit = false
                         if (neverAsk) container.settings.update { it.copy(confirmExit = false) }
                         (context as? Activity)?.finish()
-                    }) { Text("Exit") }
+                    }) { Text(t("Exit")) }
                 },
-                dismissButton = { TextButton(onClick = { confirmingExit = false }) { Text("Cancel") } },
+                dismissButton = { TextButton(onClick = { confirmingExit = false }) { Text(t("Cancel")) } },
             )
         }
         UpdateNotices(container)
