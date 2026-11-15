@@ -84,6 +84,9 @@ fun ThemeManagementScreen(container: AppContainer) {
     val settings by container.settings.settings.collectAsStateWithLifecycle()
     val update = container.settings::update
     val dynamic = settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    // The color intensity while its slider is dragged: only the previews follow it, the setting is written on release.
+    var liveIntensity by remember(settings.colorIntensity) { mutableStateOf<Float?>(null) }
+    val previewSettings = liveIntensity?.let { settings.copy(colorIntensity = it) } ?: settings
     val systemDark = isSystemInDarkTheme()
     var saving by rememberSaveable { mutableStateOf(false) }
     var loading by rememberSaveable { mutableStateOf(false) }
@@ -105,8 +108,8 @@ fun ThemeManagementScreen(container: AppContainer) {
                     Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    MiniPhone(previewScheme(settings, dark = false), t("Light"), Modifier.weight(1f))
-                    MiniPhone(previewScheme(settings, dark = true), if (settings.theme == ThemeMode.BLACK) t("Black") else t("Dark"), Modifier.weight(1f))
+                    MiniPhone(previewScheme(previewSettings, dark = false), t("Light"), Modifier.weight(1f))
+                    MiniPhone(previewScheme(previewSettings, dark = true), if (settings.theme == ThemeMode.BLACK) t("Black") else t("Dark"), Modifier.weight(1f))
                 }
                 // Sync's Automatic / Manual selection buttons. Automatic is Material You where Android has it, else
                 // Faden's default palette; Manual is a hand-picked accent (the swatches below), with Color intensity.
@@ -164,7 +167,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                 ) {
                     (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
                         ThemeSwatch(
-                            scheme = fadenColorScheme(swatchDark, black = settings.theme == ThemeMode.BLACK, seed = seed, extra = settings.extraColorful, intensity = settings.colorIntensity),
+                            scheme = fadenColorScheme(swatchDark, black = settings.theme == ThemeMode.BLACK, seed = seed, extra = settings.extraColorful, intensity = previewSettings.colorIntensity),
                             selected = !dynamic && settings.seedColor == seed,
                             description = seed?.let { t("Theme color {0}", hex(it)) } ?: t("Default theme color"),
                             onClick = { update { it.copy(seedColor = seed, dynamicColor = false) } },
@@ -175,10 +178,11 @@ fun ThemeManagementScreen(container: AppContainer) {
                     // Sync's Manual setup › Color intensity: 0–2 in steps of 0.2.
                     ThemeValueSlider(
                         title = t("Color intensity"),
-                        valueLabel = "%.1f×".format(settings.colorIntensity),
+                        valueLabel = { "%.1f×".format(it) },
                         value = settings.colorIntensity,
                         range = 0f..Settings.COLOR_INTENSITY_MAX,
                         steps = 9,
+                        onChange = { liveIntensity = it },
                     ) { v -> update { it.copy(colorIntensity = v) } }
                     Toggle(t("Extra colorful"), t("Tint backgrounds and cards with the accent too"), settings.extraColorful) { v -> update { it.copy(extraColorful = v) } }
                 }
@@ -410,7 +414,7 @@ internal fun DarkOverlayRows(settings: Settings, update: ((Settings) -> Settings
     if (settings.darkOverlay) {
         ThemeValueSlider(
             title = t("Overlay darkness"),
-            valueLabel = "${(settings.darkOverlayLevel * 100).roundToInt()}%",
+            valueLabel = { "${(it * 100).roundToInt()}%" },
             value = settings.darkOverlayLevel,
             range = Settings.DARK_OVERLAY_MIN..Settings.DARK_OVERLAY_MAX,
             steps = 11,
@@ -422,20 +426,26 @@ internal fun DarkOverlayRows(settings: Settings, update: ((Settings) -> Settings
 @Composable
 private fun ThemeValueSlider(
     title: String,
-    valueLabel: String,
+    valueLabel: (Float) -> String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,
     steps: Int,
-    onChange: (Float) -> Unit,
+    onChange: (Float) -> Unit = {},
+    onCommit: (Float) -> Unit,
 ) {
+    // Dragging only moves this local value ([onChange] lets a preview follow it); the setting, which is JSON-encoded
+    // and saved whole, is written once on release.
+    var dragging by remember(value) { mutableStateOf<Float?>(null) }
+    val shown = (dragging ?: value).coerceIn(range.start, range.endInclusive)
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-            Text(valueLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(valueLabel(shown), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Slider(
-            value = value.coerceIn(range.start, range.endInclusive),
-            onValueChange = onChange,
+            value = shown,
+            onValueChange = { dragging = it; onChange(it) },
+            onValueChangeFinished = { dragging?.let(onCommit) },
             valueRange = range,
             steps = steps,
         )
