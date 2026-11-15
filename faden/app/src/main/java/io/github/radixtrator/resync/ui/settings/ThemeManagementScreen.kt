@@ -129,6 +129,8 @@ fun ThemeManagementScreen(container: AppContainer) {
                 // Where Material You exists, anything else is a manual pick: Faden's Default and Classic palettes are
                 // swatches of their own, not the absence of a choice.
                 val manual = if (canDynamic) !dynamic else settings.seedColor != null
+                // An accent swatch (not Default or Classic): only then do Color intensity and Extra colorful apply.
+                val accentPicked = !dynamic && settings.seedColor != null
                 val automatic = if (canDynamic) dynamic else settings.seedColor == null
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     SegmentedButton(
@@ -147,7 +149,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                 Text(
                     when {
                         dynamic -> t("Following your wallpaper's colors (Material You). Pick a color below to use it instead.")
-                        manual -> t("Using the color you picked below.")
+                        accentPicked -> t("Using the color you picked below.")
                         settings.palette == ThemePalette.CLASSIC -> t("Using the Classic palette, Sync's own colors.")
                         canDynamic -> t("Using Faden's default palette. Automatic follows your wallpaper's colors instead.")
                         else -> t("Using Faden's default palette: this Android version has no wallpaper colors.")
@@ -193,7 +195,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                         )
                     }
                 }
-                if (manual) {
+                if (accentPicked) {
                     // Sync's Manual setup › Color intensity: 0–2 in steps of 0.2.
                     ThemeValueSlider(
                         title = t("Color intensity"),
