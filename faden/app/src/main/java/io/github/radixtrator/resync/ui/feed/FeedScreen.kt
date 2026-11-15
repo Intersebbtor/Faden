@@ -45,6 +45,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -97,7 +98,7 @@ import io.github.radixtrator.resync.ui.common.feedColumns
 import io.github.radixtrator.resync.ui.common.distinguishedMarks
 import io.github.radixtrator.resync.ui.common.gutter
 import io.github.radixtrator.resync.ui.common.postCallbacks
-import io.github.radixtrator.resync.ui.common.rememberRedditHtml
+import io.github.radixtrator.resync.ui.common.rememberRedditText
 import io.github.radixtrator.resync.ui.common.spacing
 import io.github.radixtrator.resync.ui.common.visiblePosts
 import io.github.radixtrator.resync.ui.home.HomeTab
@@ -115,6 +116,7 @@ import io.github.radixtrator.resync.ui.theme.FadenColors
 import io.github.radixtrator.resync.ui.navigation.SettingsRoute
 import io.github.radixtrator.resync.ui.settings.SettingsCategory
 import kotlinx.coroutines.launch
+import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.tn
 
@@ -131,6 +133,8 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
     val subreddit = route.subreddit
     val nav = LocalNavigator.current
     val vm = viewModel { FeedViewModel(container, subreddit, route.domain) }
+    val linkColor = MaterialTheme.colorScheme.primary
+    SideEffect { vm.setLinkColor(linkColor) }
     val state by vm.state.collectAsStateWithLifecycle()
     val sort by vm.sort.collectAsStateWithLifecycle()
     val about by vm.about.collectAsStateWithLifecycle()
@@ -403,7 +407,8 @@ fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val flairBg = MaterialTheme.colorScheme.surfaceVariant
-    val meta = buildAnnotatedString {
+    val language = I18n.language
+    val meta = remember(comment, accent, flairBg, language) { buildAnnotatedString {
         withStyle(SpanStyle(color = accent)) { append(comment.author) }
         comment.distinguished?.takeIf { it == "moderator" || it == "admin" }?.let {
             append(" ")
@@ -428,12 +433,12 @@ fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
             )
         }
         append(" • ${Format.timeAgo(comment.createdUtc)} • ${comment.subreddit}")
-    }
+    } }
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.combinedClickable(onClick = onOpen).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(comment.postTitle, style = MaterialTheme.typography.bodyMedium, fontStyle = FontStyle.Italic)
             Text(meta, style = MaterialTheme.typography.bodyMedium, color = muted, inlineContent = distinguishedMarks())
-            RedditBodyText(rememberRedditHtml(comment.bodyHtml), MaterialTheme.typography.bodyMedium.copy(lineHeight = TextUnit.Unspecified))
+            RedditBodyText(rememberRedditText(comment.bodyHtml, footnotes = false).text, MaterialTheme.typography.bodyMedium.copy(lineHeight = TextUnit.Unspecified))
         }
     }
 }
