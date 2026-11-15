@@ -94,7 +94,7 @@ data class Comment(
 ) : CommentNode
 
 /**
- * A GIF in a comment: [id] is its media_metadata key ("giphy|abc" or an upload's id), [url] the animated
+ * A GIF or picture in a comment (the name is from when only GIFs were shown): [id] is its media_metadata key ("giphy|abc" or an upload's id), [url] the animated
  * image, [page] where Reddit links it (Giphy's page for Giphy picks).
  */
 data class CommentGif(val id: String, val url: String, val width: Int = 0, val height: Int = 0, val page: String? = null)

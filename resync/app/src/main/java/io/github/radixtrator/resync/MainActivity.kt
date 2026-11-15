@@ -53,6 +53,7 @@ import io.github.radixtrator.resync.ui.compose.ComposeScreen
 import io.github.radixtrator.resync.ui.compose.SubmitScreen
 import io.github.radixtrator.resync.ui.feed.FeedScreen
 import io.github.radixtrator.resync.ui.home.DualPaneDetail
+import io.github.radixtrator.resync.ui.home.UpdateNotices
 import io.github.radixtrator.resync.ui.home.DualPaneList
 import io.github.radixtrator.resync.ui.home.rememberDualPaneSceneStrategies
 import io.github.radixtrator.resync.ui.inbox.InboxScreen
@@ -278,6 +279,7 @@ private fun ResyncNavHost(
                 dismissButton = { TextButton(onClick = { confirmingExit = false }) { Text("Cancel") } },
             )
         }
+        UpdateNotices(container)
         val sceneStrategies = rememberDualPaneSceneStrategies()
         ScreenSnapshotHost {
         NavDisplay(

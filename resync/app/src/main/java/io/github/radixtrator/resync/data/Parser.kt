@@ -384,11 +384,11 @@ object Parser {
         }
     }
 
-    /** A comment's animated media_metadata entries (Giphy picks and uploaded GIFs). */
+    /** A comment's pictures from media_metadata: Giphy picks, uploaded GIFs and uploaded images. */
     private fun commentGifs(d: JsonObject): List<CommentGif> =
         d.obj("media_metadata")?.entries.orEmpty().mapNotNull { (id, value) ->
             val m = value as? JsonObject ?: return@mapNotNull null
-            if (m.string("e") != "AnimatedImage") return@mapNotNull null
+            if (m.string("e") != "AnimatedImage" && m.string("e") != "Image") return@mapNotNull null
             if (m.string("status").let { it != null && it != "valid" }) return@mapNotNull null
             val s = m.obj("s") ?: return@mapNotNull null
             val url = s.string("gif") ?: s.string("u") ?: return@mapNotNull null

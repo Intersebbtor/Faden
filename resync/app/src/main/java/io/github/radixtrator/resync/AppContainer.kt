@@ -21,6 +21,9 @@ import io.github.radixtrator.resync.data.NotifiedMessages
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostMemoryStore
 import io.github.radixtrator.resync.data.ThreadVisits
+import io.github.radixtrator.resync.data.AppUpdates
+import io.github.radixtrator.resync.data.VersionNotes
+import io.github.radixtrator.resync.data.WhatsNew
 import io.github.radixtrator.resync.data.RecentPostsStore
 import io.github.radixtrator.resync.data.RedditApi
 import io.github.radixtrator.resync.data.RedditClient
@@ -58,6 +61,19 @@ class AppContainer(context: Context) {
     // Stores no screen needs for the first frame load (and parse) when first used, not at launch.
     val postMemory by lazy { PostMemoryStore(prefs) }
     val threadVisits by lazy { ThreadVisits(prefs) }
+    val appUpdates by lazy { AppUpdates(prefs) }
+
+    /** Whether this install has been updated in place, rather than installed fresh at this version. */
+    val hadEarlierVersion: Boolean
+        get() = runCatching {
+            val info = appContext.packageManager.getPackageInfo(appContext.packageName, 0)
+            info.lastUpdateTime > info.firstInstallTime
+        }.getOrDefault(false)
+
+    /** whats-new.md's sections, newest first: what each version changed. */
+    val whatsNew: List<VersionNotes> by lazy {
+        runCatching { appContext.assets.open("whats-new.md").bufferedReader().use { WhatsNew.parse(it.readText()) } }.getOrDefault(emptyList())
+    }
     val explore = ExploreStore(prefs)
     val downloads by lazy { MediaDownloads(appContext) }
     val watch = WatchStore(prefs)

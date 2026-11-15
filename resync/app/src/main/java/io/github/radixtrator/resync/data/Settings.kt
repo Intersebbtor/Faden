@@ -308,6 +308,8 @@ data class Settings(
     val markNewComments: Boolean = true,
     /** Off: hold a comment to collapse it, tap it for its action bar. On: tap collapses, hold opens the bar. */
     val tapToCollapse: Boolean = false,
+    /** Ask GitHub now and then whether a newer release is out, and say so. */
+    val checkForUpdates: Boolean = true,
     val messageCheck: MessageCheck = MessageCheck.HOUR,
     /** Sync's extended swipe: drag left, and each further step arms the next of these three. */
     val postSwipe: Boolean = true,

@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.radixtrator.resync.data.CommentGif
 
-/** A comment body with its GIFs taken out of the text, and the GIFs to show under it. */
+/** A comment body with its GIFs and pictures taken out of the text, and the ones to show under it. */
 data class GifBody(val html: String, val gifs: List<CommentGif>)
 
 private val ANCHOR = Regex("""<a\s+href="([^"]*)"[^>]*>(.*?)</a>""", RegexOption.DOT_MATCHES_ALL)
@@ -29,9 +29,10 @@ private val TAG = Regex("<[^>]*>")
 private val EMPTY_PARAGRAPH = Regex("""<p>\s*</p>""")
 
 /**
- * Splits [html] into text and GIF previews. The comment's own GIFs ([gifs], from media_metadata) come out of the
- * text entirely, since Reddit only leaves a link or an image tag there. A bare link to a GIF (the link's text is
- * its URL) is swapped for a preview as well; a GIF link with words of its own keeps them and also gets a preview.
+ * Splits [html] into text and picture previews. The comment's own GIFs and images ([gifs], from media_metadata)
+ * come out of the text entirely, since Reddit only leaves a link (usually to preview.redd.it) or an image tag
+ * there. A bare link to a GIF or image (the link's text is its URL) is swapped for a preview as well; one with
+ * words of its own keeps them and also gets a preview.
  */
 fun gifBody(html: String, gifs: List<CommentGif>): GifBody {
     val previews = gifs.toMutableList()
@@ -41,7 +42,7 @@ fun gifBody(html: String, gifs: List<CommentGif>): GifBody {
         val label = inner.replace(TAG, "").replace("&amp;", "&").trim()
         val own = gifs.any { g -> href == g.page || href == g.url || g.id in href || g.id == label }
         if (own) return@replace ""
-        val gif = gifUrl(href) ?: return@replace m.value
+        val gif = gifUrl(href) ?: imageUrl(href) ?: return@replace m.value
         if (previews.none { it.url == gif }) previews += CommentGif(id = gif, url = gif)
         if (label == href || label.isEmpty()) "" else m.value
     }
@@ -79,7 +80,14 @@ fun gifUrl(link: String): String? {
     }
 }
 
-/** A comment's GIFs, playing, each at most 280dp either way; tapping one opens it in the image viewer. */
+/** A still picture a link points at: .jpg, .png and .webp links, including preview.redd.it's. */
+fun imageUrl(link: String): String? {
+    if (!link.startsWith("http")) return null
+    val path = link.substringAfter("://").substringAfter('/', "").substringBefore('?').substringBefore('#')
+    return link.takeIf { Regex("""\.(?:jpe?g|png|webp)$""", RegexOption.IGNORE_CASE).containsMatchIn(path) }
+}
+
+/** A comment's GIFs (playing) and pictures, each at most 280dp either way; tapping one opens it in the image viewer. */
 @Composable
 fun CommentGifs(gifs: List<CommentGif>, onOpen: (Int) -> Unit, modifier: Modifier = Modifier) {
     if (gifs.isEmpty()) return
@@ -91,7 +99,7 @@ fun CommentGifs(gifs: List<CommentGif>, onOpen: (Int) -> Unit, modifier: Modifie
             }
             AsyncImage(
                 model = gif.url,
-                contentDescription = "GIF",
+                contentDescription = if (gif.url.substringBefore('?').endsWith(".gif", ignoreCase = true)) "GIF" else "Image",
                 contentScale = ContentScale.Crop,
                 onSuccess = { state ->
                     val image = state.result.image

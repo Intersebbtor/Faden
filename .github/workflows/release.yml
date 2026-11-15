@@ -71,10 +71,27 @@ jobs:
             -PversionName=${{ steps.version.outputs.name }} -PversionCode=${{ steps.version.outputs.code }}
           cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/resync-${GITHUB_REF_NAME}.apk"
 
+      # The "## x.y.z" section of whats-new.md becomes the release's "What's new". The app shows the same list
+      # after an update, and its update notice reads it back from this release, so keep the heading as it is.
+      - name: Release notes
+        env:
+          VERSION: ${{ steps.version.outputs.name }}
+        run: |
+          base="${VERSION%%-*}"
+          notes=$(awk -v v="$base" '/^## / { on = ($2 == v || $2 == "v" v); next } on && /^[-*] /' app/src/main/assets/whats-new.md)
+          {
+            if [ -n "$notes" ]; then
+              printf "### What's new\n\n%s\n\n" "$notes"
+            else
+              echo "::warning::whats-new.md has no section for $base" >&2
+            fi
+            echo '**Install or update:** add `https://github.com/Radixtrator/Resync` in [Obtainium](https://github.com/ImranR98/Obtainium) to get updates automatically ([steps](https://github.com/Radixtrator/Resync#install)), or download the APK below.'
+          } > "$RUNNER_TEMP/release-notes.md"
+          cat "$RUNNER_TEMP/release-notes.md"
+
       - uses: softprops/action-gh-release@v2
         with:
           files: ${{ runner.temp }}/resync-${{ github.ref_name }}.apk
           prerelease: ${{ steps.version.outputs.prerelease == 'true' }}
-          body: |
-            **Install or update:** add `https://github.com/Radixtrator/Resync` in [Obtainium](https://github.com/ImranR98/Obtainium) to get updates automatically ([steps](https://github.com/Radixtrator/Resync#install)), or download the APK below.
+          body_path: ${{ runner.temp }}/release-notes.md
           generate_release_notes: true

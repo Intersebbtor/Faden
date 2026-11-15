@@ -3,6 +3,7 @@ package io.github.radixtrator.resync
 import io.github.radixtrator.resync.data.CommentGif
 import io.github.radixtrator.resync.ui.common.gifBody
 import io.github.radixtrator.resync.ui.common.gifUrl
+import io.github.radixtrator.resync.ui.common.imageUrl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -34,5 +35,25 @@ class CommentGifsTest {
         val split = gifBody(html, emptyList())
         assertEquals("""<p> and <a href="https://i.imgur.com/b.gif">this</a></p>""", split.html)
         assertEquals(listOf("https://i.imgur.com/a.gif", "https://i.imgur.com/b.gif"), split.gifs.map { it.url })
+    }
+
+    @Test
+    fun `uploaded images replace their preview link`() {
+        val image = CommentGif("q9f8t2abc1", "https://preview.redd.it/q9f8t2abc1.jpeg?width=1080&format=pjpg&s=abc", 1080, 720)
+        val html = """<div class="md"><p>look</p><p><a href="https://preview.redd.it/q9f8t2abc1.jpeg?width=1080&amp;format=pjpg&amp;s=abc">""" +
+            """https://preview.redd.it/q9f8t2abc1.jpeg?width=1080&amp;format=pjpg&amp;s=abc</a></p></div>"""
+        val split = gifBody(html, listOf(image))
+        assertEquals("""<div class="md"><p>look</p></div>""", split.html)
+        assertEquals(listOf(image), split.gifs)
+    }
+
+    @Test
+    fun `bare image links become previews`() {
+        assertEquals("https://i.imgur.com/a.png", imageUrl("https://i.imgur.com/a.png"))
+        assertEquals("https://i.redd.it/b.jpeg?x=1", imageUrl("https://i.redd.it/b.jpeg?x=1"))
+        assertNull(imageUrl("https://example.com/page"))
+        val split = gifBody("""<p><a href="https://i.redd.it/b.jpg">https://i.redd.it/b.jpg</a></p>""", emptyList())
+        assertEquals("", split.html)
+        assertEquals(listOf("https://i.redd.it/b.jpg"), split.gifs.map { it.url })
     }
 }

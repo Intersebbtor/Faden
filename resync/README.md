@@ -71,14 +71,18 @@ Pushing a version tag builds a signed APK and publishes it as a GitHub release
 
 ### Publishing a release
 
+First add a `## 0.2.0` section of short bullets to `app/src/main/assets/whats-new.md`. That list is the
+release's "What's new", what the app shows after updating, and what its "new version is out" notice reads back
+from the release, so write it for people using the app.
+
 ```bash
 git tag v0.2.0 && git push origin v0.2.0      # v0.2.0-beta.1 publishes a pre-release
 gh run watch                                  # follow the build
 ```
 
 The version name comes from the tag and the version code is derived from it (1.2.3 → 10203), so tags must be
-`vMAJOR.MINOR.PATCH` and keep increasing. Unit tests run before the build, and release notes are generated
-from the commits. Pre-releases are skipped by Obtainium unless "Include prereleases" is on.
+`vMAJOR.MINOR.PATCH` and keep increasing. Unit tests run before the build, and the release notes are the
+version's whats-new.md section followed by the commits since the last release. Pre-releases are skipped by Obtainium unless "Include prereleases" is on.
 
 If a run fails before publishing, fix the cause on `main`, then move the tag to the fixed commit and push it again:
 

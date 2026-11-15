@@ -108,7 +108,7 @@ object SettingsIndex {
 
             row(SettingsCategory.LINKS, "Open links in the app", "Custom Tabs instead of your browser app", "browser chrome"),
             row(SettingsCategory.LINKS, "Link cards", "Number links and list them under posts and comments"),
-            row(SettingsCategory.LINKS, "GIF previews in comments", "Play GIFs under the comments that post or link them"),
+            row(SettingsCategory.LINKS, "Pictures in comments", "Show GIFs and images under the comments that post or link them, instead of their links", "gif image photo inline preview"),
             row(SettingsCategory.LINKS, "Open Reddit links in Resync", "Links to reddit.com and redd.it from other apps open here", "default supported web"),
 
             row(SettingsCategory.HISTORY, "Mark posts as read on scroll", "Posts you scroll past in a feed count as read"),
@@ -122,6 +122,8 @@ object SettingsIndex {
 
             SettingsEntry("Reddit API", "Client ID, redirect URI, user agent", SettingsCategory.OTHER.title, { SetupRoute }, "login key"),
             row(SettingsCategory.OTHER, "Version", keywords = "about"),
+            row(SettingsCategory.OTHER, "What's new", "What changed in each version", "changelog release notes update"),
+            row(SettingsCategory.OTHER, "Check for updates", "Say when a new version is out on GitHub", "release version"),
         ) +
             FilterType.entries.map { type -> SettingsEntry(type.title, type.summary, SettingsCategory.FILTERS.title, { FilterEditorRoute(type) }, "hide block") } +
             ViewOption.entries.distinctBy { it.title }.map { view(it.title, it.summary) } +

@@ -93,6 +93,7 @@ import io.github.radixtrator.resync.data.VideoQuality
 import io.github.radixtrator.resync.notify.InboxWorker
 import io.github.radixtrator.resync.notify.Notifications
 import io.github.radixtrator.resync.ui.common.SwipeBack
+import io.github.radixtrator.resync.ui.home.WhatsNewDialog
 import io.github.radixtrator.resync.ui.navigation.CustomizeViewRoute
 import io.github.radixtrator.resync.ui.navigation.FilterEditorRoute
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
@@ -385,7 +386,7 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
         SettingsCategory.LINKS -> {
             Toggle("Open links in the app", "Custom Tabs instead of your browser app", settings.inAppBrowser) { v -> update { it.copy(inAppBrowser = v) } }
             Toggle("Link cards", "Number links and list them under posts and comments", settings.linkCards) { v -> update { it.copy(linkCards = v) } }
-            Toggle("GIF previews in comments", "Play GIFs under the comments that post or link them", settings.commentGifs) { v -> update { it.copy(commentGifs = v) } }
+            Toggle("Pictures in comments", "Show GIFs and images under the comments that post or link them, instead of their links", settings.commentGifs) { v -> update { it.copy(commentGifs = v) } }
             // Resync can't verify reddit.com as its own, so Android 12+ leaves its links off until they're allowed here.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 ListItem(
@@ -433,10 +434,18 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                 supportingContent = { Text("Client ID, redirect URI, user agent") },
                 modifier = Modifier.clickable { nav.push(SetupRoute) },
             )
+            var notesOpen by remember { mutableStateOf(false) }
             ListItem(
                 headlineContent = { Text("Version") },
                 supportingContent = { Text(BuildConfig.VERSION_NAME) },
             )
+            ListItem(
+                headlineContent = { Text("What's new") },
+                supportingContent = { Text("What changed in each version") },
+                modifier = Modifier.clickable { notesOpen = true },
+            )
+            Toggle("Check for updates", "Say when a new version is out on GitHub", settings.checkForUpdates) { v -> update { it.copy(checkForUpdates = v) } }
+            if (notesOpen) WhatsNewDialog("What's new", container.whatsNew, onDismiss = { notesOpen = false })
         }
     }
 }
