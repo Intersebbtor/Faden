@@ -15,7 +15,6 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.Font
@@ -152,41 +151,23 @@ private val Typographies by lazy {
     )
 }
 
-/**
- * Tints [base] from a hand-picked [seed], standing in for Monet's tonal palettes: accents take the seed's hue at
- * the tones Sync uses for each role, neutrals take it at low saturation ([extra]: a lot more of it). [intensity]
- * is Sync's Color intensity: it scales every saturation, 0 giving greys and 2 twice the usual colour.
- */
-private fun ColorScheme.tintedBy(seed: Color, dark: Boolean, extra: Boolean, intensity: Float): ColorScheme {
-    val hsv = FloatArray(3)
-    android.graphics.Color.colorToHSV(seed.toArgb(), hsv)
-    val hue = hsv[0]
-    val scale = intensity.coerceIn(0f, Settings.COLOR_INTENSITY_MAX)
-    val sat = (hsv[1].coerceIn(0.25f, 0.9f) * scale).coerceIn(0f, 1f)
-    fun accent(l: Float, s: Float = sat) = Color.hsl(hue, s.coerceIn(0f, 1f), l)
-    val neutralSat = ((if (extra) 0.22f else 0.06f) * scale).coerceIn(0f, 0.5f)
-    fun neutral(l: Float) = Color.hsl(hue, neutralSat, l)
-    return if (dark) {
-        copy(
-            primary = accent(0.75f), onPrimary = accent(0.15f), primaryContainer = accent(0.30f), onPrimaryContainer = accent(0.90f),
-            secondary = accent(0.80f, sat * 0.4f), onSecondary = accent(0.18f, sat * 0.4f),
-            secondaryContainer = accent(0.28f, sat * 0.4f), onSecondaryContainer = accent(0.90f, sat * 0.4f),
-            tertiary = Color.hsl((hue + 60f) % 360f, sat * 0.5f, 0.80f), tertiaryContainer = Color.hsl((hue + 60f) % 360f, sat * 0.4f, 0.28f),
-            background = neutral(0.07f), surface = neutral(0.07f), surfaceContainerLowest = neutral(0.07f),
-            surfaceContainerLow = neutral(0.10f), surfaceContainer = neutral(0.14f), surfaceContainerHigh = neutral(0.17f),
-            surfaceContainerHighest = neutral(0.20f), surfaceVariant = neutral(0.16f), outlineVariant = neutral(0.20f),
-        )
-    } else {
-        copy(
-            primary = accent(0.38f), onPrimary = Color.White, primaryContainer = accent(0.38f), onPrimaryContainer = Color.White,
-            secondary = accent(0.40f, sat * 0.4f), onSecondary = Color.White,
-            secondaryContainer = accent(0.84f, sat * 0.4f), onSecondaryContainer = accent(0.12f, sat * 0.4f),
-            tertiary = Color.hsl((hue + 60f) % 360f, sat * 0.4f, 0.40f), tertiaryContainer = Color.hsl((hue + 60f) % 360f, sat * 0.6f, 0.90f),
-            background = neutral(0.94f), surface = neutral(0.94f), surfaceContainerLowest = neutral(0.94f),
-            surfaceContainerLow = neutral(0.99f), surfaceContainer = neutral(0.90f), surfaceContainerHigh = neutral(0.88f),
-            surfaceContainerHighest = neutral(0.86f), surfaceVariant = neutral(0.95f), outlineVariant = neutral(0.80f),
-        )
-    }
+/** A [ToneScheme] as Material roles. */
+private fun ToneScheme.toColorScheme(dark: Boolean): ColorScheme {
+    val base = if (dark) darkColorScheme() else lightColorScheme()
+    return base.copy(
+        primary = Color(primary), onPrimary = Color(onPrimary), primaryContainer = Color(primaryContainer), onPrimaryContainer = Color(onPrimaryContainer),
+        inversePrimary = Color(inversePrimary), secondary = Color(secondary), onSecondary = Color(onSecondary),
+        secondaryContainer = Color(secondaryContainer), onSecondaryContainer = Color(onSecondaryContainer),
+        tertiary = Color(tertiary), onTertiary = Color(onTertiary), tertiaryContainer = Color(tertiaryContainer), onTertiaryContainer = Color(onTertiaryContainer),
+        background = Color(background), onBackground = Color(onBackground), surface = Color(surface), onSurface = Color(onSurface),
+        surfaceVariant = Color(surfaceVariant), onSurfaceVariant = Color(onSurfaceVariant), surfaceTint = Color(primary),
+        inverseSurface = Color(inverseSurface), inverseOnSurface = Color(inverseOnSurface),
+        error = Color(error), onError = Color(onError), errorContainer = Color(errorContainer), onErrorContainer = Color(onErrorContainer),
+        outline = Color(outline), outlineVariant = Color(outlineVariant),
+        surfaceDim = Color(surfaceDim), surfaceBright = Color(surfaceBright),
+        surfaceContainerLowest = Color(surfaceContainerLowest), surfaceContainerLow = Color(surfaceContainerLow), surfaceContainer = Color(surfaceContainer),
+        surfaceContainerHigh = Color(surfaceContainerHigh), surfaceContainerHighest = Color(surfaceContainerHighest),
+    )
 }
 
 /** The accent choices offered in Settings › Theme color, after "Default" (ARGB). */
@@ -206,13 +187,13 @@ private fun ColorScheme.blackened() = copy(
 )
 
 /**
- * Faden's own palette (not Material You): Sync's sampled Monet colors, tinted from [seed] (ARGB) when one is
- * picked, [extra] colorful or not, at Color [intensity], and pure black when [black] (dark only). Theme management
+ * Faden's own palette (not Material You): Sync's sampled Monet colors, or tone-based colors generated from [seed]
+ * (ARGB) when one is picked ([extra] colorful or not, at Color [intensity]), and pure black when [black] (dark only). Theme management
  * draws its previews with this too.
  */
 fun fadenColorScheme(dark: Boolean, black: Boolean, seed: Int?, extra: Boolean, intensity: Float = 1f): ColorScheme {
     val base = if (dark) DarkColors else LightColors
-    val tinted = if (seed != null) base.tintedBy(Color(seed), dark, extra, intensity) else base
+    val tinted = if (seed != null) ToneScheme.generate(seed, dark, extra, intensity).toColorScheme(dark) else base
     return if (black && dark) tinted.blackened() else tinted
 }
 
