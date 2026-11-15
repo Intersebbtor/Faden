@@ -72,6 +72,11 @@ import io.github.radixtrator.resync.ui.navigation.LocalAccount
 import io.github.radixtrator.resync.ui.navigation.LocalContainer
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
+import io.github.radixtrator.resync.ui.common.FeedDisplay
+import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
+import io.github.radixtrator.resync.ui.common.LocalMinuteClock
+import io.github.radixtrator.resync.ui.common.meteredNetworkFlow
+import io.github.radixtrator.resync.ui.common.rememberMinuteClock
 import io.github.radixtrator.resync.ui.navigation.LocalUserTagColors
 import io.github.radixtrator.resync.ui.navigation.LocalUserTags
 import io.github.radixtrator.resync.ui.navigation.LocalVisited
@@ -119,7 +124,10 @@ class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase)
         // Only fontScale is set, so every other setting still follows the device.
-        applyOverrideConfiguration(Configuration().apply { fontScale = newBase.resources.configuration.fontScale * savedBaseFontScale(newBase.getSharedPreferences("resync", Context.MODE_PRIVATE)) })
+        // The app's container already holds the settings (Application.onCreate runs first), so they're not decoded again.
+        val saved = (newBase.applicationContext as? FadenApp)?.containerOrNull?.settings?.settings?.value?.baseFontSize?.scale
+            ?: savedBaseFontScale(newBase.getSharedPreferences("resync", Context.MODE_PRIVATE))
+        applyOverrideConfiguration(Configuration().apply { fontScale = newBase.resources.configuration.fontScale * saved })
     }
 
     /** A page to open, from a tapped notification (a watched community's post, an inbox message). */
@@ -196,6 +204,11 @@ private fun FadenNavHost(
     val tagColors by container.tags.colors.collectAsStateWithLifecycle()
     val currentSettings by rememberUpdatedState(settings)
     val scope = rememberCoroutineScope()
+    // One network callback and one lowercase set of moderated communities for every feed row.
+    val metered by remember { meteredNetworkFlow(context, scope) }.collectAsStateWithLifecycle()
+    val moderated by container.moderated.collectAsStateWithLifecycle()
+    val moderatedNames = remember(moderated) { moderated.mapTo(HashSet()) { it.lowercase() } }
+    val feedDisplay = remember(settings, metered, moderatedNames) { FeedDisplay.of(settings, metered, moderatedNames) }
     val navigator = remember(backStack) {
         Navigator(context, backStack, { currentSettings }, scope, { container.configStore.load()?.userAgent ?: ApiConfig.DEFAULT_USER_AGENT })
     }
@@ -212,6 +225,8 @@ private fun FadenNavHost(
         LocalNavigator provides navigator,
         LocalUriHandler provides navigator,
         LocalSettings provides settings,
+        LocalFeedDisplay provides feedDisplay,
+        LocalMinuteClock provides rememberMinuteClock(),
         LocalAccount provides username,
         LocalVisited provides visited,
         LocalUserTags provides tags,

@@ -148,7 +148,12 @@ data class ViewOptions(
     val descriptionSize: TitleSize = TitleSize.NORMAL,
     /** Slides and Cards: the size half of Sync's "Selftext font" (`slide_selftext`, `card_selftext`), the text preview. */
     val selftextSize: TitleSize = TitleSize.NORMAL,
-)
+) {
+    companion object {
+        /** The options of a layout nobody has customized, shared so reading them allocates nothing. */
+        val DEFAULT = ViewOptions()
+    }
+}
 
 /** A [ViewOptions.columns] choice; [count] null means Faden picks from the window width. */
 enum class PostColumns(private val en: String, val count: Int?) {
@@ -409,7 +414,7 @@ data class Settings(
 
     fun sortFor(subreddit: String?): Sort? = feedSorts[feedKey(subreddit)]
 
-    fun viewOptionsFor(layout: PostLayout): ViewOptions = viewOptions[layout] ?: ViewOptions()
+    fun viewOptionsFor(layout: PostLayout): ViewOptions = viewOptions[layout] ?: ViewOptions.DEFAULT
 
     /**
      * Whether Tablet mode's dual pane shows in a window [widthDp] wide, held [landscape] or not: Sync's per-orientation

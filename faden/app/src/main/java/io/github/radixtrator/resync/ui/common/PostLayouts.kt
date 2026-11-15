@@ -70,7 +70,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.radixtrator.resync.data.ImageSource
 import io.github.radixtrator.resync.data.Post
@@ -83,11 +82,9 @@ import io.github.radixtrator.resync.data.ViewOptions
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.tn
 import io.github.radixtrator.resync.ui.navigation.LocalAccount
-import io.github.radixtrator.resync.ui.navigation.LocalContainer
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.LocalUserTagColors
 import io.github.radixtrator.resync.ui.navigation.LocalFrontpageOrAllFeed
-import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.navigation.LocalUserTags
 import io.github.radixtrator.resync.ui.navigation.rememberVisited
 import io.github.radixtrator.resync.ui.navigation.ModRoute
@@ -131,7 +128,7 @@ val PostLayout.gutter: Dp
 val PostLayout.spacing: Dp
     @Composable get() = when (this) {
         PostLayout.LIST, PostLayout.COMPACT -> 0.dp
-        PostLayout.SLIDES -> if (LocalSettings.current.viewOptionsFor(this).thickDivider) 8.dp else 0.dp
+        PostLayout.SLIDES -> if (LocalFeedDisplay.current.viewOptionsFor(this).thickDivider) 8.dp else 0.dp
         PostLayout.CARD -> if (fullWidthCards()) 8.dp else 16.dp
         PostLayout.SMALLER_CARDS, PostLayout.SMALL_CARDS -> 16.dp
     }
@@ -153,7 +150,7 @@ val PostLayout.swipeShape: Shape
 @Composable
 private fun PostLayout.fullWidthCards(): Boolean {
     if (this != PostLayout.CARD) return false
-    val options = LocalSettings.current.viewOptionsFor(this)
+    val options = LocalFeedDisplay.current.viewOptionsFor(this)
     return options.cardFullWidth && feedColumns(options) == 1
 }
 
@@ -180,10 +177,10 @@ fun PostLayout.columns(widthDp: Int, override: PostColumns = PostColumns.AUTO): 
     else -> 1
 }
 
-/** [post] drawn in [layout], honoring that layout's Customize view options ([ViewOptions]) from [LocalSettings]. */
+/** [post] drawn in [layout], honoring that layout's Customize view options ([ViewOptions]) from [LocalFeedDisplay]. */
 @Composable
 fun PostLayoutItem(layout: PostLayout, post: Post, showSubreddit: Boolean, actions: PostActions) {
-    val options = LocalSettings.current.viewOptionsFor(layout)
+    val options = LocalFeedDisplay.current.viewOptionsFor(layout)
     when (layout) {
         PostLayout.LIST -> RowPost(post, showSubreddit, actions, options, flushThumbnail = true, inCard = false)
         PostLayout.COMPACT -> RowPost(post, showSubreddit, actions, options, flushThumbnail = false, inCard = false)
@@ -319,8 +316,7 @@ private fun PostButtonIcons(post: Post, actions: PostActions, buttons: PostButto
         IconButton(onClick = share) { Icon(Icons.Outlined.Share, t("Share"), tint = tint) }
     }
     if (buttons.mod) {
-        val moderated by LocalContainer.current.moderated.collectAsStateWithLifecycle()
-        if (moderated.any { it.equals(post.subreddit, ignoreCase = true) }) {
+        if (post.subreddit.lowercase() in LocalFeedDisplay.current.moderated) {
             val modTools: () -> Unit = actions.onModTools ?: { nav.push(ModRoute(post.subreddit)) }
             IconButton(onClick = modTools) { Icon(AppIcons.Shield, t("Mod tools"), tint = tint) }
         }
@@ -339,7 +335,7 @@ private fun PostButtonIcons(post: Post, actions: PostActions, buttons: PostButto
 private fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, options: ViewOptions, flushThumbnail: Boolean, inCard: Boolean) {
     var expanded by rememberSaveable(post.fullname) { mutableStateOf(false) }
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    val short = LocalSettings.current.shortScores
+    val short = LocalFeedDisplay.current.shortScores
     Column(
         Modifier
             // Opaque so a swipe's action panel shows only where the row has slid away.
@@ -578,7 +574,7 @@ private fun CommentsPill(count: Int, onOpen: () -> Unit) {
     ) {
         Icon(AppIcons.Comment, t("Comments"), modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
-        Text(Format.count(count, LocalSettings.current.shortScores), style = MaterialTheme.typography.labelLarge)
+        Text(Format.count(count, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge)
     }
 }
 
@@ -599,7 +595,7 @@ private fun VotePill(likes: Boolean?, score: Int, onVote: (Int) -> Unit) {
         IconButton(onClick = { onVote(if (likes == true) 0 else 1) }, modifier = Modifier.size(40.dp)) {
             Icon(Icons.Default.KeyboardArrowUp, t("Upvote"), tint = tint)
         }
-        Text(Format.count(score, LocalSettings.current.shortScores), style = MaterialTheme.typography.labelLarge, color = tint)
+        Text(Format.count(score, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge, color = tint)
         IconButton(onClick = { onVote(if (likes == false) 0 else -1) }, modifier = Modifier.size(40.dp)) {
             Icon(Icons.Default.KeyboardArrowDown, t("Downvote"), tint = tint)
         }
@@ -687,7 +683,9 @@ fun PostMeta(
     val tag = LocalUserTags.current[post.author.lowercase()]
     val tagStyle = userTagStyle(post.author)
     val me = LocalAccount.current
-    val text = remember(post, showSubreddit, showAuthor, suffix, me, tag, tagStyle, accent, flairBg) { buildAnnotatedString {
+    // The age ("4h") is part of the text, so it is rebuilt when the shared clock moves on a minute.
+    val minute = LocalMinuteClock.current.value
+    val text = remember(post, showSubreddit, showAuthor, suffix, me, tag, tagStyle, accent, flairBg, minute) { buildAnnotatedString {
         if (showSubreddit) {
             withStyle(SpanStyle(color = accent)) { append(post.subreddit) }
         }
@@ -771,11 +769,11 @@ internal fun shortDomain(post: Post): String? = when {
 
 /** Post options › "Show post author", for feed items' [PostMeta]; off leaves the name and its marks out. */
 private val feedAuthors: Boolean
-    @Composable get() = LocalSettings.current.showPostAuthor
+    @Composable get() = LocalFeedDisplay.current.showPostAuthor
 
 /** The post's flair, unless Post options › Flair hides flair in feeds. */
 @Composable
-private fun Post.shownFlair(): String? = flair?.takeIf { LocalSettings.current.showPostFlair }
+private fun Post.shownFlair(): String? = flair?.takeIf { LocalFeedDisplay.current.showPostFlair }
 
 /** A rounded flair chip, tinted with the subreddit's flair color when it has one. */
 @Composable
@@ -809,7 +807,7 @@ fun PostStats(post: Post, modifier: Modifier = Modifier, style: TextStyle = Card
         false -> FadenColors.Downvote
         null -> muted
     }
-    val short = LocalSettings.current.shortScores
+    val short = LocalFeedDisplay.current.shortScores
     Column(modifier) {
         Text(points(post.score, short), style = style, color = pointsColor)
         Text(comments(post.numComments, short), style = style, color = muted)
@@ -838,13 +836,13 @@ private fun PostMedia.cardImage(): ImageSource? = when (this) {
  */
 @Composable
 fun rememberPostPreloads(layout: PostLayout, columns: Int): (Post) -> List<ImagePreload> {
-    val settings = LocalSettings.current
+    val display = LocalFeedDisplay.current
     val frontpageOrAll = LocalFrontpageOrAllFeed.current
     val saving = dataSavingActive()
     val columnWidth = LocalWindowInfo.current.containerSize.width / columns.coerceAtLeast(1)
     val density = LocalDensity.current
-    return remember(layout, settings, frontpageOrAll, saving, columnWidth, density) {
-        val options = settings.viewOptionsFor(layout)
+    return remember(layout, display, frontpageOrAll, saving, columnWidth, density) {
+        val options = display.viewOptionsFor(layout)
         val thumbnailSize = when (layout) {
             PostLayout.LIST -> if (options.thumbnails) 72.dp else null
             PostLayout.COMPACT, PostLayout.SMALLER_CARDS -> if (options.thumbnails) 64.dp else null
@@ -854,7 +852,7 @@ fun rememberPostPreloads(layout: PostLayout, columns: Int): (Post) -> List<Image
         val cards = layout == PostLayout.CARD || (layout == PostLayout.SLIDES && options.imagePreviews)
         val thumbnailPx = thumbnailSize?.let { with(density) { it.roundToPx() } }
         val preloads: (Post) -> List<ImagePreload> = { post ->
-            val decode = !post.shouldBlur(settings, frontpageOrAll)
+            val decode = !post.shouldBlur(display, frontpageOrAll)
             if (saving) emptyList() else when {
                 cards -> post.media.cardImage()?.let { image ->
                     val ratio = image.aspectRatio.coerceIn(0.5f, 2.2f)
