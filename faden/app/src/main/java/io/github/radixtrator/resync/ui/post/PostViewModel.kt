@@ -140,6 +140,8 @@ class PostViewModel(
                     }
                 }
                 _state.update {
+                    // Rows whose comment didn't change keep their instance, so a refresh doesn't recompose them.
+                    val comments = reuseEqual(it.comments, comments)
                     val folded = folds(comments, it)
                     val ids = comments.mapTo(HashSet()) { node -> node.id }
                     // A vote or save made on the post while this loaded is newer than what Reddit sent.
@@ -268,6 +270,13 @@ class PostViewModel(
     fun collapseAll() {
         _state.update { s -> s.copy(collapsed = topLevelIds(s.comments)) }
         rememberFolds()
+    }
+
+    private fun reuseEqual(old: List<CommentNode>, new: List<CommentNode>): List<CommentNode> {
+        if (old.isEmpty()) return new
+        val byId = HashMap<String, CommentNode>(old.size * 2)
+        for (node in old) byId[node.id] = node
+        return new.map { n -> byId[n.id]?.takeIf { it == n } ?: n }
     }
 
     private fun topLevelIds(nodes: List<CommentNode>): Set<String> =
