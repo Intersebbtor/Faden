@@ -39,6 +39,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -97,13 +103,44 @@ internal val CommentBody: TextStyle
 
 private fun railColor(level: Int) = FadenColors.Depth[(level - 1) % FadenColors.Depth.size]
 
-/** Draws a rail for every ancestor level 1..[depth], so threads read as continuous colored lines. */
-private fun Modifier.rails(depth: Int) = drawBehind {
-    val width = 2.dp.toPx()
-    for (level in 1..depth) {
-        val x = (INDENT * level).toPx()
-        drawRect(railColor(level), topLeft = Offset(x, 0f), size = Size(width, size.height))
+/**
+ * Draws a thread for every ancestor level 1..[depth] as a straight line. With [branchY] (the header's vertical centre), the
+ * comment's own level also loops into the content: the thread leaves the vertical in a quarter-circle elbow at that height and
+ * ends in a round cap just before the avatar. Verticals run butt-capped edge to edge so threads stay continuous across rows;
+ * the strokes, path and radii are built once per size.
+ */
+private fun Modifier.rails(depth: Int, branchY: Dp? = null) = if (depth < 1) this else drawWithCache {
+    val width = 2.5.dp.toPx()
+    val butt = Stroke(width)
+    val round = Stroke(width, cap = StrokeCap.Round)
+    val r = 10.dp.toPx()
+    val end = INDENT.toPx() - 2.dp.toPx() - width
+    val branch = branchY?.let { y ->
+        val cy = y.toPx()
+        // Quarter circle from the rail heading down to level heading right, then straight to the avatar.
+        Path().apply {
+            moveTo(0f, cy - r)
+            cubicTo(0f, cy - r * 0.4477f, r * 0.4477f, cy, r, cy)
+            lineTo(end.coerceAtLeast(r), cy)
+        }
     }
+    onDrawBehind {
+        for (level in 1..depth) {
+            val x = (INDENT * level).toPx() + width / 2
+            drawLine(railColor(level), Offset(x, 0f), Offset(x, size.height), strokeWidth = width)
+            if (level == depth && branch != null) {
+                translate(left = x) { drawPath(branch, railColor(level), style = round) }
+            }
+        }
+    }
+}
+
+/** The header row is 12dp down and as tall as its 22dp avatar or one line of text, whichever is more; this is its centre. */
+@Composable
+private fun headerCentre(lineHeight: TextUnit, minHeight: Dp = 22.dp): Dp {
+    val density = LocalDensity.current
+    val line = if (lineHeight.isSp) with(density) { lineHeight.toDp() } else 0.dp
+    return 12.dp + maxOf(minHeight, line) / 2
 }
 
 private fun contentStart(depth: Int): Dp = INDENT * (depth + 1)
@@ -129,6 +166,7 @@ internal fun CommentRow(
     val depth = comment.depth.coerceAtMost(MAX_DEPTH)
     val nav = LocalNavigator.current
     val display = LocalFeedDisplay.current
+    val headerY = headerCentre(MaterialTheme.typography.bodyMedium.lineHeight)
     Column {
         if (separated) Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
         SwipeActions(
@@ -156,7 +194,7 @@ internal fun CommentRow(
                         onClick = if (display.tapToCollapse) onToggle else onSelect,
                         onLongClick = if (display.tapToCollapse) onSelect else onToggle,
                     )
-                    .rails(depth)
+                    .rails(depth, headerY)
                     .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
             ) {
                 CommentHeader(comment, avatarUrl, collapsed, hiddenCount, isNew)
@@ -377,13 +415,14 @@ private fun androidx.compose.foundation.layout.RowScope.BarToggle(
 @Composable
 internal fun MoreRow(more: MoreComments, separated: Boolean, loading: Boolean, onClick: () -> Unit) {
     val depth = more.depth.coerceAtMost(MAX_DEPTH)
+    val lineY = headerCentre(MaterialTheme.typography.bodyMedium.lineHeight, minHeight = 20.dp)
     Column {
         if (separated) Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
         Row(
             Modifier
                 .fillMaxWidth()
                 .combinedClickable(onClick = onClick)
-                .rails(depth)
+                .rails(depth, lineY)
                 .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
