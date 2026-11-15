@@ -150,9 +150,6 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
     // Wiki, Flairs, Rules or Moderators, from a header chip or the About ⋮.
     var communitySheet by rememberSaveable { mutableStateOf<AboutAction?>(null) }
-    val explore by container.explore.state.collectAsStateWithLifecycle()
-    val watched by container.watch.watched.collectAsStateWithLifecycle()
-    val watching = vm.isCommunity && subreddit?.lowercase() in watched
     val community = about?.name ?: subreddit
     val toggleWatch = rememberWatchToggle(container) { message -> scope.launch { snackbar.showSnackbar(message) } }
     val callbacks = remember(vm) { vm.postCallbacks() }
@@ -233,6 +230,9 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
                     preloadsOf = { (it as? ProfileItem.PostItem)?.post?.let(postPreloads).orEmpty() },
                     emptyText = if (sort.kind == SortKind.COMMENTS) t("No comments here") else t("No posts here"),
                     header = {
+                        // Collected here, so a change in who's watched redraws the header and not the whole page.
+                        val watched by container.watch.watched.collectAsStateWithLifecycle()
+                        val watching = vm.isCommunity && subreddit?.lowercase() in watched
                         FeedHeader(
                             title = title,
                             about = about.takeIf { vm.isCommunity },
@@ -300,6 +300,9 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
     }
     if (viewOpen) ChangeViewSheet(container, layoutFeed, current = layout, onDismiss = { viewOpen = false })
     if (aboutOpen) {
+        val explore by container.explore.state.collectAsStateWithLifecycle()
+        val watched by container.watch.watched.collectAsStateWithLifecycle()
+        val watching = vm.isCommunity && subreddit?.lowercase() in watched
         SubredditInfoSheet(
             about = about,
             watching = watching,

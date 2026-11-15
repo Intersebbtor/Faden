@@ -183,11 +183,13 @@ fun ShellScaffold(
     var explore by rememberSaveable { mutableStateOf<ExploreMode?>(null) }
     var recentsOpen by rememberSaveable { mutableStateOf(false) }
     // Explore and Recently viewed open sheets this shell owns.
-    val moreActions = quickActions.map { action ->
-        when (action.key) {
-            ACTION_EXPLORE -> QuickAction(action.label, action.icon, action.active, action.key) { explore = ExploreMode.BROWSE }
-            ACTION_RECENTLY_VIEWED -> QuickAction(action.label, action.icon, action.active, action.key) { recentsOpen = true }
-            else -> action
+    val moreActions = remember(quickActions) {
+        quickActions.map { action ->
+            when (action.key) {
+                ACTION_EXPLORE -> QuickAction(action.label, action.icon, action.active, action.key) { explore = ExploreMode.BROWSE }
+                ACTION_RECENTLY_VIEWED -> QuickAction(action.label, action.icon, action.active, action.key) { recentsOpen = true }
+                else -> action
+            }
         }
     }
     // The nav bar and FAB slide away with the toolbar, as Sync's autohide does. Its collapsedFraction is read only
@@ -430,7 +432,10 @@ fun quickActions(
         accounts.size > 1 -> accounts[(accounts.indexOf(me) + 1).mod(accounts.size)]
         else -> null
     }
-    return buildList {
+    val language = I18n.language
+    // Built again only when something it shows or does changes, so the shell doesn't see a fresh list on every pass.
+    return remember(container, nav, me, dark, settings, context, scope, accounts, subreddit, onRefresh, onAbout, onChangeView, onScrollToTop, language) {
+    buildList {
         add(QuickAction(t("Search"), Icons.Outlined.Search, key = "Search") { nav.push(SearchRoute(subreddit = subreddit)) })
         if (me != null) add(QuickAction(t("Profile"), Icons.Outlined.Person, key = "Profile") { nav.push(UserRoute(me)) })
         add(QuickAction(t("Hide read"), Icons.Default.Check, key = "Hide read", active = settings.hideRead) {
@@ -473,6 +478,7 @@ fun quickActions(
         }
         add(QuickAction(t("Watched"), Icons.Outlined.Notifications, key = "Watched") { nav.push(SettingsRoute(SettingsCategory.MESSAGING)) })
     }.filterNot { it.key in settings.hiddenActions }
+    }
 }
 
 /**
