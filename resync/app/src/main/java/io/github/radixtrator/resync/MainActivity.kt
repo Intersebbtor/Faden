@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -102,6 +103,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
+import io.github.radixtrator.resync.data.ApiConfig
 import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.data.savedBaseFontScale
 import io.github.radixtrator.resync.ui.theme.LocalBaseFontScale
@@ -119,10 +121,16 @@ class MainActivity : ComponentActivity() {
     /** A page to open, from a tapped notification (a watched community's post, an inbox message). */
     private var openRoute by mutableStateOf<NavKey?>(null)
 
+    /** A reddit.com or redd.it link another app handed over, opened as a tap on it inside the app would be. */
+    private var openLink by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        if (savedInstanceState == null) openRoute = Notifications.routeFrom(intent)
+        if (savedInstanceState == null) {
+            openRoute = Notifications.routeFrom(intent)
+            openLink = linkFrom(intent)
+        }
         val container = (application as ResyncApp).container
         setContent {
             val settings by container.settings.settings.collectAsStateWithLifecycle()
@@ -139,7 +147,13 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                     ) {
-                        ResyncNavHost(container, openRoute, onRouteOpened = { openRoute = null })
+                        ResyncNavHost(
+                            container,
+                            openRoute,
+                            openLink,
+                            onRouteOpened = { openRoute = null },
+                            onLinkOpened = { openLink = null },
+                        )
                     }
                 }
             }
@@ -149,11 +163,20 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Notifications.routeFrom(intent)?.let { openRoute = it }
+        linkFrom(intent)?.let { openLink = it }
     }
+
+    private fun linkFrom(intent: Intent): String? = intent.takeIf { it.action == Intent.ACTION_VIEW }?.dataString
 }
 
 @Composable
-private fun ResyncNavHost(container: AppContainer, openRoute: NavKey?, onRouteOpened: () -> Unit) {
+private fun ResyncNavHost(
+    container: AppContainer,
+    openRoute: NavKey?,
+    openLink: String?,
+    onRouteOpened: () -> Unit,
+    onLinkOpened: () -> Unit,
+) {
     val backStack = rememberNavBackStack(if (container.isConfigured) homeRoute(container) else SetupRoute)
     val context = LocalContext.current
     val settings by container.settings.settings.collectAsStateWithLifecycle()
@@ -162,10 +185,17 @@ private fun ResyncNavHost(container: AppContainer, openRoute: NavKey?, onRouteOp
     val tags by container.tags.tags.collectAsStateWithLifecycle()
     val tagColors by container.tags.colors.collectAsStateWithLifecycle()
     val currentSettings by rememberUpdatedState(settings)
-    val navigator = remember(backStack) { Navigator(context, backStack, { currentSettings }) }
+    val scope = rememberCoroutineScope()
+    val navigator = remember(backStack) {
+        Navigator(context, backStack, { currentSettings }, scope, { container.configStore.load()?.userAgent ?: ApiConfig.DEFAULT_USER_AGENT })
+    }
     LaunchedEffect(openRoute) {
         if (openRoute != null && container.isConfigured) navigator.push(openRoute)
         if (openRoute != null) onRouteOpened()
+    }
+    LaunchedEffect(openLink) {
+        if (openLink != null && container.isConfigured) navigator.openUri(openLink)
+        if (openLink != null) onLinkOpened()
     }
 
     CompositionLocalProvider(

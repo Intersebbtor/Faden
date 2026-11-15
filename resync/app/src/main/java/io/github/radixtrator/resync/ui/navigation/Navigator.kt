@@ -3,6 +3,7 @@ package io.github.radixtrator.resync.ui.navigation
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.runtime.Composable
@@ -21,6 +22,9 @@ import io.github.radixtrator.resync.data.PostCache
 import io.github.radixtrator.resync.data.PostMedia
 import io.github.radixtrator.resync.data.RedditApi
 import io.github.radixtrator.resync.data.Settings
+import io.github.radixtrator.resync.data.ShareLinks
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import io.github.radixtrator.resync.ui.media.ScreenSnapshot
 
 /**
@@ -31,6 +35,10 @@ class Navigator(
     private val context: Context,
     private val backStack: MutableList<NavKey>,
     private val settings: () -> Settings,
+    /** For resolving Share links in the background. */
+    private val scope: CoroutineScope,
+    /** The user agent Reddit is asked with, which it wants to see before it answers a Share link. */
+    private val userAgent: () -> String,
     /** This is [listPane]: the navigator the feed sees while a post is open beside it. */
     private val inListPane: Boolean = false,
 ) : UriHandler {
@@ -41,7 +49,7 @@ class Navigator(
      * post instead of stacking on it, back closes the feed (and its post), and [top] is the feed.
      * Other pages (media, profiles, search...) still open over both panes, keeping the post.
      */
-    val listPane: Navigator by lazy { Navigator(context, backStack, settings, inListPane = true) }
+    val listPane: Navigator by lazy { Navigator(context, backStack, settings, scope, userAgent, inListPane = true) }
 
     val canPop: Boolean get() = backStack.size > 1
 
@@ -83,21 +91,44 @@ class Navigator(
     }
 
     override fun openUri(uri: String) {
+        if (RedditLinks.isShareLink(uri)) {
+            scope.launch {
+                val target = ShareLinks.resolve(uri, userAgent())
+                if (target == null) openExternal(uri) else RedditLinks.route(target)?.let(::push) ?: openExternal(target)
+            }
+            return
+        }
         RedditLinks.route(uri)?.let(::push) ?: openExternal(uri)
     }
 
     fun openExternal(uri: String) {
+        // Resync opens reddit.com links itself, so ones it has no page for go to a browser by name, not back here.
+        val browser = if (RedditLinks.isRedditPage(uri)) browserPackage() else null
         try {
             if (settings().inAppBrowser && uri.startsWith("http")) {
                 CustomTabsIntent.Builder().setShowTitle(true).build().apply {
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    browser?.let { intent.setPackage(it) }
                 }.launchUrl(context, uri.toUri())
             } else {
-                context.startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, uri.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).apply { browser?.let(::setPackage) },
+                )
             }
         } catch (_: ActivityNotFoundException) {
             Toast.makeText(context, "No app can open $uri", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /** The default browser, else any app that opens web pages, other than Resync. */
+    private fun browserPackage(): String? {
+        val probe = Intent(Intent.ACTION_VIEW, "https://example.com".toUri()).addCategory(Intent.CATEGORY_BROWSABLE)
+        val pm = context.packageManager
+        // With no default browser the "default" is the system's chooser, package "android".
+        pm.resolveActivity(probe, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
+            ?.takeIf { it != "android" && it != context.packageName }
+            ?.let { return it }
+        return pm.queryIntentActivities(probe, 0).map { it.activityInfo.packageName }.firstOrNull { it != context.packageName }
     }
 
     fun share(url: String, title: String) {

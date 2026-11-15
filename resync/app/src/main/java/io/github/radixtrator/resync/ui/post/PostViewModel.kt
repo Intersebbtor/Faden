@@ -78,6 +78,12 @@ class PostViewModel(
     private val settings get() = container.settings.settings.value
     private val remembering get() = settings.rememberCommentPosition
 
+    /**
+     * When this thread's comments last loaded before this visit (epoch seconds), or null on a first visit:
+     * comments posted after it are marked new. Held for the whole visit, so refreshes don't clear the marks.
+     */
+    val newSince: Long? = container.threadVisits[postId]
+
     /** Where the user left this page last time, to restore once comments load. */
     val savedPosition: PostMemory? = container.postMemory[memoryKey]?.takeIf { remembering }
 
@@ -114,6 +120,7 @@ class PostViewModel(
         _state.update { it.copy(loading = !refresh, refreshing = refresh && !quiet, error = if (quiet) it.error else null) }
         loadJob = viewModelScope.launch {
             val editsBefore = postEdits
+            val requestedAt = System.currentTimeMillis() / 1000
             try {
                 val result = container.api.comments(postId, _state.value.sort, focusCommentId, context, settings.commentCount.limit)
                 val color = withTimeoutOrNull(1_000) { linkColor.filterNotNull().first() }
@@ -140,6 +147,8 @@ class PostViewModel(
                     )
                 }
                 loadedOnce = true
+                // A single thread is only part of the post, so it doesn't count as having seen all of it.
+                if (focusCommentId == null) container.threadVisits.record(postId, requestedAt)
                 _state.value.post?.let(PostCache::put)
                 // The rest, ahead of the scroll.
                 prepareJob?.cancel()

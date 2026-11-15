@@ -31,7 +31,9 @@ import io.github.radixtrator.resync.data.RecentPostsStore
 import io.github.radixtrator.resync.data.RedditClient
 import io.github.radixtrator.resync.data.SettingsStore
 import io.github.radixtrator.resync.data.UserTags
+import io.github.radixtrator.resync.data.ThreadVisits
 import io.github.radixtrator.resync.data.VisitedStore
+import io.github.radixtrator.resync.ui.settings.SettingsIndex
 import io.github.radixtrator.resync.data.WatchStore
 import io.github.radixtrator.resync.data.WatchedCommunity
 import kotlin.test.Test
@@ -524,5 +526,33 @@ class BackupTest {
         val old = RedditClient.JSON.decodeFromString(ViewOptions.serializer(), """{"columns":"TWO"}""")
         assertEquals(PostColumns.TWO, old.columns)
         assertEquals(PostColumns.AUTO, old.coverColumns)
+    }
+
+    @Test
+    fun `thread visits keep the latest time and survive a reload`() {
+        val prefs = FakePrefs()
+        val visits = ThreadVisits(prefs)
+        assertNull(visits["abc"])
+        visits.record("abc", 100)
+        visits.record("def", 200)
+        visits.record("abc", 300)
+        val back = ThreadVisits(prefs)
+        assertEquals(300L, back["abc"])
+        assertEquals(200L, back["def"])
+    }
+
+    @Test
+    fun `settings search finds rows by title, summary and keyword`() {
+        val search = { q: String -> SettingsIndex.search(q).map { it.title } }
+        assertTrue(search("").isEmpty())
+        assertEquals("Hide AutoMod comments", search("automod").first())
+        // Every word has to match, in any field.
+        assertTrue("Mark new comments" in search("label new"))
+        assertTrue("Open Reddit links in Resync" in search("reddit links"))
+        assertTrue("Dark overlay" in search("dim"))
+        // Title matches first.
+        val theme = search("theme")
+        assertTrue(theme.indexOf("Theme color") in 0 until theme.indexOf("Material You colors"))
+        assertTrue(search("zzzz").isEmpty())
     }
 }

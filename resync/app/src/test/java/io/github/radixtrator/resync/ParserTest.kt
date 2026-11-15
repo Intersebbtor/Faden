@@ -55,6 +55,8 @@ import kotlinx.serialization.json.jsonObject
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import io.github.radixtrator.resync.data.UserWhere
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
@@ -164,6 +166,28 @@ class ParserTest {
         assertEquals(VideoRoute("https://i.imgur.com/abc.mp4", loop = true), RedditLinks.route("https://i.imgur.com/abc.gifv"))
         assertNull(RedditLinks.route("https://example.com/r/foo"))
         assertNull(RedditLinks.route("https://example.com/article"))
+    }
+
+    @Test
+    fun `web links from other apps route in app`() {
+        assertEquals(PostRoute("abc123"), RedditLinks.route("https://www.reddit.com/gallery/abc123"))
+        assertEquals(PostRoute("abc123"), RedditLinks.route("https://redd.it/abc123?utm_source=share"))
+        assertEquals(FeedRoute("pics"), RedditLinks.route("https://www.reddit.com/r/pics/top/?t=week"))
+        assertEquals(FeedRoute(), RedditLinks.route("https://www.reddit.com/"))
+        assertEquals(UserRoute("someone", UserWhere.SUBMITTED), RedditLinks.route("https://www.reddit.com/user/someone/submitted/"))
+        // Your own saved items aren't someone else's to open; the browser gets that page.
+        assertNull(RedditLinks.route("https://www.reddit.com/user/someone/saved"))
+        assertNull(RedditLinks.route("https://www.reddit.com/r/pics/wiki/index"))
+
+        assertTrue(RedditLinks.isShareLink("https://www.reddit.com/r/pics/s/AbC123xyz"))
+        assertTrue(RedditLinks.isShareLink("https://reddit.com/u/some-one/s/AbC123/"))
+        assertFalse(RedditLinks.isShareLink("https://www.reddit.com/r/pics/comments/abc123/"))
+        assertNull(RedditLinks.route("https://www.reddit.com/r/pics/s/AbC123xyz"))
+
+        assertTrue(RedditLinks.isRedditPage("https://old.reddit.com/r/pics/wiki"))
+        assertTrue(RedditLinks.isRedditPage("https://redd.it/abc"))
+        assertFalse(RedditLinks.isRedditPage("https://notreddit.com/r/pics"))
+        assertFalse(RedditLinks.isRedditPage("https://example.com/?u=https://reddit.com"))
     }
 
     @Test

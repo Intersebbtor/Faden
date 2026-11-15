@@ -150,7 +150,7 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
 }
 
 /** One switch on a View type screen, with the catalogue's title and the [ViewOptions] field it flips. */
-private enum class ViewOption(
+internal enum class ViewOption(
     val title: String,
     val summary: String?,
     val read: (ViewOptions) -> Boolean,
@@ -187,7 +187,7 @@ private enum class ViewOption(
 }
 
 /** One font size choice on a View type screen: the size half of one of Sync's font pickers. */
-private enum class ViewFontSize(
+internal enum class ViewFontSize(
     val title: String,
     val read: (ViewOptions) -> TitleSize,
     val write: (ViewOptions, TitleSize) -> ViewOptions,

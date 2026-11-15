@@ -304,6 +304,8 @@ data class Settings(
     val commentGifs: Boolean = true,
     /** Sync's "Show profile pictures": authors' avatars in comment headers instead of their initial. */
     val profilePictures: Boolean = true,
+    /** A "New" label on comments posted since you last opened the thread. */
+    val markNewComments: Boolean = true,
     val messageCheck: MessageCheck = MessageCheck.HOUR,
     /** Sync's extended swipe: drag left, and each further step arms the next of these three. */
     val postSwipe: Boolean = true,
@@ -355,6 +357,8 @@ data class Settings(
     val viewOptions: Map<PostLayout, ViewOptions> = emptyMap(),
     /** Sorts saved from the sort sheet ("Always use Hot here?"), keyed by [feedKey]; other feeds open on Reddit's default. */
     val feedSorts: Map<String, Sort> = emptyMap(),
+    /** Whether picking a sort asks to keep it for the feed. Turned off after the first answer; Post options turns it back on. */
+    val askToKeepSort: Boolean = true,
 ) {
     fun layoutFor(subreddit: String?): PostLayout = feedLayouts[feedKey(subreddit)] ?: layout
 

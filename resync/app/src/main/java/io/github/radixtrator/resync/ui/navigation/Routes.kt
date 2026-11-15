@@ -103,9 +103,24 @@ object RedditLinks {
         """^https?://(?:[\w-]+\.)?reddit\.com/(?:r/[^/]+/)?comments/([a-z0-9]+)(?:/[^/?#]*/([a-z0-9]+))?""",
         RegexOption.IGNORE_CASE,
     )
-    private val SHORT = Regex("""^https?://redd\.it/([a-z0-9]+)/?$""", RegexOption.IGNORE_CASE)
-    private val SUBREDDIT = Regex("""^https?://(?:[\w-]+\.)?reddit\.com/r/([\w+]+)/?(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
-    private val USER = Regex("""^https?://(?:[\w-]+\.)?reddit\.com/(?:u|user)/([\w-]+)/?(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
+    private val SHORT = Regex("""^https?://redd\.it/([a-z0-9]+)/?(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
+    private val GALLERY = Regex("""^https?://(?:[\w-]+\.)?reddit\.com/gallery/([a-z0-9]+)/?(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
+    /** A feed, optionally with its sort ("/r/pics/top"), which is dropped. */
+    private val SUBREDDIT = Regex(
+        """^https?://(?:[\w-]+\.)?reddit\.com/r/([\w+]+)(?:/(?:hot|new|top|rising|controversial|best))?/?(?:[?#].*)?$""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val USER = Regex("""^https?://(?:[\w-]+\.)?reddit\.com/(?:u|user)/([\w-]+)(?:/(\w+))?/?(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
+    private val FRONT_PAGE = Regex("""^https?://(?:[\w-]+\.)?reddit\.com/?(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
+    /** The app's Share links ("/r/pics/s/AbC123"), which only Reddit can turn into the permalink they stand for. */
+    private val SHARE = Regex("""^https?://(?:[\w-]+\.)?reddit\.com/(?:r|u|user)/[\w-]+/s/[a-z0-9]+/?(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
+    private val REDDIT_HOST = Regex("""^https?://(?:(?:[\w-]+\.)?reddit\.com|redd\.it)(?:[/?#:].*)?$""", RegexOption.IGNORE_CASE)
+
+    /** A Share link, to resolve with [io.github.radixtrator.resync.data.ShareLinks] before [route]. */
+    fun isShareLink(url: String): Boolean = SHARE.matches(url)
+
+    /** Pages on reddit.com or redd.it, which Resync is set up to open, so a browser has to be asked for by name. */
+    fun isRedditPage(url: String): Boolean = REDDIT_HOST.matches(url)
     private val REDDIT_VIDEO = Regex("""^https?://v\.redd\.it/([a-z0-9]+)/?$""", RegexOption.IGNORE_CASE)
     private val IMAGE = Regex("""^https?://[^?#]+\.(?:jpe?g|png|gif|webp)(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
     private val GIFV = Regex("""^(https?://[^?#]+)\.gifv(?:[?#].*)?$""", RegexOption.IGNORE_CASE)
@@ -114,8 +129,15 @@ object RedditLinks {
     fun route(url: String): NavKey? {
         POST.find(url)?.let { m -> return PostRoute(m.groupValues[1], m.groupValues[2].ifEmpty { null }, context = if (m.groupValues[2].isEmpty()) 0 else 3) }
         SHORT.find(url)?.let { return PostRoute(it.groupValues[1]) }
+        GALLERY.find(url)?.let { return PostRoute(it.groupValues[1]) }
         SUBREDDIT.find(url)?.let { return FeedRoute(it.groupValues[1]) }
-        USER.find(url)?.let { return UserRoute(it.groupValues[1]) }
+        USER.find(url)?.let { m ->
+            val section = m.groupValues[2]
+            if (section.isEmpty()) return UserRoute(m.groupValues[1])
+            // A profile section ("/user/x/submitted"); other pages under a profile aren't in the app.
+            UserWhere.entries.firstOrNull { it.path.equals(section, ignoreCase = true) && !it.ownOnly }?.let { return UserRoute(m.groupValues[1], it) }
+        }
+        if (FRONT_PAGE.matches(url)) return FeedRoute()
         REDDIT_VIDEO.find(url)?.let { return VideoRoute("https://v.redd.it/${it.groupValues[1]}/HLSPlaylist.m3u8") }
         GIFV.find(url)?.let { return VideoRoute(it.groupValues[1] + ".mp4", loop = true) }
         if (Redgifs.id(url) != null) return VideoRoute(url, loop = true)

@@ -20,6 +20,7 @@ import io.github.radixtrator.resync.data.MediaDownloads
 import io.github.radixtrator.resync.data.NotifiedMessages
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostMemoryStore
+import io.github.radixtrator.resync.data.ThreadVisits
 import io.github.radixtrator.resync.data.RecentPostsStore
 import io.github.radixtrator.resync.data.RedditApi
 import io.github.radixtrator.resync.data.RedditClient
@@ -56,6 +57,7 @@ class AppContainer(context: Context) {
     val visited = VisitedStore(prefs)
     // Stores no screen needs for the first frame load (and parse) when first used, not at launch.
     val postMemory by lazy { PostMemoryStore(prefs) }
+    val threadVisits by lazy { ThreadVisits(prefs) }
     val explore = ExploreStore(prefs)
     val downloads by lazy { MediaDownloads(appContext) }
     val watch = WatchStore(prefs)

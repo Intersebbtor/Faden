@@ -215,6 +215,9 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
     val readerState by reader.state.collectAsStateWithLifecycle()
     val surface = MaterialTheme.colorScheme.surfaceContainerLow
     val settings = LocalSettings.current
+    val account = LocalAccount.current
+    // Comments posted since the last visit, other than your own, get a "New" label.
+    val newSince = vm.newSince.takeIf { settings.markNewComments }
     val linkColor = MaterialTheme.colorScheme.primary
     SideEffect { vm.setLinkColor(linkColor) }
     // Sync's Tablet › "Tabbed comments": Post | Comments tabs instead of one scroll. The comments list then
@@ -434,6 +437,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                     avatarUrl = node.authorFullname?.let { avatars[it] }.takeIf { showAvatars },
                                     collapsed = node.id in state.collapsed,
                                     hiddenCount = row.hiddenCount,
+                                    isNew = newSince != null && node.createdUtc > newSince && !node.author.equals(account, ignoreCase = true),
                                     separated = separated,
                                     selected = selected == node.id,
                                     onToggle = {
@@ -659,6 +663,7 @@ private fun CommentRow(
     avatarUrl: String?,
     collapsed: Boolean,
     hiddenCount: Int,
+    isNew: Boolean,
     separated: Boolean,
     selected: Boolean,
     onToggle: () -> Unit,
@@ -699,7 +704,7 @@ private fun CommentRow(
                     .rails(depth)
                     .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
             ) {
-                CommentHeader(comment, avatarUrl, collapsed, hiddenCount)
+                CommentHeader(comment, avatarUrl, collapsed, hiddenCount, isNew)
                 // Collapsing a reply chain keeps the comment itself readable (Sync's default); a lone
                 // comment folds to its header.
                 if (!collapsed || hiddenCount > 0) {
@@ -734,9 +739,12 @@ private fun CommentRow(
     }
 }
 
-/** "avatar username [marks] [flair] 859 points • 4h", OP's name in a rounded tinted pill, "+N" when folded. */
+/**
+ * "avatar username [marks] [flair] 859 points • 4h", OP's name in a rounded tinted pill, "New" when posted since
+ * the last visit, "+N" when folded.
+ */
 @Composable
-private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boolean, hiddenCount: Int) {
+private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boolean, hiddenCount: Int, isNew: Boolean) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val nameColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
     val scoreColor = when (comment.likes) {
@@ -809,6 +817,19 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
                     )
                 },
         )
+        // Beside the header line rather than in it, where long flair could cut it off.
+        if (isNew) {
+            Text(
+                "New",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.tertiaryContainer)
+                    .padding(horizontal = 8.dp, vertical = 2.dp),
+            )
+        }
         if (collapsed && hiddenCount > 0) {
             Text(
                 "+$hiddenCount",

@@ -35,7 +35,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -110,6 +112,8 @@ import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.navigation.isFrontpageOrAll
 import io.github.radixtrator.resync.ui.navigation.PostRoute
 import io.github.radixtrator.resync.ui.theme.ResyncColors
+import io.github.radixtrator.resync.ui.navigation.SettingsRoute
+import io.github.radixtrator.resync.ui.settings.SettingsCategory
 import kotlinx.coroutines.launch
 
 @Composable
@@ -259,26 +263,37 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
         }
     }
 
-    // A sort other than the one this feed opens on asks whether to keep it ("Always use Hot for Frontpage?").
+    // A sort other than the one this feed opens on asks whether to keep it ("Always use Hot for Frontpage?"), but
+    // only until the first answer; after that a snackbar points to the setting that brings the question back.
     var offerToSave by remember { mutableStateOf<Sort?>(null) }
+    fun remindOfSetting(message: String) {
+        scope.launch {
+            val result = snackbar.showSnackbar(message, actionLabel = "Settings", duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) nav.push(SettingsRoute(SettingsCategory.POSTS))
+        }
+    }
     if (sortOpen) {
         SortSheet(current = sort, options = vm.sortOptions, onDismiss = { sortOpen = false }, onPick = { picked ->
             vm.setSort(picked)
-            if (picked != (settings.sortFor(vm.feedKey) ?: vm.openingSort)) offerToSave = picked
+            if (picked != (settings.sortFor(vm.feedKey) ?: vm.openingSort)) {
+                if (settings.askToKeepSort) offerToSave = picked else remindOfSetting("Sorted by ${picked.label} for now. To keep sorts, turn on \"Ask to keep a new sort\".")
+            }
         })
     }
     offerToSave?.let { picked ->
+        // Any answer, even closing the dialog, stops the question coming back every time.
+        val answered = { keep: Boolean ->
+            if (keep) vm.saveSort(picked)
+            offerToSave = null
+            container.settings.update { it.copy(askToKeepSort = false) }
+            remindOfSetting("Won't ask again. Settings › Post options › \"Ask to keep a new sort\" turns it back on.")
+        }
         AlertDialog(
-            onDismissRequest = { offerToSave = null },
+            onDismissRequest = { answered(false) },
             title = { Text("Always use ${picked.label}?") },
-            text = { Text("Open $title sorted by ${picked.label} from now on.") },
-            confirmButton = {
-                TextButton(onClick = {
-                    vm.saveSort(picked)
-                    offerToSave = null
-                }) { Text("Always") }
-            },
-            dismissButton = { TextButton(onClick = { offerToSave = null }) { Text("Just this time") } },
+            text = { Text("Open $title sorted by ${picked.label} from now on. This is only asked once; you can turn the question back on in Settings › Post options.") },
+            confirmButton = { TextButton(onClick = { answered(true) }) { Text("Always") } },
+            dismissButton = { TextButton(onClick = { answered(false) }) { Text("Just this time") } },
         )
     }
     if (viewOpen) ChangeViewSheet(container, layoutFeed, current = layout, onDismiss = { viewOpen = false })
