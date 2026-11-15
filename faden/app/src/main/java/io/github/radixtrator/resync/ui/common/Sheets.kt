@@ -8,7 +8,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -164,13 +163,14 @@ fun OptionRow(
 }
 
 /**
- * One button in Sync's More actions grid. [active] marks a toggle that's on (e.g. Dark mode). [label] is shown as
+ * One button in Sync's More actions grid. [active] is null for a plain action and says whether a toggle is on
+ * (e.g. Dark mode), which also exposes it to accessibility as a switch. [label] is shown as
  * given (already translated); [key] names the action for settings that persist it, and stays English.
  */
 class QuickAction(
     val label: String,
     val icon: ImageVector,
-    val active: Boolean = false,
+    val active: Boolean? = null,
     val key: String = label,
     val onClick: () -> Unit,
 )
@@ -186,10 +186,19 @@ fun QuickActionGrid(actions: List<QuickAction>, onPicked: () -> Unit, modifier: 
                         Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(16.dp))
-                            .combinedClickable(onClick = {
-                                onPicked()
-                                action.onClick()
-                            })
+                            .then(
+                                if (action.active != null) {
+                                    Modifier.toggleable(action.active, role = Role.Switch, onValueChange = {
+                                        onPicked()
+                                        action.onClick()
+                                    })
+                                } else {
+                                    Modifier.clickable(role = Role.Button, onClick = {
+                                        onPicked()
+                                        action.onClick()
+                                    })
+                                },
+                            )
                             .padding(vertical = 8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
@@ -198,7 +207,7 @@ fun QuickActionGrid(actions: List<QuickAction>, onPicked: () -> Unit, modifier: 
                                 .size(56.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (action.active) MaterialTheme.colorScheme.secondaryContainer
+                                    if (action.active == true) MaterialTheme.colorScheme.secondaryContainer
                                     else MaterialTheme.colorScheme.surfaceContainerHighest,
                                 ),
                             contentAlignment = Alignment.Center,
