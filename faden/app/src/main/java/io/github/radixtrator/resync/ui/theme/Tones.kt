@@ -138,12 +138,15 @@ class ToneScheme(
         /** Faden's own blue, the launcher icon's: the palette when no accent is picked. */
         const val FADEN_SEED = 0xFF2F5BD3.toInt()
 
+        /** The upvote orange: the default palette's tertiary hue and chroma, and its signature accent. */
+        private const val FADEN_ORANGE = 0xFFFF7500.toInt()
+
         private const val ERROR_HUE = 27f
         private const val ERROR_CHROMA = 0.19f
 
         /**
          * The scheme for [seed] (ARGB). The accent palette has the seed's hue and chroma, the secondary a third of
-         * it, the tertiary half of it at hue +60; neutrals are the seed's hue at very low chroma ([extra]: a lot
+         * it, the tertiary half of it at hue +60 (Faden's default: the upvote orange's); neutrals are the seed's hue at very low chroma ([extra]: a lot
          * more of it, so backgrounds and cards are visibly tinted). [intensity] scales every chroma: 0 gives greys,
          * 2 twice the colour. [fadenDefault] is Faden's own palette: neutrals about 2.5 times as tinted, so surfaces
          * read as cool blue rather than grey.
@@ -154,7 +157,14 @@ class ToneScheme(
             val chroma = lch.chroma.coerceIn(0.08f, 0.30f)
             val accent = Tones.Palette(lch.hue, chroma * scale)
             val secondary = Tones.Palette(lch.hue, chroma / 3 * scale)
-            val tertiary = Tones.Palette((lch.hue + 60f) % 360f, chroma / 2 * scale)
+            val tertiary = if (fadenDefault) {
+                val orange = Tones.lchOf(FADEN_ORANGE)
+                Tones.Palette(orange.hue, orange.chroma * scale)
+            } else {
+                Tones.Palette((lch.hue + 60f) % 360f, chroma / 2 * scale)
+            }
+            // Faden's tertiaryContainer is the orange itself, in both modes (it is the FAB); a picked accent's is a pale tone-90 / deep tone-30.
+            val tertiaryContainerTone = if (fadenDefault) 65 else if (dark) 30 else 90
             val neutralChroma = if (extra) 0.035f else if (fadenDefault) 0.026f else 0.010f
             val variantChroma = if (extra) 0.050f else if (fadenDefault) 0.045f else 0.018f
             val neutral = Tones.Palette(lch.hue, neutralChroma * scale)
@@ -164,7 +174,7 @@ class ToneScheme(
                 ToneScheme(
                     accent.tone(80), accent.tone(20), accent.tone(30), accent.tone(90),
                     secondary.tone(80), secondary.tone(20), secondary.tone(30), secondary.tone(90),
-                    tertiary.tone(80), tertiary.tone(20), tertiary.tone(30), tertiary.tone(90),
+                    tertiary.tone(80), tertiary.tone(20), tertiary.tone(tertiaryContainerTone), tertiary.tone(if (fadenDefault) 10 else 90),
                     error.tone(80), error.tone(20), error.tone(30), error.tone(90),
                     neutral.tone(6), neutral.tone(90), neutral.tone(6), neutral.tone(90),
                     variant.tone(30), variant.tone(80), variant.tone(60), variant.tone(30),
@@ -176,7 +186,7 @@ class ToneScheme(
                 ToneScheme(
                     accent.tone(40), accent.tone(100), accent.tone(90), accent.tone(10),
                     secondary.tone(40), secondary.tone(100), secondary.tone(90), secondary.tone(10),
-                    tertiary.tone(40), tertiary.tone(100), tertiary.tone(90), tertiary.tone(10),
+                    tertiary.tone(40), tertiary.tone(100), tertiary.tone(tertiaryContainerTone), tertiary.tone(10),
                     error.tone(40), error.tone(100), error.tone(90), error.tone(10),
                     // The app's surfaces are a window with lighter cards on it (cards, sheets and chips are
                     // surfaceContainerLow), then the nav bar and selected rows a step darker than the window. M3's

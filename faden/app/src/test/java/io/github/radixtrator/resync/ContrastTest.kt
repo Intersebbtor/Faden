@@ -67,6 +67,24 @@ class ContrastTest {
     }
 
     @Test
+    fun defaultPaletteMeetsContrastIncludingTertiary() {
+        for (dark in listOf(false, true)) {
+            val s = fadenColorScheme(dark, black = false, seed = null, extra = false)
+            val mode = if (dark) "dark" else "light"
+            val checks = listOfNotNull(
+                need("onPrimary/primary", s.onPrimary, s.primary, 4.5),
+                need("onPrimaryContainer/primaryContainer", s.onPrimaryContainer, s.primaryContainer, 4.5),
+                need("onTertiary/tertiary", s.onTertiary, s.tertiary, 4.5),
+                need("onTertiaryContainer/tertiaryContainer", s.onTertiaryContainer, s.tertiaryContainer, 4.5),
+                need("onSurface/surfaceContainerLow", s.onSurface, s.surfaceContainerLow, 7.0),
+                need("onSurfaceVariant/surfaceContainerLow", s.onSurfaceVariant, s.surfaceContainerLow, 4.5),
+                need("primary/surfaceContainerLow", s.primary, s.surfaceContainerLow, 3.0),
+            )
+            assertTrue(checks.isEmpty(), "default $mode: " + checks.joinToString("; "))
+        }
+    }
+
+    @Test
     fun depthRailsStandOutOnCards() {
         for (dark in listOf(false, true)) {
             val card = fadenColorScheme(dark, black = false, seed = null, extra = false).surfaceContainerLow
