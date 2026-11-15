@@ -345,7 +345,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                 onStop = reader::stop,
                                 onReadReplies = { on ->
                                     container.settings.update { it.copy(readerReplies = on) }
-                                    state.post?.let { post -> reader.replaceItems(readerQueue(post, state.comments, ::plainText, replies = on)) }
+                                    state.post?.let { post -> scope.launch { reader.replaceItems(buildReaderQueue(post, state.comments, ::plainText, replies = on)) } }
                                 },
                                 onSpeechRate = { rate -> container.settings.update { it.copy(readerSpeechRate = rate) } },
                             )
@@ -536,7 +536,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                             reader.stop()
                         } else {
                             container.readAloud.stop()
-                            reader.start(readerQueue(post, state.comments, ::plainText, replies = settings.readerReplies))
+                            scope.launch { reader.start(buildReaderQueue(post, state.comments, ::plainText, replies = settings.readerReplies)) }
                         }
                     },
                 ) + remember(post, state.comments) { commentActionExtras(post, state.comments, nav) },
@@ -765,7 +765,8 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val tag = LocalUserTags.current[comment.author.lowercase()]
     val tagStyle = userTagStyle(comment.author)
-    val text = buildAnnotatedString {
+    val language = I18n.language
+    val text = remember(comment, nameColor, muted, scoreColor, flairBackground, tag, tagStyle, language) { buildAnnotatedString {
         withStyle(SpanStyle(color = nameColor)) { append(comment.author) }
         tag?.let {
             append(" ")
@@ -797,6 +798,22 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
             append(" • ${Format.timeAgo(comment.createdUtc)}")
             if (comment.edited) append("*")
         }
+    } }
+    // A span background can't round its corners, so the OP pill is drawn under the name.
+    val pill = remember(comment.isSubmitter, comment.author, opPill) {
+        Modifier.drawBehind {
+            val result = layout ?: return@drawBehind
+            if (!comment.isSubmitter || comment.author.isEmpty()) return@drawBehind
+            val first = result.getBoundingBox(0)
+            val last = result.getBoundingBox(comment.author.length - 1)
+            val pad = 4.dp.toPx()
+            drawRoundRect(
+                opPill,
+                topLeft = Offset(first.left - pad, first.top),
+                size = Size(last.right - first.left + 2 * pad, first.height),
+                cornerRadius = CornerRadius(6.dp.toPx()),
+            )
+        }
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         UserAvatar(comment.author, avatarUrl, 22.dp)
@@ -808,22 +825,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
             overflow = TextOverflow.Ellipsis,
             inlineContent = commentMarks(),
             onTextLayout = { layout = it },
-            modifier = Modifier
-                .weight(1f)
-                .drawBehind {
-                    // A span background can't round its corners, so the pill is drawn under the name.
-                    val result = layout ?: return@drawBehind
-                    if (!comment.isSubmitter || comment.author.isEmpty()) return@drawBehind
-                    val first = result.getBoundingBox(0)
-                    val last = result.getBoundingBox(comment.author.length - 1)
-                    val pad = 4.dp.toPx()
-                    drawRoundRect(
-                        opPill,
-                        topLeft = Offset(first.left - pad, first.top),
-                        size = Size(last.right - first.left + 2 * pad, first.height),
-                        cornerRadius = CornerRadius(6.dp.toPx()),
-                    )
-                },
+            modifier = Modifier.weight(1f).then(pill),
         )
         // Beside the header line rather than in it, where long flair could cut it off.
         if (isNew) {
@@ -857,10 +859,14 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
 @Composable
 private fun commentMarks(): Map<String, InlineTextContent> {
     val accent = MaterialTheme.colorScheme.primary
-    return distinguishedMarks() + mapOf(
-        "op" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Speaker, "OP", tint = accent) },
-        "pin" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Pin, t("Pinned"), tint = accent) },
-    )
+    val base = distinguishedMarks()
+    val language = I18n.language
+    return remember(base, accent, language) {
+        base + mapOf(
+            "op" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Speaker, "OP", tint = accent) },
+            "pin" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Pin, t("Pinned"), tint = accent) },
+        )
+    }
 }
 
 /** Sync's long-press bar: upvote, downvote, save, profile, reply, go to parent, more. */

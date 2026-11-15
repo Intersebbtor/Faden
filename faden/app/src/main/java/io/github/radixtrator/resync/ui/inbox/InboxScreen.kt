@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +36,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,7 +69,7 @@ import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.SheetHandle
 import io.github.radixtrator.resync.ui.common.SheetTitle
 import io.github.radixtrator.resync.ui.common.SwipeBack
-import io.github.radixtrator.resync.ui.common.rememberRedditHtml
+import io.github.radixtrator.resync.ui.common.rememberRedditText
 import io.github.radixtrator.resync.ui.home.HomeTab
 import io.github.radixtrator.resync.ui.home.ShellScaffold
 import io.github.radixtrator.resync.ui.home.quickActions
@@ -94,6 +96,7 @@ class InboxViewModel(container: AppContainer) : ListingViewModel<InboxItem>(cont
 
     override suspend fun fetch(after: String?): Listing<InboxItem> = container.api.inbox(_box.value, after)
     override fun keyOf(item: InboxItem) = item.fullname
+    override fun bodiesOf(item: InboxItem) = listOf(item.bodyHtml)
 
     fun setBox(box: InboxBox) {
         if (box == _box.value) return
@@ -122,6 +125,8 @@ class InboxViewModel(container: AppContainer) : ListingViewModel<InboxItem>(cont
 fun InboxScreen(route: InboxRoute, container: AppContainer) {
     val nav = LocalNavigator.current
     val vm = viewModel { InboxViewModel(container) }
+    val linkColor = MaterialTheme.colorScheme.primary
+    SideEffect { vm.setLinkColor(linkColor) }
     val state by vm.state.collectAsStateWithLifecycle()
     val box by vm.box.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -259,7 +264,7 @@ private fun InboxRow(item: InboxItem, sent: Boolean, onOpen: () -> Unit, onReply
         )
         item.postTitle?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         RedditBodyText(
-            rememberRedditHtml(item.bodyHtml),
+            rememberRedditText(item.bodyHtml, footnotes = false).text,
             MaterialTheme.typography.bodyMedium,
             maxLines = if (expanded || item.isComment) Int.MAX_VALUE else 3,
             overflow = TextOverflow.Ellipsis,

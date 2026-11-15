@@ -69,6 +69,11 @@ class PostViewModel(
 
         /** Comments built before the page shows them: more than fit on a tall screen. */
         private const val FIRST_SCREEN = 30
+
+        /** Icons fetched from /about for communities the user isn't subscribed to: a small LRU, by lowercase name. */
+        private val fetchedIcons = object : LinkedHashMap<String, String>(32, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, String>) = size > 64
+        }
     }
 
     // A post already seen in a listing draws at once; the comments load under it.
@@ -135,6 +140,8 @@ class PostViewModel(
                     }
                 }
                 _state.update {
+                    // Rows whose comment didn't change keep their instance, so a refresh doesn't recompose them.
+                    val comments = reuseEqual(it.comments, comments)
                     val folded = folds(comments, it)
                     val ids = comments.mapTo(HashSet()) { node -> node.id }
                     // A vote or save made on the post while this loaded is newer than what Reddit sent.
@@ -265,6 +272,13 @@ class PostViewModel(
         rememberFolds()
     }
 
+    private fun reuseEqual(old: List<CommentNode>, new: List<CommentNode>): List<CommentNode> {
+        if (old.isEmpty()) return new
+        val byId = HashMap<String, CommentNode>(old.size * 2)
+        for (node in old) byId[node.id] = node
+        return new.map { n -> byId[n.id]?.takeIf { it == n } ?: n }
+    }
+
     private fun topLevelIds(nodes: List<CommentNode>): Set<String> =
         nodes.filter { it is Comment && it.depth == 0 }.mapTo(HashSet()) { it.id }
 
@@ -306,8 +320,18 @@ class PostViewModel(
 
     private fun loadSubredditIcon(subreddit: String) {
         iconRequested = true
+        val key = subreddit.lowercase()
+        // Subscribed and moderated communities already have theirs, and earlier visits' lookups are kept.
+        val known = container.subredditIcons.value[key] ?: fetchedIcons[key]
+        if (known != null) {
+            _subredditIcon.value = known
+            return
+        }
         viewModelScope.launch {
-            runCatching { container.api.subredditAbout(subreddit) }.onSuccess { _subredditIcon.value = it.iconUrl }
+            runCatching { container.api.subredditAbout(subreddit) }.onSuccess { about ->
+                about.iconUrl?.let { synchronized(fetchedIcons) { fetchedIcons[key] = it } }
+                _subredditIcon.value = about.iconUrl
+            }
         }
     }
 

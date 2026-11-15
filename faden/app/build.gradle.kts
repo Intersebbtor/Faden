@@ -111,6 +111,7 @@ dependencies {
     implementation(libs.coil.gif)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.datasource.okhttp)
     implementation(libs.media3.ui)
     implementation(libs.androidx.browser)
     implementation(libs.okhttp)

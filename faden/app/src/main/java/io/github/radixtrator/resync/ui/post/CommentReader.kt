@@ -11,9 +11,11 @@ import android.widget.Toast
 import io.github.radixtrator.resync.data.Comment
 import io.github.radixtrator.resync.data.CommentNode
 import io.github.radixtrator.resync.data.Post
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 
 /** One stop of the comment reader: [label] for the player bar, [text] for the speech engine. */
 data class ReaderItem(val label: String, val text: String)
@@ -44,6 +46,14 @@ fun readerQueue(
         }
     }
 }
+
+/** [readerQueue] built on a background thread: turning every comment's HTML into text is too much to do on main. */
+suspend fun buildReaderQueue(
+    post: Post,
+    comments: List<CommentNode>,
+    plain: (html: String?, fallback: String) -> String,
+    replies: Boolean = false,
+): List<ReaderItem> = withContext(Dispatchers.Default) { readerQueue(post, comments, plain, replies) }
 
 /**
  * Sync's comment TTS player (`view_tts`): reads a [readerQueue] item by item on the device's text-to-speech

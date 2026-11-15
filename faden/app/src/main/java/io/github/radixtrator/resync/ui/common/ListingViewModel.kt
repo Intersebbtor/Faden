@@ -6,7 +6,11 @@ import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.ContentEvent
 import io.github.radixtrator.resync.data.Listing
 import io.github.radixtrator.resync.data.Post
+import androidx.compose.ui.graphics.Color
+import io.github.radixtrator.resync.data.ProfileItem
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,10 +41,20 @@ abstract class ListingViewModel<T>(protected val container: AppContainer) : View
     /** Where the list is scrolled to, for [rememberLazyListState] and [rememberLazyStaggeredGridState]. */
     val scroll = ScrollMemory()
 
+    /** The theme's link color, set by the screen, so comment bodies can be built before they're shown. */
+    private val linkColor = MutableStateFlow<Color?>(null)
+
+    fun setLinkColor(color: Color) {
+        linkColor.value = color
+    }
+
     protected abstract suspend fun fetch(after: String?): Listing<T>
     protected abstract fun keyOf(item: T): String
     protected open fun postOf(item: T): Post? = null
     protected open fun withPost(item: T, post: Post): T = item
+
+    /** The comment bodies (HTML) [item] shows with [rememberRedditText], to build off the main thread after a fetch. */
+    protected open fun bodiesOf(item: T): List<String> = (item as? ProfileItem.CommentItem)?.let { listOf(it.comment.bodyHtml) }.orEmpty()
 
     init {
         viewModelScope.launch {
@@ -76,6 +90,12 @@ abstract class ListingViewModel<T>(protected val container: AppContainer) : View
     private suspend fun fetchInto(after: String?) {
         try {
             val page = fetch(after)
+            // fromHtml for each body, built here so the rows don't do it on main as they scroll in.
+            linkColor.value?.let { color ->
+                withContext(Dispatchers.Default) {
+                    for (item in page.items) for (html in bodiesOf(item)) prepareRedditText(html, color, footnotes = false)
+                }
+            }
             _state.update {
                 // Listings shift while paging, so a page can repeat items; list keys must stay unique.
                 val items = if (after == null) page.items else it.items + page.items
