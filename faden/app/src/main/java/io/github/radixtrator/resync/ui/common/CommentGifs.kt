@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.radixtrator.resync.data.CommentGif
+import io.github.radixtrator.resync.i18n.t
 
 /** A comment body with its GIFs and pictures taken out of the text, and the ones to show under it. */
 data class GifBody(val html: String, val gifs: List<CommentGif>)
@@ -99,7 +100,7 @@ fun CommentGifs(gifs: List<CommentGif>, onOpen: (Int) -> Unit, modifier: Modifie
             }
             AsyncImage(
                 model = gif.url,
-                contentDescription = if (gif.url.substringBefore('?').endsWith(".gif", ignoreCase = true)) "GIF" else "Image",
+                contentDescription = if (gif.url.substringBefore('?').endsWith(".gif", ignoreCase = true)) "GIF" else t("Image"),
                 contentScale = ContentScale.Crop,
                 onSuccess = { state ->
                     val image = state.result.image

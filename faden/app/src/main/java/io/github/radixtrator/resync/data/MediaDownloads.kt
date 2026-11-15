@@ -12,6 +12,7 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import io.github.radixtrator.resync.BuildConfig
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -42,11 +43,11 @@ class MediaDownloads(context: Context) {
         .build()
 
     fun save(url: String) {
-        toast("Downloading…")
+        toast(t("Downloading…"))
         scope.launch {
             val result = runCatching { saveNow(url) }
             withContext(Dispatchers.Main) {
-                toast(result.fold({ "Saved to $it" }, { "Download failed: ${it.message ?: it.javaClass.simpleName}" }))
+                toast(result.fold({ t("Saved to {0}", it) }, { t("Download failed: {0}", it.message ?: it.javaClass.simpleName) }))
             }
         }
     }
@@ -73,7 +74,7 @@ class MediaDownloads(context: Context) {
     private fun saveRedditVideo(id: String): String {
         val base = "https://v.redd.it/$id/"
         val manifest = fetch(base + "DASHPlaylist.mpd").use { it.body.string() }
-        val tracks = dashTracks(manifest) ?: throw IOException("no video in the DASH playlist")
+        val tracks = dashTracks(manifest) ?: throw IOException(t("no video in the DASH playlist"))
         val parts = File(context.cacheDir, "downloads").apply { mkdirs() }
         val video = File(parts, "$id-video.mp4")
         val audio = tracks.audio?.let { File(parts, "$id-audio.mp4") }
@@ -148,9 +149,9 @@ class MediaDownloads(context: Context) {
                 put(MediaStore.MediaColumns.IS_PENDING, 1)
             }
             val resolver = context.contentResolver
-            val uri = resolver.insert(collection, values) ?: throw IOException("couldn't create the file")
+            val uri = resolver.insert(collection, values) ?: throw IOException(t("couldn't create the file"))
             try {
-                resolver.openOutputStream(uri)?.use(write) ?: throw IOException("couldn't open the file")
+                resolver.openOutputStream(uri)?.use(write) ?: throw IOException(t("couldn't open the file"))
                 resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
             } catch (e: Exception) {
                 resolver.delete(uri, null, null)

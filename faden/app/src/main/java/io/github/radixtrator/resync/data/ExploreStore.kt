@@ -2,6 +2,7 @@ package io.github.radixtrator.resync.data
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -9,14 +10,17 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /** Explore's sections, in the order the sheet shows them. [header] is the sheet's heading, [label] the options menu's. */
-enum class ExploreSection(val label: String, val header: String = label) {
+enum class ExploreSection(private val en: String, private val enHeader: String = en) {
     FAVORITES("Favorites"),
     FEEDS("Feeds"),
     CUSTOM_FEEDS("Custom feeds"),
     SUBSCRIPTIONS("Subscriptions"),
     FOLLOWS("Follows"),
     MODERATED("Moderated"),
-    MOST_VISITED("Most visited", header = "Top"),
+    MOST_VISITED("Most visited", enHeader = "Top");
+
+    val label: String get() = t(en)
+    val header: String get() = t(enHeader)
 }
 
 /** A feed opened (`query` null) or a search run (`subreddit` null = all of Reddit), for "Recently searched & visited". */

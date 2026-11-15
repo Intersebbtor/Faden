@@ -48,6 +48,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.ContentEvent
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.navigation.ComposeMode
 import io.github.radixtrator.resync.ui.navigation.ComposeRoute
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
@@ -82,7 +83,7 @@ class ComposeViewModel(private val container: AppContainer, private val route: C
             }.onSuccess {
                 container.drafts.clear(route.draftKey())
                 _state.value = State(done = true)
-            }.onFailure { e -> _state.value = State(error = e.message ?: "Couldn't send") }
+            }.onFailure { e -> _state.value = State(error = e.message ?: t("Couldn't send")) }
         }
     }
 
@@ -100,14 +101,14 @@ fun ComposeRoute.draftKey(): String = when (mode) {
 fun ComposeRoute.draftLabel(to: String = this.to): String {
     val about = quote?.lineSequence()?.firstOrNull { it.isNotBlank() }?.trim()?.take(60)
     return when (mode) {
-        ComposeMode.REPLY -> about?.let { "Reply to \"$it\"" } ?: "Reply"
-        ComposeMode.EDIT -> about?.let { "Edit in \"$it\"" } ?: "Edit"
+        ComposeMode.REPLY -> about?.let { t("Reply to \"{0}\"", it) } ?: t("Reply")
+        ComposeMode.EDIT -> about?.let { t("Edit in \"{0}\"", it) } ?: t("Edit")
         ComposeMode.MESSAGE -> {
             val name = to.trim().removePrefix("/")
             when {
-                name.isEmpty() -> "Message"
-                name.startsWith("r/") || name.startsWith("u/") -> "Message to $name"
-                else -> "Message to u/$name"
+                name.isEmpty() -> t("Message")
+                name.startsWith("r/") || name.startsWith("u/") -> t("Message to {0}", name)
+                else -> t("Message to u/{0}", name)
             }
         }
     }
@@ -150,13 +151,13 @@ fun ComposeScreen(route: ComposeRoute, container: AppContainer) {
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.Default.Close, "Discard") } },
+                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.Default.Close, t("Discard")) } },
                 title = {
                     Text(
                         when (route.mode) {
-                            ComposeMode.REPLY -> "Reply"
-                            ComposeMode.EDIT -> "Edit"
-                            ComposeMode.MESSAGE -> "New message"
+                            ComposeMode.REPLY -> t("Reply")
+                            ComposeMode.EDIT -> t("Edit")
+                            ComposeMode.MESSAGE -> t("New message")
                         },
                     )
                 },
@@ -165,7 +166,7 @@ fun ComposeScreen(route: ComposeRoute, container: AppContainer) {
                         CircularProgressIndicator(Modifier.padding(12.dp).size(24.dp), strokeWidth = 2.dp)
                     } else {
                         IconButton(onClick = { vm.send(body.text, to, subject) }, enabled = canSend) {
-                            Icon(Icons.AutoMirrored.Filled.Send, "Send")
+                            Icon(Icons.AutoMirrored.Filled.Send, t("Send"))
                         }
                     }
                 },
@@ -194,14 +195,14 @@ fun ComposeScreen(route: ComposeRoute, container: AppContainer) {
                 }
             }
             if (isMessage) {
-                OutlinedTextField(to, { to = it }, label = { Text("To") }, prefix = { Text("u/") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(subject, { subject = it }, label = { Text("Subject") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(to, { to = it }, label = { Text(t("To")) }, prefix = { Text("u/") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(subject, { subject = it }, label = { Text(t("Subject")) }, singleLine = true, modifier = Modifier.fillMaxWidth())
             }
             MarkdownToolbar(body, edit, drafts = container.drafts, draftKey = draftKey, imageUpload = imageUpload)
             OutlinedTextField(
                 value = body,
                 onValueChange = edit,
-                placeholder = { Text("Write something (markdown)") },
+                placeholder = { Text(t("Write something (markdown)")) },
                 modifier = Modifier.fillMaxWidth().heightIn(min = 220.dp).focusRequester(bodyFocus),
             )
         }

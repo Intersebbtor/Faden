@@ -22,13 +22,14 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
+import io.github.radixtrator.resync.i18n.t
 
 /**
  * One group of saved data a backup carries, as the restore dialog names it. The keys copy each store's private KEY
  * constant (the stores all share the "resync" preferences file); the store tests round-trip every store through a
  * backup to keep them in step.
  */
-enum class BackupPart(val label: String, val keys: List<String>) {
+enum class BackupPart(private val en: String, val keys: List<String>) {
     SETTINGS("Settings", listOf("settings.v1")),
     FILTERS("Filters", listOf("filters.v1")),
     EXPLORE("Favorites, defaults and recently visited", listOf("explore.v1")),
@@ -38,7 +39,9 @@ enum class BackupPart(val label: String, val keys: List<String>) {
     COMMENT_POSITIONS("Comment positions", listOf("post_memory.v1")),
     RECENTS("Recently viewed posts", listOf("recent_posts.v1")),
     DRAFTS("Drafts", listOf("drafts.v1")),
-    NOTIFIED("Messages already notified about", listOf("notified.v1")),
+    NOTIFIED("Messages already notified about", listOf("notified.v1"));
+
+    val label: String get() = t(en)
 }
 
 /**
@@ -71,7 +74,7 @@ data class RestoreResult(val signedOut: Boolean, val accountsRestored: Int)
 class BackupFormatException(message: String) : Exception(message)
 
 /** The accounts section couldn't be opened: wrong password, or a damaged file. */
-class BackupPasswordException : Exception("Wrong password, or the backup is damaged")
+class BackupPasswordException : Exception(t("Wrong password, or the backup is damaged"))
 
 /**
  * Sync's Backup now / Restore from backup: the local stores' preference keys as one versioned JSON document,
@@ -173,12 +176,12 @@ object Backup {
     /** Parses and checks a backup file; throws [BackupFormatException] with a message for the user. */
     fun decode(text: String): BackupDocument {
         val root = runCatching { Json.parseToJsonElement(text) as? JsonObject }.getOrNull()
-            ?: throw BackupFormatException("That file isn't a Faden backup")
-        if (root.string("format") != FORMAT) throw BackupFormatException("That file isn't a Faden backup")
-        val version = root.long("version")?.toInt() ?: throw BackupFormatException("That backup has no version")
-        if (version < 1) throw BackupFormatException("That backup's version ($version) isn't valid")
-        if (version > VERSION) throw BackupFormatException("That backup is from a newer Faden; update the app to restore it")
-        val prefs = root.obj("prefs") ?: throw BackupFormatException("That backup has no data")
+            ?: throw BackupFormatException(t("That file isn't a Faden backup"))
+        if (root.string("format") != FORMAT) throw BackupFormatException(t("That file isn't a Faden backup"))
+        val version = root.long("version")?.toInt() ?: throw BackupFormatException(t("That backup has no version"))
+        if (version < 1) throw BackupFormatException(t("That backup's version ({0}) isn't valid", version))
+        if (version > VERSION) throw BackupFormatException(t("That backup is from a newer Faden; update the app to restore it"))
+        val prefs = root.obj("prefs") ?: throw BackupFormatException(t("That backup has no data"))
         val values = prefs.keys.mapNotNull { key -> prefs.string(key)?.let { key to it } }.toMap()
         // Only a well-formed encrypted section counts; anything else (say, hand-planted plain tokens) is dropped.
         val accounts = root.obj("accounts")?.takeIf { s -> listOf("salt", "iv", "data").all { s.string(it) != null } }
@@ -257,7 +260,7 @@ object Backup {
             // The cached access token may belong to another account now; a fresh one is fetched on first use.
             SESSION_KEYS.forEach { editor.remove(it) }
         }
-        if (!editor.commit()) throw IllegalStateException("couldn't write the restored data")
+        if (!editor.commit()) throw IllegalStateException(t("couldn't write the restored data"))
         return RestoreResult(signedOut, restoreAccounts?.accounts?.size ?: 0)
     }
 
@@ -296,8 +299,8 @@ object Backup {
     fun restoreSnapshot(prefs: SharedPreferences, text: String) {
         val root = runCatching { Json.parseToJsonElement(text) as JsonObject }.getOrNull()
             ?.takeIf { it.string("format") == "$FORMAT-snapshot" }
-            ?: throw BackupFormatException("The saved copy is damaged")
-        val values = root.obj("prefs") ?: throw BackupFormatException("The saved copy is damaged")
+            ?: throw BackupFormatException(t("The saved copy is damaged"))
+        val values = root.obj("prefs") ?: throw BackupFormatException(t("The saved copy is damaged"))
         val editor = prefs.edit().clear()
         values.forEach { (key, value: JsonElement) ->
             val p = value as? JsonPrimitive ?: return@forEach
@@ -307,7 +310,7 @@ object Backup {
                 p.longOrNull != null -> editor.putLong(key, p.longOrNull!!)
             }
         }
-        if (!editor.commit()) throw IllegalStateException("couldn't write the saved copy")
+        if (!editor.commit()) throw IllegalStateException(t("couldn't write the saved copy"))
     }
 
     /** The file name Backup now suggests: faden-backup-YYYY-MM-DD.json. */

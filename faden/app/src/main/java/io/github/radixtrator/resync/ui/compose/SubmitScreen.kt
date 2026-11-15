@@ -49,6 +49,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.data.LinkFlair
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.feed.RulesSheet
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.PostRoute
@@ -71,7 +72,7 @@ class SubmitViewModel(private val container: AppContainer) : ViewModel() {
     fun submit(subreddit: String, title: String, isLink: Boolean, body: String, nsfw: Boolean, spoiler: Boolean, sendReplies: Boolean, flair: LinkFlair?) {
         if (_state.value.sending) return
         if (container.username.value == null) {
-            _state.value = State(error = "Log in to post")
+            _state.value = State(error = t("Log in to post"))
             return
         }
         _state.value = State(sending = true)
@@ -81,7 +82,7 @@ class SubmitViewModel(private val container: AppContainer) : ViewModel() {
             }.onSuccess {
                 container.drafts.clear(SUBMIT_DRAFT)
                 _state.value = State(postId = it)
-            }.onFailure { e -> _state.value = State(error = e.message ?: "Couldn't post") }
+            }.onFailure { e -> _state.value = State(error = e.message ?: t("Couldn't post")) }
         }
     }
 
@@ -90,7 +91,7 @@ class SubmitViewModel(private val container: AppContainer) : ViewModel() {
         if (_state.value.sending) return
         val me = container.username.value
         if (me == null) {
-            _state.value = State(error = "Log in to post")
+            _state.value = State(error = t("Log in to post"))
             return
         }
         _state.value = State(sending = true)
@@ -98,14 +99,14 @@ class SubmitViewModel(private val container: AppContainer) : ViewModel() {
             runCatching {
                 val resolver = context.contentResolver
                 val mime = resolver.getType(uri) ?: "image/jpeg"
-                val bytes = withContext(Dispatchers.IO) { resolver.openInputStream(uri)?.use { it.readBytes() } } ?: error("Couldn't read that image")
+                val bytes = withContext(Dispatchers.IO) { resolver.openInputStream(uri)?.use { it.readBytes() } } ?: error(t("Couldn't read that image"))
                 val name = "photo." + (mime.substringAfter('/', "jpg").substringBefore(';').let { if (it == "jpeg") "jpg" else it })
                 container.api.submitImage(subreddit.trim().removePrefix("r/").removePrefix("/r/"), title.trim(), me, name, mime, bytes, nsfw, spoiler, sendReplies, flair)
             }.onSuccess { id ->
                 container.drafts.clear(SUBMIT_DRAFT)
-                _state.value = if (id != null) State(postId = id) else State(error = "Posted. Reddit is still processing the photo; check your profile")
+                _state.value = if (id != null) State(postId = id) else State(error = t("Posted. Reddit is still processing the photo; check your profile"))
             }
-                .onFailure { e -> _state.value = State(error = e.message ?: "Couldn't post") }
+                .onFailure { e -> _state.value = State(error = e.message ?: t("Couldn't post")) }
         }
     }
 
@@ -133,7 +134,7 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
     }
     val editBody: (TextFieldValue) -> Unit = {
         body = it
-        container.drafts.save(SUBMIT_DRAFT, it.text, "Post")
+        container.drafts.save(SUBMIT_DRAFT, it.text, t("Post"))
     }
     val imageUpload = rememberComposerImageUpload(container) { uploaded -> editBody(body.insertImageLink(uploaded)) }
     var url by rememberSaveable { mutableStateOf("") }
@@ -171,8 +172,8 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.Default.Close, "Discard") } },
-                title = { Text("Create post") },
+                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.Default.Close, t("Discard")) } },
+                title = { Text(t("Create post")) },
                 actions = {
                     if (state.sending) {
                         CircularProgressIndicator(Modifier.padding(12.dp).size(24.dp), strokeWidth = 2.dp)
@@ -187,7 +188,7 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
                                     vm.submit(subreddit, title, isLink, if (isLink) url else body.text, nsfw, spoiler, sendReplies, flair)
                                 }
                             },
-                        ) { Text("Post") }
+                        ) { Text(t("Post")) }
                     }
                 },
             )
@@ -212,31 +213,31 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
                     }
                     subreddit = it.trim().removePrefix("r/")
                 },
-                label = { Text("Community") },
+                label = { Text(t("Community")) },
                 prefix = { Text("r/") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
             if (community.isNotBlank()) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    AssistChip(onClick = { flairOpen = true }, label = { Text(flairText?.let { "Flair: $it" } ?: "Add flair") })
-                    AssistChip(onClick = { rulesOpen = true }, label = { Text("Community rules") })
+                    AssistChip(onClick = { flairOpen = true }, label = { Text(flairText?.let { t("Flair: {0}", it) } ?: t("Add flair")) })
+                    AssistChip(onClick = { rulesOpen = true }, label = { Text(t("Community rules")) })
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = !isLink && !isPhoto, onClick = { isLink = false; isPhoto = false }, label = { Text("Text") })
-                FilterChip(selected = isLink && !isPhoto, onClick = { isLink = true; isPhoto = false }, label = { Text("Link") })
-                FilterChip(selected = isPhoto, onClick = { isPhoto = true }, label = { Text("Photo") })
+                FilterChip(selected = !isLink && !isPhoto, onClick = { isLink = false; isPhoto = false }, label = { Text(t("Text")) })
+                FilterChip(selected = isLink && !isPhoto, onClick = { isLink = true; isPhoto = false }, label = { Text(t("Link")) })
+                FilterChip(selected = isPhoto, onClick = { isPhoto = true }, label = { Text(t("Photo")) })
             }
             OutlinedTextField(
                 value = title,
                 onValueChange = { title = it.take(300) },
-                label = { Text("Title") },
+                label = { Text(t("Title")) },
                 supportingText = { Text("${title.length}/300") },
                 modifier = Modifier.fillMaxWidth(),
             )
             if (isPhoto) {
-                TextButton(onClick = { picker.launch("image/*") }) { Text(if (photo == null) "Choose a photo" else "Photo chosen: change") }
+                TextButton(onClick = { picker.launch("image/*") }) { Text(if (photo == null) t("Choose a photo") else t("Photo chosen: change")) }
                 photo?.let {
                     coil3.compose.AsyncImage(model = it, contentDescription = null, modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp))
                 }
@@ -254,19 +255,19 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
                 OutlinedTextField(
                     value = body,
                     onValueChange = editBody,
-                    placeholder = { Text("Body (optional, markdown)") },
+                    placeholder = { Text(t("Body (optional, markdown)")) },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 180.dp),
                 )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = nsfw, onCheckedChange = { nsfw = it })
-                Text("NSFW")
+                Text(t("NSFW"))
                 Checkbox(checked = spoiler, onCheckedChange = { spoiler = it })
-                Text("Spoiler")
+                Text(t("Spoiler"))
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = sendReplies, onCheckedChange = { sendReplies = it })
-                Text("Send replies to my inbox")
+                Text(t("Send replies to my inbox"))
             }
         }
     }
@@ -281,16 +282,16 @@ private fun FlairPickerSheet(container: AppContainer, subreddit: String, onDismi
     }
     androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Flair", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+            Text(t("Flair"), style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
             when (val result = flairs) {
                 null -> CircularProgressIndicator(Modifier.padding(16.dp))
                 else -> result.fold(
                     onSuccess = { list ->
-                        if (list.isEmpty()) Text("r/$subreddit has no flairs you can pick")
-                        TextButton(onClick = { onPick(null) }) { Text("No flair") }
+                        if (list.isEmpty()) Text(t("r/{0} has no flairs you can pick", subreddit))
+                        TextButton(onClick = { onPick(null) }) { Text(t("No flair")) }
                         list.forEach { f -> AssistChip(onClick = { onPick(f) }, label = { Text(f.text) }) }
                     },
-                    onFailure = { Text("Couldn't load flairs: ${it.message}") },
+                    onFailure = { Text(t("Couldn't load flairs: {0}", it.message)) },
                 )
             }
         }

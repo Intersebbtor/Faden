@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import io.github.radixtrator.resync.data.ReportReason
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.navigation.LocalContainer
 import kotlin.coroutines.cancellation.CancellationException
 
@@ -55,21 +56,21 @@ fun ReportSheet(fullname: String, subreddit: String, comment: Boolean, onDismiss
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = { SheetHandle() }) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
-            SheetTitle("Report reasons", topPadding = 0.dp)
+            SheetTitle(t("Report reasons"), topPadding = 0.dp)
             when (val result = reasons) {
                 null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 else -> Column(Modifier.verticalScroll(rememberScrollState())) {
                     // Without the rules (a private community, say), Other still works.
                     result.onFailure {
                         Text(
-                            "Couldn't load r/$subreddit's rules: ${it.message}",
+                            t("Couldn't load r/{0}'s rules: {1}", subreddit, it.message),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         )
                     }
                     result.getOrDefault(emptyList()).forEach { reason -> OptionRow(reason.text, null, onClick = { confirm = reason }) }
-                    OptionRow("Other", null, onClick = { other = true })
+                    OptionRow(t("Other"), null, onClick = { other = true })
                 }
             }
         }
@@ -77,30 +78,30 @@ fun ReportSheet(fullname: String, subreddit: String, comment: Boolean, onDismiss
     confirm?.let { reason ->
         AlertDialog(
             onDismissRequest = { confirm = null },
-            title = { Text("Report this ${if (comment) "comment" else "post"}?") },
+            title = { Text(if (comment) t("Report this comment?") else t("Report this post?")) },
             text = { Text(reason.text) },
             confirmButton = {
                 TextButton(onClick = {
                     container.report(fullname, reason)
                     onDismiss()
-                }) { Text("Report") }
+                }) { Text(t("Report")) }
             },
-            dismissButton = { TextButton(onClick = { confirm = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirm = null }) { Text(t("Cancel")) } },
         )
     }
     if (other) {
         var text by remember { mutableStateOf("") }
         AlertDialog(
             onDismissRequest = { other = false },
-            title = { Text("Report this ${if (comment) "comment" else "post"}?") },
-            text = { OutlinedTextField(text, { text = it.take(100) }, label = { Text("Reason") }, singleLine = true) },
+            title = { Text(if (comment) t("Report this comment?") else t("Report this post?")) },
+            text = { OutlinedTextField(text, { text = it.take(100) }, label = { Text(t("Reason")) }, singleLine = true) },
             confirmButton = {
                 TextButton(enabled = text.isNotBlank(), onClick = {
                     container.report(fullname, reason = null, other = text.trim())
                     onDismiss()
-                }) { Text("Report") }
+                }) { Text(t("Report")) }
             },
-            dismissButton = { TextButton(onClick = { other = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { other = false }) { Text(t("Cancel")) } },
         )
     }
 }
@@ -119,7 +120,7 @@ fun TagUserDialog(user: String, onDismiss: () -> Unit) {
     var color by remember(user) { mutableStateOf(container.tags.colorOf(user)) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Tag u/$user") },
+        title = { Text(t("Tag u/{0}", user)) },
         text = {
           Column {
             OutlinedTextField(
@@ -128,10 +129,10 @@ fun TagUserDialog(user: String, onDismiss: () -> Unit) {
                     text = it.take(40)
                     empty = false
                 },
-                label = { Text("Tag") },
+                label = { Text(t("Tag")) },
                 singleLine = true,
                 isError = empty,
-                supportingText = if (empty) ({ Text("Tag name must not be empty.") }) else null,
+                supportingText = if (empty) ({ Text(t("Tag name must not be empty.")) }) else null,
             )
             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf<Int?>(null) .plus(TAG_COLORS).forEach { swatch ->
@@ -155,20 +156,20 @@ fun TagUserDialog(user: String, onDismiss: () -> Unit) {
                 } else {
                     container.tags.set(user, text)
                     container.tags.setColor(user, color)
-                    Toast.makeText(context, "Tag added: ${text.trim()}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, t("Tag added: {0}", text.trim()), Toast.LENGTH_SHORT).show()
                     onDismiss()
                 }
-            }) { Text("Save") }
+            }) { Text(t("Save")) }
         },
         dismissButton = {
             if (current != null) {
                 TextButton(onClick = {
                     container.tags.set(user, null)
-                    Toast.makeText(context, "Tag removed", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, t("Tag removed"), Toast.LENGTH_SHORT).show()
                     onDismiss()
-                }) { Text("Remove tag") }
+                }) { Text(t("Remove tag")) }
             } else {
-                TextButton(onClick = onDismiss) { Text("Cancel") }
+                TextButton(onClick = onDismiss) { Text(t("Cancel")) }
             }
         },
     )

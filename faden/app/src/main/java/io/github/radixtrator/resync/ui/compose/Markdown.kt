@@ -46,6 +46,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.data.Draft
 import io.github.radixtrator.resync.data.DraftStore
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.Format
 import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.rememberRedditHtml
@@ -80,7 +81,7 @@ fun TextFieldValue.prefixLines(prefix: String): TextFieldValue {
 fun TextFieldValue.insertLink(): TextFieldValue {
     val start = selection.min
     val end = selection.max
-    val label = text.substring(start, end).ifEmpty { "text" }
+    val label = text.substring(start, end).ifEmpty { t("text") }
     val url = "https://"
     val inserted = "[$label]($url)"
     val urlStart = start + label.length + 3
@@ -108,7 +109,7 @@ fun TextFieldValue.insert(snippet: String): TextFieldValue =
 
 /** Inserts a link to an uploaded image at the cursor, labelled with the selection or "image". */
 fun TextFieldValue.insertImageLink(url: String): TextFieldValue =
-    insert("[" + text.substring(selection.min, selection.max).ifEmpty { "image" } + "](" + url + ")")
+    insert("[" + text.substring(selection.min, selection.max).ifEmpty { t("image") } + "](" + url + ")")
 
 /** The composer's image tool: [pick] opens the system picker; [uploading] while the picked image goes up. */
 class ComposerImageUpload(val uploading: Boolean, val pick: () -> Unit)
@@ -131,14 +132,14 @@ fun rememberComposerImageUpload(container: AppContainer, onUploaded: (String) ->
                     val resolver = context.contentResolver
                     val mime = resolver.getType(uri) ?: "image/jpeg"
                     val bytes = withContext(Dispatchers.IO) { resolver.openInputStream(uri)?.use { it.readBytes() } }
-                        ?: error("Couldn't read that image")
+                        ?: error(t("Couldn't read that image"))
                     val ext = mime.substringAfter('/', "jpg").substringBefore(';').let { if (it == "jpeg") "jpg" else it }
                     val url = container.client.uploadImage("image.$ext", mime, bytes)
                     latestOnUploaded.value(url)
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Toast.makeText(context, "Couldn't upload the image: " + (e.message ?: "unknown error"), Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, t("Couldn't upload the image: {0}", e.message ?: t("unknown error")), Toast.LENGTH_LONG).show()
                 } finally {
                     uploading = false
                 }
@@ -181,30 +182,30 @@ fun MarkdownToolbar(
         )
     }
     Row(modifier.horizontalScroll(rememberScrollState())) {
-        TextButton(onClick = { previewing = true }) { Text("Preview") }
-        if (drafts != null) TextButton(onClick = { pickingDraft = true }) { Text("Drafts") }
+        TextButton(onClick = { previewing = true }) { Text(t("Preview")) }
+        if (drafts != null) TextButton(onClick = { pickingDraft = true }) { Text(t("Drafts")) }
         if (imageUpload != null) {
             TextButton(onClick = imageUpload.pick, enabled = !imageUpload.uploading) {
                 if (imageUpload.uploading) {
                     CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                 } else {
-                    Text("Image")
+                    Text(t("Image"))
                 }
             }
         }
         TextButton(onClick = { onChange(value.wrap("**")) }) { Text("B", fontWeight = FontWeight.Bold) }
         TextButton(onClick = { onChange(value.wrap("*")) }) { Text("I", fontStyle = FontStyle.Italic) }
         TextButton(onClick = { onChange(value.wrap("~~")) }) { Text("S", textDecoration = TextDecoration.LineThrough) }
-        TextButton(onClick = { onChange(value.insertLink()) }) { Text("Link") }
-        TextButton(onClick = { onChange(value.prefixLines("> ")) }) { Text("Quote") }
-        TextButton(onClick = { onChange(value.wrap("`")) }) { Text("Code") }
-        TextButton(onClick = { onChange(value.wrap(">!", "!<")) }) { Text("Spoiler") }
-        TextButton(onClick = { onChange(value.prefixLines("- ")) }) { Text("List") }
-        TextButton(onClick = { onChange(value.wrap("^(", ")")) }) { Text("Sup") }
+        TextButton(onClick = { onChange(value.insertLink()) }) { Text(t("Link")) }
+        TextButton(onClick = { onChange(value.prefixLines("> ")) }) { Text(t("Quote")) }
+        TextButton(onClick = { onChange(value.wrap("`")) }) { Text(t("Code")) }
+        TextButton(onClick = { onChange(value.wrap(">!", "!<")) }) { Text(t("Spoiler")) }
+        TextButton(onClick = { onChange(value.prefixLines("- ")) }) { Text(t("List")) }
+        TextButton(onClick = { onChange(value.wrap("^(", ")")) }) { Text(t("Sup")) }
         TextButton(onClick = { onChange(value.numberLines()) }) { Text("1.") }
         TextButton(onClick = { onChange(value.prefixLines("# ")) }) { Text("H") }
-        TextButton(onClick = { onChange(value.prefixLines("    ")) }) { Text("Block") }
-        TextButton(onClick = { onChange(value.insert("\n\n---\n\n")) }) { Text("Rule") }
+        TextButton(onClick = { onChange(value.prefixLines("    ")) }) { Text(t("Block")) }
+        TextButton(onClick = { onChange(value.insert("\n\n---\n\n")) }) { Text(t("Rule")) }
         var emojiOpen by remember { mutableStateOf(false) }
         Box {
             TextButton(onClick = { emojiOpen = true }) { Text("😀") }
@@ -216,35 +217,36 @@ fun MarkdownToolbar(
                 }
             }
         }
-        TextButton(onClick = { showingInfo = true }) { Text("Info") }
+        TextButton(onClick = { showingInfo = true }) { Text(t("Info")) }
     }
 }
 
-private val CHEAT_SHEET = listOf(
-    "**bold**" to "bold",
-    "*italic*" to "italic",
-    "~~strikethrough~~" to "strikethrough",
-    ">!spoiler!<" to "spoiler",
-    "^(superscript)" to "superscript",
-    "`code`" to "inline code",
-    "[text](https://…)" to "link",
-    "> quote" to "quote",
-    "- item" to "bulleted list",
-    "1. item" to "numbered list",
-    "# Heading" to "heading",
-    "    code" to "code block (4 spaces)",
-    "---" to "horizontal rule",
-    "r/sub, u/name" to "community and user links",
-    "a | b\n--|--\n1 | 2" to "table",
-    "two spaces at line end" to "line break; a blank line starts a paragraph",
-)
+private val CHEAT_SHEET: List<Pair<String, String>>
+    get() = listOf(
+        "**bold**" to t("bold"),
+        "*italic*" to t("italic"),
+        "~~strikethrough~~" to t("strikethrough"),
+        ">!spoiler!<" to t("spoiler"),
+        "^(superscript)" to t("superscript"),
+        "`code`" to t("inline code"),
+        "[text](https://…)" to t("link"),
+        "> quote" to t("quote"),
+        "- item" to t("bulleted list"),
+        "1. item" to t("numbered list"),
+        "# Heading" to t("heading"),
+        "    code" to t("code block (4 spaces)"),
+        "---" to t("horizontal rule"),
+        "r/sub, u/name" to t("community and user links"),
+        "a | b\n--|--\n1 | 2" to t("table"),
+        t("two spaces at line end") to t("line break; a blank line starts a paragraph"),
+    )
 
 /** Sync's composer info: a quick reference of Reddit's markdown. */
 @Composable
 private fun MarkdownInfoDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Formatting help") },
+        title = { Text(t("Formatting help")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CHEAT_SHEET.forEach { (syntax, meaning) ->
@@ -255,7 +257,7 @@ private fun MarkdownInfoDialog(onDismiss: () -> Unit) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(t("Close")) } },
     )
 }
 
@@ -266,17 +268,17 @@ private fun MarkdownPreviewDialog(markdown: String, onDismiss: () -> Unit) {
     val rendered = rememberRedditHtml(html)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Preview") },
+        title = { Text(t("Preview")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (markdown.isBlank()) {
-                    Text("Nothing to preview", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("Nothing to preview"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {
                     RedditBodyText(rendered, MaterialTheme.typography.bodyMedium)
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(t("Close")) } },
     )
 }
 
@@ -287,10 +289,10 @@ private fun DraftsDialog(drafts: DraftStore, exclude: String?, onPick: (Draft) -
     val shown = all.filter { it.key != exclude }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Drafts") },
+        title = { Text(t("Drafts")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                if (shown.isEmpty()) Text("No saved drafts", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (shown.isEmpty()) Text(t("No saved drafts"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 shown.forEach { draft ->
                     Row(
                         Modifier.fillMaxWidth().clickable { onPick(draft) }.padding(vertical = 6.dp),
@@ -298,7 +300,7 @@ private fun DraftsDialog(drafts: DraftStore, exclude: String?, onPick: (Draft) -
                     ) {
                         Column(Modifier.weight(1f)) {
                             Text(
-                                draft.label.ifBlank { "Draft" } + " · " + Format.timeAgo(draft.savedAt),
+                                draft.label.ifBlank { t("Draft") } + " · " + Format.timeAgo(draft.savedAt),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -306,11 +308,11 @@ private fun DraftsDialog(drafts: DraftStore, exclude: String?, onPick: (Draft) -
                             )
                             Text(draft.text, style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         }
-                        IconButton(onClick = { drafts.clear(draft.key) }) { Icon(Icons.Default.Delete, "Delete draft") }
+                        IconButton(onClick = { drafts.clear(draft.key) }) { Icon(Icons.Default.Delete, t("Delete draft")) }
                     }
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(t("Close")) } },
     )
 }

@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import io.github.radixtrator.resync.i18n.t
 
 /**
  * What Sync's "Filter…" hides from feeds: communities, users and link domains, all lowercase, plus
@@ -36,13 +37,23 @@ data class Filters(
  * Sync's five Post filters lists (Settings › Filters), each edited on its own screen. [hint] is the add
  * field's label; [describe] turns a stored entry back into what the list shows.
  */
-enum class FilterType(val title: String, val summary: String, val hint: String, val empty: String) {
+enum class FilterType(
+    private val enTitle: String,
+    private val enSummary: String,
+    private val enHint: String,
+    private val enEmpty: String,
+) {
     KEYWORDS("Keyword filters", "Hide posts by title keywords", "Word or phrase in the title", "No keyword filters"),
     DOMAINS("Domain filters", "Hide posts by domain", "Domain, like example.com", "No domain filters"),
     SUBREDDITS("Subreddit filters", "Hide posts by subreddit", "Community name", "No subreddit filters"),
     USERS("User filters", "Hide posts by users", "Username", "No user filters"),
     FLAIRS("Flair filters", "Hide posts by flair", "Flair text, exactly", "No flair filters"),
     ;
+
+    val title: String get() = t(enTitle)
+    val summary: String get() = t(enSummary)
+    val hint: String get() = t(enHint)
+    val empty: String get() = t(enEmpty)
 
     fun of(filters: Filters): Set<String> = when (this) {
         KEYWORDS -> filters.keywords

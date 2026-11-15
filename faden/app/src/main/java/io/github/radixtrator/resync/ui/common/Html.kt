@@ -25,6 +25,8 @@ import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import io.github.radixtrator.resync.i18n.I18n
+import io.github.radixtrator.resync.i18n.t
 
 private const val SPOILER_URL = "resync-spoiler:reveal"
 private val PARAGRAPH_BREAK = Regex("""</p>\s*<p>""")
@@ -88,7 +90,7 @@ fun redditHtml(
 private val markupCache = LruCache<String, String>(300)
 
 private fun cachedMarkup(html: String, revealSpoilers: Boolean): String {
-    val key = if (revealSpoilers) "1$html" else "0$html"
+    val key = (if (revealSpoilers) "1" else "0") + I18n.language.ordinal + html
     return markupCache[key] ?: redditMarkup(html, revealSpoilers).also { markupCache.put(key, it) }
 }
 
@@ -112,7 +114,7 @@ fun redditMarkup(html: String, revealSpoilers: Boolean): String {
     // Rules in a row sit a line apart in Sync, not a paragraph apart.
     source = RULE_GAP.replace(source, "<p>$RULE</p>")
     return SPOILER.replace(source) { m ->
-        if (revealSpoilers) "<i>${m.groupValues[1]}</i>" else "<a href=\"$SPOILER_URL\">[spoiler]</a>"
+        if (revealSpoilers) "<i>${m.groupValues[1]}</i>" else "<a href=\"$SPOILER_URL\">" + t("[spoiler]") + "</a>"
     }
 }
 

@@ -1,38 +1,47 @@
 package io.github.radixtrator.resync.ui.common
 
+import io.github.radixtrator.resync.i18n.I18n
+import io.github.radixtrator.resync.i18n.t
 import java.util.Locale
 import kotlin.math.abs
 
 object Format {
     /** Sync names feeds plainly: "Frontpage" (null or ""), "Popular", "All", or the subreddit as is. */
     fun feedName(subreddit: String?): String = when (subreddit?.lowercase()) {
-        null, "" -> "Frontpage"
-        "popular" -> "Popular"
-        "all" -> "All"
+        null, "" -> t("Frontpage")
+        "popular" -> t("Popular")
+        "all" -> t("All")
         else -> subreddit
     }
 
     fun timeAgo(epochSeconds: Long, nowSeconds: Long = System.currentTimeMillis() / 1000): String {
         val s = (nowSeconds - epochSeconds).coerceAtLeast(0)
         return when {
-            s < 60 -> "just now"
-            s < 3_600 -> "${s / 60}m"
-            s < 86_400 -> "${s / 3_600}h"
-            s < 86_400 * 30 -> "${s / 86_400}d"
-            s < 86_400 * 365 -> "${s / (86_400 * 30)}mo"
-            else -> "${s / (86_400 * 365)}y"
+            s < 60 -> t("just now")
+            s < 3_600 -> t("{0}m", s / 60)
+            s < 86_400 -> t("{0}h", s / 3_600)
+            s < 86_400 * 30 -> t("{0}d", s / 86_400)
+            s < 86_400 * 365 -> t("{0}mo", s / (86_400 * 30))
+            else -> t("{0}y", s / (86_400 * 365))
         }
     }
 
     fun count(n: Int): String = when {
         abs(n) < 1_000 -> n.toString()
-        abs(n) < 100_000 -> String.format(Locale.ROOT, "%.1fk", n / 1_000.0).replace(".0k", "k")
+        abs(n) < 100_000 -> oneDecimal(n / 1_000.0, "k")
         abs(n) < 1_000_000 -> "${n / 1_000}k"
-        else -> String.format(Locale.ROOT, "%.1fm", n / 1_000_000.0).replace(".0m", "m")
+        else -> oneDecimal(n / 1_000_000.0, "m")
+    }
+
+    /** "1.2k", or "1,2k" in German (decimal comma); a ".0" is dropped ("5k"). */
+    private fun oneDecimal(value: Double, unit: String): String {
+        val text = String.format(Locale.ROOT, "%.1f", value).removeSuffix(".0")
+        val decimal = if (I18n.locale.language == Locale.GERMAN.language) text.replace('.', ',') else text
+        return decimal + unit
     }
 
     /** [count] when [short], else the whole number with grouping ("10,600"): Sync's "Display short scores". */
-    fun count(n: Int, short: Boolean): String = if (short) count(n) else String.format(Locale.getDefault(), "%,d", n)
+    fun count(n: Int, short: Boolean): String = if (short) count(n) else String.format(I18n.locale, "%,d", n)
 
     /** Community sizes, which Sync writes in capitals ("33.6M") unlike points ("4.3k"). */
     fun members(n: Int): String = count(n).uppercase(Locale.ROOT)

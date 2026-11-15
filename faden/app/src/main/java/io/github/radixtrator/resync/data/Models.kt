@@ -1,5 +1,6 @@
 package io.github.radixtrator.resync.data
 
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.serialization.Serializable
 
 data class Listing<T>(val items: List<T>, val after: String?)
@@ -111,7 +112,7 @@ data class MoreComments(
 data class PostWithComments(val post: Post, val comments: List<CommentNode>)
 
 /** Listing sorts, as Sync's sort sheet lists them. [timed] sorts take a [TimeRange]. */
-enum class SortKind(val path: String, val label: String, val timed: Boolean = false) {
+enum class SortKind(val path: String, private val en: String, val timed: Boolean = false) {
     BEST("best", "Best"),
     HOT("hot", "Hot"),
     NEW("new", "New"),
@@ -119,16 +120,20 @@ enum class SortKind(val path: String, val label: String, val timed: Boolean = fa
     TOP("top", "Top", timed = true),
     CONTROVERSIAL("controversial", "Controversial", timed = true),
     /** Sync's "Comments" sort: the feed's newest comments instead of its posts. */
-    COMMENTS("comments", "Comments"),
+    COMMENTS("comments", "Comments");
+
+    val label: String get() = t(en)
 }
 
-enum class TimeRange(val param: String, val label: String) {
+enum class TimeRange(val param: String, private val en: String) {
     HOUR("hour", "Hour"),
     DAY("day", "Day"),
     WEEK("week", "Week"),
     MONTH("month", "Month"),
     YEAR("year", "Year"),
-    ALL("all", "All"),
+    ALL("all", "All");
+
+    val label: String get() = t(en)
 }
 
 @Serializable
@@ -236,27 +241,31 @@ data class InboxItem(
 data class Me(val name: String, val inboxCount: Int, val iconUrl: String? = null)
 
 /** Sync's profile sections, in its order. The last four are only yours to see. */
-enum class UserWhere(val path: String, val label: String, val ownOnly: Boolean = false) {
+enum class UserWhere(val path: String, private val en: String, val ownOnly: Boolean = false) {
     OVERVIEW("overview", "Overview"),
     COMMENTS("comments", "Comments"),
     SUBMITTED("submitted", "Submitted"),
     UPVOTED("upvoted", "Upvoted", ownOnly = true),
     DOWNVOTED("downvoted", "Downvoted", ownOnly = true),
     SAVED("saved", "Saved", ownOnly = true),
-    HIDDEN("hidden", "Hidden", ownOnly = true),
+    HIDDEN("hidden", "Hidden", ownOnly = true);
+
+    val label: String get() = t(en)
 }
 
 /** A Reddit trophy (14-Year Club, Verified Email…), for the profile's Trophies sheet. */
 data class Trophy(val name: String, val iconUrl: String?, val description: String?)
 
-enum class UserSort(val param: String, val label: String, val time: String? = null) {
+enum class UserSort(val param: String, private val en: String, val time: String? = null) {
     NEW("new", "New"),
     HOT("hot", "Hot"),
     TOP_WEEK("top", "Top: this week", "week"),
-    TOP_ALL("top", "Top: all time", "all"),
+    TOP_ALL("top", "Top: all time", "all");
+
+    val label: String get() = t(en)
 }
 
-enum class InboxBox(val path: String, val label: String) {
+enum class InboxBox(val path: String, private val en: String) {
     INBOX("inbox", "All"),
     UNREAD("unread", "Unread"),
     MESSAGES("messages", "DMs"),
@@ -265,34 +274,43 @@ enum class InboxBox(val path: String, val label: String) {
     POST_REPLIES("selfreply", "Post replies"),
     MENTIONS("mentions", "Mentions"),
     MOD("moderator", "Mod"),
-    MOD_UNREAD("moderator/unread", "Mod unread"),
+    MOD_UNREAD("moderator/unread", "Mod unread");
+
+    val label: String get() = t(en)
 }
 
-enum class SearchSort(val param: String, val label: String, val time: String? = null) {
+enum class SearchSort(val param: String, private val en: String, val time: String? = null) {
     RELEVANCE("relevance", "Relevance"),
     NEW("new", "New"),
     HOT("hot", "Hot"),
     TOP_ALL("top", "Top", "all"),
     TOP_WEEK("top", "Top: this week", "week"),
-    COMMENTS("comments", "Comments"),
+    COMMENTS("comments", "Comments");
+
+    val label: String get() = t(en)
 }
 
 /** Sync's search "Options" modes for post search; "Search subs" is the Communities tab instead. */
-enum class SearchMode(val label: String, val hint: String) {
+enum class SearchMode(private val en: String, private val enHint: String) {
     SEARCH("Search", ""),
     SUBREDDIT("Subreddit", "Community, e.g. pics"),
     CUSTOM_FEED("Custom feed", "Multireddit, e.g. username/feedname"),
     PROFILE("Profile", "Username"),
-    DOMAIN("Domain", "Domain, e.g. imgur.com"),
+    DOMAIN("Domain", "Domain, e.g. imgur.com");
+
+    val label: String get() = t(en)
+    val hint: String get() = if (enHint.isEmpty()) "" else t(enHint)
 }
 
-enum class CommentSort(val param: String, val label: String) {
+enum class CommentSort(val param: String, private val en: String) {
     BEST("confidence", "Best"),
     TOP("top", "Top"),
     NEW("new", "New"),
     CONTROVERSIAL("controversial", "Controversial"),
     OLD("old", "Old"),
-    QA("qa", "Q&A"),
+    QA("qa", "Q&A");
+
+    val label: String get() = t(en)
 }
 
 /** One of your custom feeds (multireddits). [path] is like "user/bob/m/news"; [subreddits] are lowercase-agnostic names. */
@@ -305,21 +323,25 @@ data class Multi(val name: String, val path: String, val subreddits: List<String
  * Sync's moderator sections for one community; [path] is under /r/<sub>/about/, except [COMMENTS], which is the
  * community's newest comments (/r/<sub>/comments, [RedditApi.feedComments]).
  */
-enum class ModSection(val path: String, val label: String) {
+enum class ModSection(val path: String, private val en: String) {
     MODQUEUE("modqueue", "Modqueue"),
     REPORTS("reports", "Reports"),
     SPAM("spam", "Spam"),
     EDITED("edited", "Edited"),
     UNMODERATED("unmoderated", "Unmoderated"),
-    COMMENTS("comments", "Comments"),
+    COMMENTS("comments", "Comments");
+
+    val label: String get() = t(en)
 }
 
 /** The boxes of new-style mod mail (/api/mod/conversations?state=…). */
-enum class ModMailState(val param: String, val label: String) {
+enum class ModMailState(val param: String, private val en: String) {
     ALL("all", "All"),
     NEW("new", "New"),
     IN_PROGRESS("inprogress", "In progress"),
-    ARCHIVED("archived", "Archived"),
+    ARCHIVED("archived", "Archived");
+
+    val label: String get() = t(en)
 }
 
 /**

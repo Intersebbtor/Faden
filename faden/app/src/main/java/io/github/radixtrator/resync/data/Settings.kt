@@ -7,34 +7,45 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import io.github.radixtrator.resync.i18n.t
 
-enum class ThemeMode(val label: String) { SYSTEM("Follow system"), LIGHT("Light"), DARK("Dark"), BLACK("Black (AMOLED)") }
+enum class ThemeMode(private val en: String) {
+    SYSTEM("Follow system"), LIGHT("Light"), DARK("Dark"), BLACK("Black (AMOLED)");
+
+    val label: String get() = t(en)
+}
 
 /** Sync's six feed layouts, in its Change view order. Names are persisted, so CARD/COMPACT keep theirs. */
-enum class PostLayout(val label: String) {
+enum class PostLayout(private val en: String) {
     LIST("List"),
     COMPACT("Compact"),
     SMALLER_CARDS("Smaller cards"),
     SMALL_CARDS("Small cards"),
     CARD("Cards"),
-    SLIDES("Slides"),
+    SLIDES("Slides");
+
+    val label: String get() = t(en)
 }
 
 /** Sync's "Base font size": scales every sp in the app. SMALLER is Sync's default on phones. */
-enum class BaseFontSize(val label: String, val scale: Float) {
+enum class BaseFontSize(private val en: String, val scale: Float) {
     SMALLEST("Smallest", 0.8f),
     SMALLER("Smaller", 0.9f),
     NORMAL("Normal", 1.0f),
     LARGER("Larger", 1.1f),
-    LARGEST("Largest", 1.25f),
+    LARGEST("Largest", 1.25f);
+
+    val label: String get() = t(en)
 }
 
 /** Typeface choices. Roboto is bundled (Sync's default); Product Sans can't be, so the rest are the system's families. */
-enum class Typeface(val label: String) {
+enum class Typeface(private val en: String) {
     ROBOTO("Roboto"),
     SANS("Sans serif (system)"),
     SERIF("Serif"),
-    MONOSPACE("Monospace"),
+    MONOSPACE("Monospace");
+
+    val label: String get() = t(en)
 }
 /**
  * Sync's per-view-type display options (Settings > View type, sync-reference/settings-catalogue.md "View type").
@@ -140,12 +151,14 @@ data class ViewOptions(
 )
 
 /** A [ViewOptions.columns] choice; [count] null means Faden picks from the window width. */
-enum class PostColumns(val label: String, val count: Int?) {
+enum class PostColumns(private val en: String, val count: Int?) {
     AUTO("Auto", null),
     ONE("1", 1),
     TWO("2", 2),
     THREE("3", 3),
-    FOUR("4", 4),
+    FOUR("4", 4);
+
+    val label: String get() = t(en)
 }
 
 /**
@@ -164,19 +177,25 @@ fun ViewOptions.columnsFor(coverScreen: Boolean): PostColumns = if (coverScreen)
  * A Customize view font size ([ViewOptions.titleSize], [ViewOptions.descriptionSize], [ViewOptions.selftextSize]):
  * [scale] multiplies the layout's own size for that text. Named for the first of them; names are persisted.
  */
-enum class TitleSize(val label: String, val scale: Float) {
+enum class TitleSize(private val en: String, val scale: Float) {
     SMALL("Small", 0.875f),
     NORMAL("Normal", 1f),
-    LARGE("Large", 1.15f),
+    LARGE("Large", 1.15f);
+
+    val label: String get() = t(en)
 }
 
-enum class NsfwMode(val label: String) { HIDE("Hide NSFW posts"), BLUR("Blur previews"), SHOW("Show") }
+enum class NsfwMode(private val en: String) {
+    HIDE("Hide NSFW posts"), BLUR("Blur previews"), SHOW("Show");
+
+    val label: String get() = t(en)
+}
 
 /**
  * Sync's "Periodically check for new messages". [minutes] null means no repeating check. WorkManager can't
  * repeat faster than every 15 minutes, so Sync's "Every 10 minutes" is 15 here.
  */
-enum class MessageCheck(val label: String, val minutes: Long?) {
+enum class MessageCheck(private val en: String, val minutes: Long?) {
     OFF("Off", null),
     MINUTES_15("Every 15 minutes", 15),
     MINUTES_30("Every 30 minutes", 30),
@@ -185,40 +204,58 @@ enum class MessageCheck(val label: String, val minutes: Long?) {
     HOURS_6("Every 6 hours", 360),
     HOURS_12("Every 12 hours", 720),
     HOURS_24("Every 24 hours", 1440),
-    ON_LAUNCH("On launch", null),
+    ON_LAUNCH("On launch", null);
+
+    val label: String get() = t(en)
 }
 
 /** Sync's "HD Reddit video quality": when v.redd.it videos open in HD rather than SD (the player's HD button switches). */
-enum class VideoQuality(val label: String) { ALWAYS("Always"), WIFI("WiFi only"), NEVER("Never") }
+enum class VideoQuality(private val en: String) {
+    ALWAYS("Always"), WIFI("WiFi only"), NEVER("Never");
+
+    val label: String get() = t(en)
+}
 
 /**
  * Sync's "Data saving mode" (Data options): while it applies, feeds leave thumbnails and card previews unloaded
  * and Reddit videos open in SD. [MOBILE] is Sync's "Automagic": any metered connection.
  */
-enum class DataSaving(val label: String) { NEVER("Never"), MOBILE("On mobile data"), ALWAYS("Always") }
+enum class DataSaving(private val en: String) {
+    NEVER("Never"), MOBILE("On mobile data"), ALWAYS("Always");
+
+    val label: String get() = t(en)
+}
 
 /** Sync's "Initial comment count": Reddit's `limit` for a post's first page of comments (500 is Reddit's ceiling). */
-enum class CommentCount(val label: String, val limit: Int) {
+enum class CommentCount(private val en: String, val limit: Int) {
     C50("50", 50),
     C75("75", 75),
     C100("100", 100),
     C200("200", 200),
-    ALL("All (up to 500)", 500),
+    ALL("All (up to 500)", 500);
+
+    val label: String get() = t(en)
 }
 
 /** Sync's "Live comments refresh rate" (`live_comments_refresh`): how often sports mode reloads the comments. */
-enum class LiveRefresh(val label: String, val seconds: Int) {
+enum class LiveRefresh(private val en: String, val seconds: Int) {
     S10("Every 10 seconds", 10),
     S15("Every 15 seconds", 15),
     S30("Every 30 seconds", 30),
-    S60("Every 60 seconds", 60),
+    S60("Every 60 seconds", 60);
+
+    val label: String get() = t(en)
 }
 
 /** Sync's "Post media preview size" for the image or video above a post's comments. */
-enum class MediaPreviewSize(val label: String) { CROPPED("Cropped height"), FULL("Full height") }
+enum class MediaPreviewSize(private val en: String) {
+    CROPPED("Cropped height"), FULL("Full height");
+
+    val label: String get() = t(en)
+}
 
 /** What a swipe stage does. Sync's post and comment swipe lists, merged; [posts]/[comments] say where each applies. */
-enum class SwipeAction(val label: String, val posts: Boolean, val comments: Boolean) {
+enum class SwipeAction(private val en: String, val posts: Boolean, val comments: Boolean) {
     UPVOTE("Upvote", posts = true, comments = true),
     DOWNVOTE("Downvote", posts = true, comments = true),
     SAVE("Save", posts = true, comments = true),
@@ -226,7 +263,9 @@ enum class SwipeAction(val label: String, val posts: Boolean, val comments: Bool
     SHARE("Share", posts = true, comments = true),
     HIDE("Hide", posts = true, comments = false),
     MARK_READ("Mark as read", posts = true, comments = false),
-    REPLY("Reply", posts = false, comments = true),
+    REPLY("Reply", posts = false, comments = true);
+
+    val label: String get() = t(en)
 }
 
 @Serializable

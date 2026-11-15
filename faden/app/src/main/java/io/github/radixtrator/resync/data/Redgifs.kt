@@ -1,6 +1,7 @@
 package io.github.radixtrator.resync.data
 
 import io.github.radixtrator.resync.BuildConfig
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -53,9 +54,9 @@ object Redgifs {
         val (code, body) = http.newCall(request).execute().use { it.code to it.body.string() }
         // An expired or refused token: get a fresh one and try once more.
         if ((code == 401 || code == 403) && !renewToken) return fetchGif(id, renewToken = true)
-        if (code == 404 || code == 410) throw IOException("This RedGifs clip was removed")
+        if (code == 404 || code == 410) throw IOException(t("This RedGifs clip was removed"))
         if (code !in 200..299) throw IOException("RedGifs HTTP $code")
-        return parseGif(json.parseToJsonElement(body) as? JsonObject) ?: throw IOException("RedGifs sent no video")
+        return parseGif(json.parseToJsonElement(body) as? JsonObject) ?: throw IOException(t("RedGifs sent no video"))
     }
 
     private suspend fun token(renew: Boolean): String {
@@ -65,7 +66,7 @@ object Redgifs {
             val fresh = http.newCall(Request.Builder().url("$API/auth/temporary").build()).execute().use { response ->
                 if (!response.isSuccessful) throw IOException("RedGifs sign-in HTTP ${response.code}")
                 (json.parseToJsonElement(response.body.string()) as? JsonObject)?.string("token")
-            } ?: throw IOException("RedGifs sent no token")
+            } ?: throw IOException(t("RedGifs sent no token"))
             token = fresh
             tokenTime = now
             return fresh
