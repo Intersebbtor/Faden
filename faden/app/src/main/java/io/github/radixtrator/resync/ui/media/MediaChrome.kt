@@ -43,8 +43,12 @@ import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.PostRoute
 
 /** Sync's media info sheet: a translucent layer over the media, with a denser bar of actions at the bottom. */
-internal val MediaPanelColor = Color(0xFF1C1E22).copy(alpha = 0.78f)
-private val MediaBarColor = Color(0xFF2E3237).copy(alpha = 0.9f)
+// Media chrome stays dark over images and video whatever the app's theme (it sits on the picture, not on a
+// surface), so these are fixed colors rather than color scheme roles, which turn light in a light theme.
+private val MediaChromeDark = Color(0xFF1C1E22)
+private val MediaChromeDarkRaised = Color(0xFF2E3237)
+internal val MediaPanelColor = MediaChromeDark.copy(alpha = 0.78f)
+private val MediaBarColor = MediaChromeDarkRaised.copy(alpha = 0.9f)
 
 /** 🔍 then the media's host and URL, then [details] ("Image resolution: …"), as in Sync's sheet. */
 @Composable
