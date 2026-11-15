@@ -73,6 +73,7 @@ internal fun germanCompose(): Map<String, String> = mapOf(
     "Photo chosen: change" to "Foto ausgewählt: ändern",
     "Body (optional, markdown)" to "Text (optional, Markdown)",
     "NSFW" to "NSFA",
+    "Post" to "Pfostieren",
     "Send replies to my inbox" to "Antworten in meine Innenschachtel",
     "Flair" to "Gespür",
     "r/{0} has no flairs you can pick" to "r/{0} hat kein Gespür, das du wählen kannst",

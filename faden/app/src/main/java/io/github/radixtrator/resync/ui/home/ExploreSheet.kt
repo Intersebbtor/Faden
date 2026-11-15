@@ -105,10 +105,11 @@ import io.github.radixtrator.resync.ui.feed.runAboutAction
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.SearchRoute
 import io.github.radixtrator.resync.ui.navigation.UserRoute
-import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.I18n
 
 /** BROWSE opens on the feed lists (Explore tab); SEARCH focuses the field and shows recents (search button, FAB long-press). */
 enum class ExploreMode { BROWSE, SEARCH }
@@ -208,7 +209,7 @@ fun ExploreSheet(
                 .fold(
                     onSuccess = { onDone() },
                     onFailure = { e ->
-                        val why = if ((e as? RedditException)?.code == 409) "that name is taken" else e.message
+                        val why = if ((e as? RedditException)?.code == 409) t("that name is taken") else e.message
                         Toast.makeText(context, "$failure: $why", Toast.LENGTH_SHORT).show()
                     },
                 )
@@ -260,7 +261,7 @@ fun ExploreSheet(
                     onSearchCommunities = { close { nav.push(SearchRoute(query = q, communities = true)) } },
                     onOpenUser = { close { nav.push(UserRoute(q)) } },
                 )
-                mode == ExploreMode.SEARCH && explore.recents.isNotEmpty() -> group("Recently searched & visited", folds) {
+                mode == ExploreMode.SEARCH && explore.recents.isNotEmpty() -> group(t("Recently searched & visited"), folds) {
                     items(explore.recents, key = { "recent:${it.subreddit}:${it.query}" }) { recent ->
                         val name = recent.subreddit.orEmpty()
                         if (recent.query == null) {
@@ -282,7 +283,7 @@ fun ExploreSheet(
                                     if (multi.subreddits.isEmpty()) managingFeed = multi else onOpenFeed(multi.feedName)
                                 }
                             }
-                            if (me != null) item(key = "new-custom-feed") { ActionRow("New custom feed", Icons.Default.Add) { creatingFeed = true } }
+                            if (me != null) item(key = "new-custom-feed") { ActionRow(t("New custom feed"), Icons.Default.Add) { creatingFeed = true } }
                         }
                     }
                     section(
@@ -304,13 +305,13 @@ fun ExploreSheet(
 
     if (creatingFeed) {
         MultiNameDialog(
-            title = "New custom feed",
+            title = t("New custom feed"),
             initial = "",
-            confirm = "Create",
+            confirm = t("Create"),
             onConfirm = { name ->
                 creatingFeed = false
                 val user = me ?: return@MultiNameDialog
-                feedEdit("Couldn't create $name", { container.api.createMulti(user, name) }) {
+                feedEdit(t("Couldn't create {0}", name), { container.api.createMulti(user, name) }) {
                     // Straight into Manage communities, since an empty feed has nothing to show.
                     managingFeed = Multi(name, "user/$user/m/${multiName(name)}", emptyList())
                 }
@@ -320,12 +321,12 @@ fun ExploreSheet(
     }
     renamingFeed?.let { multi ->
         MultiNameDialog(
-            title = "Rename custom feed",
+            title = t("Rename custom feed"),
             initial = multi.name,
-            confirm = "Rename",
+            confirm = t("Rename"),
             onConfirm = { name ->
                 renamingFeed = null
-                feedEdit("Couldn't rename ${multi.name}", { container.api.renameMulti(multi.path, name) })
+                feedEdit(t("Couldn't rename {0}", multi.name), { container.api.renameMulti(multi.path, name) })
             },
             onDismiss = { renamingFeed = null },
         )
@@ -335,8 +336,8 @@ fun ExploreSheet(
             multi,
             onConfirm = {
                 deletingFeed = null
-                feedEdit("Couldn't delete ${multi.name}", { container.api.deleteMulti(multi.path) }) {
-                    Toast.makeText(context, "Deleted ${multi.name}", Toast.LENGTH_SHORT).show()
+                feedEdit(t("Couldn't delete {0}", multi.name), { container.api.deleteMulti(multi.path) }) {
+                    Toast.makeText(context, t("Deleted {0}", multi.name), Toast.LENGTH_SHORT).show()
                 }
             },
             onDismiss = { deletingFeed = null },
@@ -397,32 +398,32 @@ private fun LazyListScope.searchResults(
     item(key = "search-buttons") {
         Column {
             Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                SearchButton("Search all", Modifier.weight(1f)) { onSearch(null) }
-                if (subreddit != null) SearchButton("Search r/$subreddit", Modifier.weight(1f)) { onSearch(subreddit) }
+                SearchButton(t("Search all"), Modifier.weight(1f)) { onSearch(null) }
+                if (subreddit != null) SearchButton(t("Search r/{0}", subreddit), Modifier.weight(1f)) { onSearch(subreddit) }
             }
             HorizontalDivider()
         }
     }
     val subscribed = subscriptions.filter { it.contains(q, ignoreCase = true) }
     if (subscribed.isNotEmpty()) {
-        group("Subscribed", folds) {
+        group(t("Subscribed"), folds) {
             items(subscribed, key = { "mine:$it" }) { name ->
                 FeedRow(name, name, icons[name.lowercase()], isDefault = false, rowMenu, null, match = q) { onOpenFeed(name) }
             }
         }
     }
     if (suggestions.isNotEmpty()) {
-        group("Suggested subreddit results", folds, action = "Search all subs" to onSearchCommunities) {
+        group(t("Suggested subreddit results"), folds, action = t("Search all subs") to onSearchCommunities) {
             items(suggestions, key = { "suggest:${it.name}" }) { sub ->
-                FeedRow(sub.name, sub.name, sub.iconUrl, isDefault = false, rowMenu, null, match = q, trailing = "${subscriberCount(sub.subscribers)} subs") {
+                FeedRow(sub.name, sub.name, sub.iconUrl, isDefault = false, rowMenu, null, match = q, trailing = t("{0} subs", subscriberCount(sub.subscribers))) {
                     onOpenFeed(sub.name)
                 }
             }
         }
     }
-    group("Actions", folds) {
-        item(key = "open-user") { ActionRow("Open u/$q", Icons.Outlined.Person, onOpenUser) }
-        item(key = "open-sub") { ActionRow("Open r/$q", AppIcons.Compass) { onOpenFeed(q) } }
+    group(t("Actions"), folds) {
+        item(key = "open-user") { ActionRow(t("Open u/{0}", q), Icons.Outlined.Person, onOpenUser) }
+        item(key = "open-sub") { ActionRow(t("Open r/{0}", q), AppIcons.Compass) { onOpenFeed(q) } }
     }
 }
 
@@ -430,7 +431,7 @@ private fun LazyListScope.searchResults(
 private fun subscriberCount(n: Int): String = when {
     n < 10_000 -> n.toString()
     n < 1_000_000 -> "${n / 1_000}k"
-    else -> String.format(Locale.ROOT, "%.2fm", n / 1_000_000.0)
+    else -> String.format(I18n.locale, "%.2fm", n / 1_000_000.0)
 }
 
 /** Which headers are folded, by title; kept for as long as the sheet is open. */
@@ -465,7 +466,7 @@ private fun SectionHeader(title: String, open: Boolean, action: Pair<String, () 
         }
         Icon(
             if (open) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-            if (open) "Collapse $title" else "Expand $title",
+            if (open) t("Collapse {0}", title) else t("Expand {0}", title),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 7.dp).size(18.dp),
         )
@@ -514,25 +515,25 @@ private fun MultiRow(multi: Multi, isDefault: Boolean, menu: RowMenu, multiMenu:
             modifier = Modifier.weight(1f),
         )
         val note = when {
-            isDefault -> "Default"
-            multi.subreddits.isEmpty() -> "Empty"
+            isDefault -> t("Default")
+            multi.subreddits.isEmpty() -> t("Empty")
             else -> null
         }
         note?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp)) }
         Box {
-            RowMenuButton("Options for ${multi.name}") { menuOpen = true }
+            RowMenuButton(t("Options for {0}", multi.name)) { menuOpen = true }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 val pick = { action: () -> Unit -> menuOpen = false; action() }
                 if (feed.isNotEmpty()) {
                     DropdownMenuItem(
-                        text = { Text(if (menu.state.isFavorite(feed)) "Unfavorite" else "Favorite") },
+                        text = { Text(if (menu.state.isFavorite(feed)) t("Unfavorite") else t("Favorite")) },
                         onClick = { pick { menu.onToggleFavorite(feed) } },
                     )
-                    if (!menu.state.isDefault(feed)) DropdownMenuItem(text = { Text("Set as default") }, onClick = { pick { menu.onSetDefault(feed) } })
+                    if (!menu.state.isDefault(feed)) DropdownMenuItem(text = { Text(t("Set as default")) }, onClick = { pick { menu.onSetDefault(feed) } })
                 }
-                DropdownMenuItem(text = { Text("Manage communities") }, onClick = { pick { multiMenu.onManage(multi) } })
-                DropdownMenuItem(text = { Text("Rename") }, onClick = { pick { multiMenu.onRename(multi) } })
-                DropdownMenuItem(text = { Text("Delete") }, onClick = { pick { multiMenu.onDelete(multi) } })
+                DropdownMenuItem(text = { Text(t("Manage communities")) }, onClick = { pick { multiMenu.onManage(multi) } })
+                DropdownMenuItem(text = { Text(t("Rename")) }, onClick = { pick { multiMenu.onRename(multi) } })
+                DropdownMenuItem(text = { Text(t("Delete")) }, onClick = { pick { multiMenu.onDelete(multi) } })
             }
         }
     }
@@ -571,27 +572,27 @@ private fun FeedRow(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        val note = if (isDefault) "Default" else trailing
+        val note = if (isDefault) t("Default") else trailing
         note?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 8.dp)) }
         Box {
-            RowMenuButton("Options for ${Format.feedName(name)}") { menuOpen = true }
+            RowMenuButton(t("Options for {0}", Format.feedName(name))) { menuOpen = true }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 val pick = { action: () -> Unit -> menuOpen = false; action() }
                 DropdownMenuItem(
-                    text = { Text(if (menu.state.isFavorite(name)) "Unfavorite" else "Favorite") },
+                    text = { Text(if (menu.state.isFavorite(name)) t("Unfavorite") else t("Favorite")) },
                     onClick = { pick { menu.onToggleFavorite(name) } },
                 )
                 if (section == ExploreSection.FAVORITES) {
-                    DropdownMenuItem(text = { Text("Move up") }, onClick = { pick { menu.onMoveFavorite(name, -1) } })
-                    DropdownMenuItem(text = { Text("Move down") }, onClick = { pick { menu.onMoveFavorite(name, 1) } })
+                    DropdownMenuItem(text = { Text(t("Move up")) }, onClick = { pick { menu.onMoveFavorite(name, -1) } })
+                    DropdownMenuItem(text = { Text(t("Move down")) }, onClick = { pick { menu.onMoveFavorite(name, 1) } })
                 }
-                if (!menu.state.isDefault(name)) DropdownMenuItem(text = { Text("Set as default") }, onClick = { pick { menu.onSetDefault(name) } })
-                if (isCommunity) DropdownMenuItem(text = { Text("About") }, onClick = { pick { menu.onAbout(name) } })
+                if (!menu.state.isDefault(name)) DropdownMenuItem(text = { Text(t("Set as default")) }, onClick = { pick { menu.onSetDefault(name) } })
+                if (isCommunity) DropdownMenuItem(text = { Text(t("About")) }, onClick = { pick { menu.onAbout(name) } })
                 if (isCommunity && menu.subscribed.any { it.equals(name, ignoreCase = true) }) {
-                    DropdownMenuItem(text = { Text("Unsubscribe") }, onClick = { pick { menu.onUnsubscribe(name) } })
+                    DropdownMenuItem(text = { Text(t("Unsubscribe")) }, onClick = { pick { menu.onUnsubscribe(name) } })
                 }
                 if (section == ExploreSection.MOST_VISITED) {
-                    DropdownMenuItem(text = { Text("Reset viewed") }, onClick = { pick { menu.onResetVisits(name) } })
+                    DropdownMenuItem(text = { Text(t("Reset viewed")) }, onClick = { pick { menu.onResetVisits(name) } })
                 }
             }
         }
@@ -628,7 +629,7 @@ private fun QueryRow(recent: Recent, iconUrl: String?, onClick: () -> Unit) {
         if (sub == null) Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Search, null) } else FeedIcon(sub, iconUrl)
         Spacer(Modifier.width(16.dp))
         Text(
-            if (sub == null) "\"${recent.query}\"" else "\"${recent.query}\" in /r/$sub",
+            if (sub == null) t("\"{0}\"", recent.query) else t("\"{0}\" in /r/{1}", recent.query, sub),
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -672,28 +673,28 @@ private fun ExploreOptionsMenu(container: AppContainer, state: ExploreState) {
     val scope = rememberCoroutineScope()
     var open by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { open = true }) { Icon(Icons.Default.MoreVert, "Explore options") }
+        IconButton(onClick = { open = true }) { Icon(Icons.Default.MoreVert, t("Explore options")) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             ExploreSection.entries.forEach { section ->
                 val visible = section !in state.hidden
                 DropdownMenuItem(
-                    text = { Text("Show ${section.label.lowercase()}") },
+                    text = { Text(t("Show {0}", section.label.let { if (I18n.locale.language == "en") it.lowercase() else it })) },
                     trailingIcon = { Checkbox(checked = visible, onCheckedChange = null) },
                     onClick = { container.explore.setVisible(section, !visible) },
                 )
             }
             DropdownMenuItem(
-                text = { Text("Duplicate favorites") },
+                text = { Text(t("Duplicate favorites")) },
                 trailingIcon = { Checkbox(checked = state.duplicateFavorites, onCheckedChange = null) },
                 onClick = { container.explore.setDuplicateFavorites(!state.duplicateFavorites) },
             )
             HorizontalDivider()
-            DropdownMenuItem(text = { Text("Reload subscriptions") }, onClick = {
+            DropdownMenuItem(text = { Text(t("Reload subscriptions")) }, onClick = {
                 open = false
                 scope.launch { container.refreshSubscriptions(force = true) }
             })
-            DropdownMenuItem(text = { Text("Clear search history") }, onClick = { open = false; container.explore.clearRecents() })
-            DropdownMenuItem(text = { Text("Clear most visited") }, onClick = { open = false; container.explore.clearVisits() })
+            DropdownMenuItem(text = { Text(t("Clear search history")) }, onClick = { open = false; container.explore.clearRecents() })
+            DropdownMenuItem(text = { Text(t("Clear most visited")) }, onClick = { open = false; container.explore.clearVisits() })
         }
     }
 }
@@ -718,7 +719,7 @@ private fun SearchField(
         Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(16.dp))
         Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) Text("Search...", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+            if (value.isEmpty()) Text(t("Search..."), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
             BasicTextField(
                 value = value,
                 onValueChange = onChange,
@@ -730,7 +731,7 @@ private fun SearchField(
                 modifier = Modifier.fillMaxWidth(),
             )
         }
-        if (value.isNotEmpty()) IconButton(onClick = { onChange("") }) { Icon(Icons.Outlined.Close, "Clear") } else menu()
+        if (value.isNotEmpty()) IconButton(onClick = { onChange("") }) { Icon(Icons.Outlined.Close, t("Clear")) } else menu()
     }
 }
 

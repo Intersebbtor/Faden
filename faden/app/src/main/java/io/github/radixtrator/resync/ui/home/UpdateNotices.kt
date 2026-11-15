@@ -24,6 +24,7 @@ import io.github.radixtrator.resync.data.LatestRelease
 import io.github.radixtrator.resync.data.VersionNotes
 import io.github.radixtrator.resync.data.WhatsNew
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
+import io.github.radixtrator.resync.i18n.t
 
 /**
  * The two notices at launch. After an update, "Faden was updated" lists what changed since the version you
@@ -56,7 +57,7 @@ fun UpdateNotices(container: AppContainer) {
     }
 
     if (updated.isNotEmpty()) {
-        WhatsNewDialog("Faden was updated", updated, onDismiss = {
+        WhatsNewDialog(t("Faden was updated"), updated, onDismiss = {
             container.appUpdates.lastSeenVersion = current
             updated = emptyList()
         })
@@ -87,12 +88,12 @@ fun WhatsNewDialog(title: String, notes: List<VersionNotes>, onDismiss: () -> Un
         title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                if (notes.isEmpty()) Text("Nothing listed for this version.")
+                if (notes.isEmpty()) Text(t("Nothing listed for this version."))
                 notes.forEachIndexed { i, version ->
                     // One version needs no heading; several get one each.
                     if (notes.size > 1) {
                         Text(
-                            "Version ${version.version}",
+                            t("Version {0}", version.version),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(top = if (i == 0) 0.dp else 12.dp, bottom = 4.dp),
@@ -102,13 +103,13 @@ fun WhatsNewDialog(title: String, notes: List<VersionNotes>, onDismiss: () -> Un
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(t("OK")) } },
         dismissButton = newest?.let {
             {
                 TextButton(onClick = {
                     nav.openExternal(WhatsNew.releaseUrl(it.version))
                     onDismiss()
-                }) { Text("View release") }
+                }) { Text(t("View release")) }
             }
         },
     )
@@ -118,19 +119,19 @@ fun WhatsNewDialog(title: String, notes: List<VersionNotes>, onDismiss: () -> Un
 private fun UpdateDialog(release: LatestRelease, onView: () -> Unit, onLater: () -> Unit) {
     AlertDialog(
         onDismissRequest = onLater,
-        title = { Text("Faden ${release.version} is out") },
+        title = { Text(t("Faden {0} is out", release.version)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 if (release.items.isEmpty()) {
-                    Text("A new version is available on GitHub.")
+                    Text(t("A new version is available on GitHub."))
                 } else {
-                    Text("What's new:", Modifier.padding(bottom = 4.dp))
+                    Text(t("What's new:"), Modifier.padding(bottom = 4.dp))
                     Bullets(release.items)
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onView) { Text("View release") } },
-        dismissButton = { TextButton(onClick = onLater) { Text("Later") } },
+        confirmButton = { TextButton(onClick = onView) { Text(t("View release")) } },
+        dismissButton = { TextButton(onClick = onLater) { Text(t("Later")) } },
     )
 }
 

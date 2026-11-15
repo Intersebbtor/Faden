@@ -25,6 +25,7 @@ T_CALL = re.compile(r'(?<![\w.])t\(\s*' + STR)
 TN_CALL = re.compile(r'(?<![\w.])tn\(\s*[^,]+?,\s*' + STR + r'\s*,\s*' + STR, re.S)
 ENTRY = re.compile(r'^\s*' + STR + r'\s+to\s+' + STR + r'\s*,?\s*$', re.M)
 PLURAL = re.compile(r'^\s*' + STR + r'\s+to\s+\(\s*' + STR + r'\s+to\s+' + STR + r'\s*\)\s*,?\s*$', re.M)
+ENUM_ENTRY = re.compile(r'^\s*(?:enum class \w+\([^)]*\)\s*\{\s*)?[A-Z][A-Z0-9_]*\s*\(')
 PH = re.compile(r'\{\d+\}')
 TEMPLATE = re.compile(r'(?<!\\)\$[{\w]')
 
@@ -43,7 +44,7 @@ def main():
     only = args[0] if args else ""
     suspects = "--suspects" in sys.argv
 
-    looked_up, plural_keys, problems = {}, {}, []
+    looked_up, plural_keys, problems, enum_literals = {}, {}, [], set()
     for f in sorted(ROOT.rglob("*.kt")):
         if f.parent == I18N:
             continue
@@ -54,6 +55,13 @@ def main():
             if TEMPLATE.search(key):
                 problems.append(f"templates: {rel}: t(\"{key}\")")
             looked_up.setdefault(unescape(key), str(rel))
+        # Enum labels looked up through a getter (`val label get() = t(en)`): the entries' literals are the keys.
+        if re.search(r'get\(\)\s*=\s*t\(\w+\)', src):
+            for line in src.splitlines():
+                if ENUM_ENTRY.match(line):
+                    for s in re.findall(STR, line):
+                        if re.search(r'[A-Za-z]', s) and not TEMPLATE.search(s):
+                            enum_literals.add(unescape(s))
         for m in TN_CALL.finditer(src):
             one, other = m.group(1), m.group(2)
             if TEMPLATE.search(one + other):
@@ -94,7 +102,7 @@ def main():
             if sorted(set(PH.findall(key))) != sorted(set(PH.findall(de_other))):
                 problems.append(f"placeholders: plural \"{key}\" -> \"{de_other}\"")
     for key, (_, f) in strings.items():
-        if key not in looked_up:
+        if key not in looked_up and key not in enum_literals:
             problems.append(f"unused: {f}: \"{key}\"")
     for key, (_, f) in plurals.items():
         if key not in plural_keys:

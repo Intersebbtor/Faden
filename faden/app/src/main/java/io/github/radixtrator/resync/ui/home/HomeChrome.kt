@@ -136,6 +136,8 @@ import io.github.radixtrator.resync.ui.navigation.SwipeModeRoute
 import io.github.radixtrator.resync.ui.navigation.SubmitRoute
 import io.github.radixtrator.resync.ui.navigation.UserRoute
 import io.github.radixtrator.resync.ui.theme.LocalDarkTheme
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.I18n
 
 /** Sync's bottom-navigation tabs. Explore isn't a page: it opens [ExploreSheet] over the current one. */
 enum class HomeTab { POSTS, INBOX }
@@ -182,9 +184,9 @@ fun ShellScaffold(
     var recentsOpen by rememberSaveable { mutableStateOf(false) }
     // Explore and Recently viewed open sheets this shell owns.
     val moreActions = quickActions.map { action ->
-        when (action.label) {
-            ACTION_EXPLORE -> QuickAction(action.label, action.icon, action.active) { explore = ExploreMode.BROWSE }
-            ACTION_RECENTLY_VIEWED -> QuickAction(action.label, action.icon, action.active) { recentsOpen = true }
+        when (action.key) {
+            ACTION_EXPLORE -> QuickAction(action.label, action.icon, action.active, action.key) { explore = ExploreMode.BROWSE }
+            ACTION_RECENTLY_VIEWED -> QuickAction(action.label, action.icon, action.active, action.key) { recentsOpen = true }
             else -> action
         }
     }
@@ -240,16 +242,16 @@ fun ShellScaffold(
                             }
                         })
                     } else {
-                        IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                        IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
                     }
                 },
                 title = {
                     if (smallTitle != null) Text(smallTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 actions = {
-                    if (showSearch) IconButton(onClick = { explore = ExploreMode.SEARCH }) { Icon(Icons.Outlined.Search, "Search") }
+                    if (showSearch) IconButton(onClick = { explore = ExploreMode.SEARCH }) { Icon(Icons.Outlined.Search, t("Search")) }
                     actions()
-                    IconButton(onClick = { moreOpen = true }) { Icon(Icons.Default.MoreVert, "More actions") }
+                    IconButton(onClick = { moreOpen = true }) { Icon(Icons.Default.MoreVert, t("More actions")) }
                 },
             )
         },
@@ -284,11 +286,11 @@ fun ShellScaffold(
                     Spacer(Modifier.weight(1f))
                     androidx.compose.material3.NavigationRailItem(
                         selected = tab == HomeTab.POSTS, onClick = { if (tab == HomeTab.POSTS) onReselectTab() else nav.popWhile { it is InboxRoute } },
-                        icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) }, label = { Text("Posts", style = NavLabel) },
+                        icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) }, label = { Text(t("Posts"), style = NavLabel) },
                     )
                     androidx.compose.material3.NavigationRailItem(
                         selected = false, onClick = { explore = ExploreMode.BROWSE },
-                        icon = { Icon(AppIcons.Compass, null) }, label = { Text("Explore", style = NavLabel) },
+                        icon = { Icon(AppIcons.Compass, null) }, label = { Text(t("Explore"), style = NavLabel) },
                     )
                     androidx.compose.material3.NavigationRailItem(
                         selected = tab == HomeTab.INBOX, onClick = { if (tab == HomeTab.INBOX) onReselectTab() else nav.push(InboxRoute(home = true)) },
@@ -297,7 +299,7 @@ fun ShellScaffold(
                                 Icon(if (tab == HomeTab.INBOX) Icons.Filled.Email else Icons.Outlined.Email, null)
                             }
                         },
-                        label = { Text("Inbox", style = NavLabel) },
+                        label = { Text(t("Inbox"), style = NavLabel) },
                     )
                     Spacer(Modifier.weight(1f))
                 }
@@ -429,48 +431,48 @@ fun quickActions(
         else -> null
     }
     return buildList {
-        add(QuickAction("Search", Icons.Outlined.Search) { nav.push(SearchRoute(subreddit = subreddit)) })
-        if (me != null) add(QuickAction("Profile", Icons.Outlined.Person) { nav.push(UserRoute(me)) })
-        add(QuickAction("Hide read", Icons.Default.Check, active = settings.hideRead) {
+        add(QuickAction(t("Search"), Icons.Outlined.Search, key = "Search") { nav.push(SearchRoute(subreddit = subreddit)) })
+        if (me != null) add(QuickAction(t("Profile"), Icons.Outlined.Person, key = "Profile") { nav.push(UserRoute(me)) })
+        add(QuickAction(t("Hide read"), Icons.Default.Check, key = "Hide read", active = settings.hideRead) {
             container.settings.update { it.copy(hideRead = !it.hideRead) }
         })
-        onAbout?.let { add(QuickAction("About", Icons.Outlined.Info, onClick = it)) }
-        add(QuickAction("Submit", Icons.Outlined.Create) { nav.push(SubmitRoute(subreddit)) })
-        add(QuickAction("Random", AppIcons.Dice) { scope.launch { nav.openRandomCommunity(container.api) } })
-        add(QuickAction("Dark mode", AppIcons.Moon, active = dark) {
+        onAbout?.let { add(QuickAction(t("About"), Icons.Outlined.Info, key = "About", onClick = it)) }
+        add(QuickAction(t("Submit"), Icons.Outlined.Create, key = "Submit") { nav.push(SubmitRoute(subreddit)) })
+        add(QuickAction(t("Random"), AppIcons.Dice, key = "Random") { scope.launch { nav.openRandomCommunity(container.api) } })
+        add(QuickAction(t("Dark mode"), AppIcons.Moon, key = "Dark mode", active = dark) {
             container.settings.update { it.copy(theme = if (dark) ThemeMode.LIGHT else ThemeMode.DARK) }
         })
-        add(QuickAction("Settings", Icons.Outlined.Settings) { nav.push(SettingsRoute()) })
-        add(QuickAction("Swipe mode", AppIcons.Gallery) { nav.push(SwipeModeRoute(subreddit)) })
-        onChangeView?.let { add(QuickAction("Change view", AppIcons.ViewStack, onClick = it)) }
-        add(QuickAction("Refresh", Icons.Outlined.Refresh, onClick = onRefresh))
-        if (me != null) add(QuickAction("Saved", AppIcons.Bookmark) { nav.push(UserRoute(me, UserWhere.SAVED)) })
-        add(QuickAction("Dark overlay", AppIcons.Contrast, active = settings.darkOverlay) {
+        add(QuickAction(t("Settings"), Icons.Outlined.Settings, key = "Settings") { nav.push(SettingsRoute()) })
+        add(QuickAction(t("Swipe mode"), AppIcons.Gallery, key = "Swipe mode") { nav.push(SwipeModeRoute(subreddit)) })
+        onChangeView?.let { add(QuickAction(t("Change view"), AppIcons.ViewStack, key = "Change view", onClick = it)) }
+        add(QuickAction(t("Refresh"), Icons.Outlined.Refresh, key = "Refresh", onClick = onRefresh))
+        if (me != null) add(QuickAction(t("Saved"), AppIcons.Bookmark, key = "Saved") { nav.push(UserRoute(me, UserWhere.SAVED)) })
+        add(QuickAction(t("Dark overlay"), AppIcons.Contrast, key = "Dark overlay", active = settings.darkOverlay) {
             container.settings.update { it.copy(darkOverlay = !it.darkOverlay) }
         })
         // Flips between Always and Never; "On mobile data" counts as on, so a tap turns it off.
-        add(QuickAction("Data saving", AppIcons.DataSaver, active = settings.dataSaving != DataSaving.NEVER) {
+        add(QuickAction(t("Data saving"), AppIcons.DataSaver, key = "Data saving", active = settings.dataSaving != DataSaving.NEVER) {
             container.settings.update {
                 it.copy(dataSaving = if (it.dataSaving == DataSaving.NEVER) DataSaving.ALWAYS else DataSaving.NEVER)
             }
         })
-        add(QuickAction(ACTION_EXPLORE, AppIcons.Compass) {})
-        add(QuickAction("Filters", AppIcons.Filter) { nav.push(SettingsRoute(SettingsCategory.FILTERS)) })
-        if (me != null) add(QuickAction("Inbox", Icons.Outlined.Email) { nav.push(InboxRoute()) })
+        add(QuickAction(t("Explore"), AppIcons.Compass, key = ACTION_EXPLORE) {})
+        add(QuickAction(t("Filters"), AppIcons.Filter, key = "Filters") { nav.push(SettingsRoute(SettingsCategory.FILTERS)) })
+        if (me != null) add(QuickAction(t("Inbox"), Icons.Outlined.Email, key = "Inbox") { nav.push(InboxRoute()) })
         // A random NSFW community from all of Reddit (needs an account that allows NSFW).
         if (me != null && settings.nsfw != NsfwMode.HIDE) {
-            add(QuickAction("Random nsfw", AppIcons.Dice) { scope.launch { nav.openRandomCommunity(container.api, nsfw = true) } })
+            add(QuickAction(t("Random nsfw"), AppIcons.Dice, key = "Random nsfw") { scope.launch { nav.openRandomCommunity(container.api, nsfw = true) } })
         }
-        add(QuickAction(ACTION_RECENTLY_VIEWED, AppIcons.Clock) {})
-        onScrollToTop?.let { add(QuickAction("Scroll to top", AppIcons.ArrowUp, onClick = it)) }
+        add(QuickAction(t("Recently viewed"), AppIcons.Clock, key = ACTION_RECENTLY_VIEWED) {})
+        onScrollToTop?.let { add(QuickAction(t("Scroll to top"), AppIcons.ArrowUp, key = "Scroll to top", onClick = it)) }
         nextAccount?.let { next ->
-            add(QuickAction("Toggle account", Icons.Outlined.AccountCircle) {
+            add(QuickAction(t("Toggle account"), Icons.Outlined.AccountCircle, key = "Toggle account") {
                 container.switchAccount(next)
-                Toast.makeText(context, "Switched to u/$next", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, t("Switched to u/{0}", next), Toast.LENGTH_SHORT).show()
             })
         }
-        add(QuickAction("Watched", Icons.Outlined.Notifications) { nav.push(SettingsRoute(SettingsCategory.MESSAGING)) })
-    }.filterNot { it.label in settings.hiddenActions }
+        add(QuickAction(t("Watched"), Icons.Outlined.Notifications, key = "Watched") { nav.push(SettingsRoute(SettingsCategory.MESSAGING)) })
+    }.filterNot { it.key in settings.hiddenActions }
 }
 
 /**
@@ -488,18 +490,18 @@ private fun MoreActionsTitle(container: AppContainer, topPadding: Dp = 16.dp) {
         inVisibility = false
     }
     Box(Modifier.fillMaxWidth()) {
-        SheetTitle("More actions", topPadding = topPadding)
+        SheetTitle(t("More actions"), topPadding = topPadding)
         Box(Modifier.align(Alignment.TopEnd).padding(top = (topPadding - 12.dp).coerceAtLeast(0.dp), end = 4.dp)) {
-            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, "More actions options") }
+            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("More actions options")) }
             DropdownMenu(expanded = menuOpen, onDismissRequest = ::close) {
                 if (!inVisibility) {
                     DropdownMenuItem(
-                        text = { Text("Action visibility") },
+                        text = { Text(t("Action visibility")) },
                         trailingIcon = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
                         onClick = { inVisibility = true },
                     )
                     DropdownMenuItem(
-                        text = { Text("Show all actions") },
+                        text = { Text(t("Show all actions")) },
                         enabled = settings.hiddenActions.isNotEmpty(),
                         onClick = {
                             container.settings.update { it.copy(hiddenActions = emptySet()) }
@@ -508,12 +510,12 @@ private fun MoreActionsTitle(container: AppContainer, topPadding: Dp = 16.dp) {
                     )
                 } else {
                     DropdownMenuItem(
-                        text = { Text("Action visibility", style = MaterialTheme.typography.titleSmall) },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") },
+                        text = { Text(t("Action visibility"), style = MaterialTheme.typography.titleSmall) },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) },
                         onClick = { inVisibility = false },
                     )
                     HorizontalDivider()
-                    QUICK_ACTION_LABELS.sortedBy { it.lowercase() }.forEach { label ->
+                    QUICK_ACTION_LABELS.sortedBy { t(it).lowercase(I18n.locale) }.forEach { label ->
                         val shown = label !in settings.hiddenActions
                         val toggle = {
                             container.settings.update {
@@ -521,7 +523,7 @@ private fun MoreActionsTitle(container: AppContainer, topPadding: Dp = 16.dp) {
                             }
                         }
                         DropdownMenuItem(
-                            text = { Text(label) },
+                            text = { Text(t(label)) },
                             trailingIcon = { Checkbox(checked = shown, onCheckedChange = { toggle() }) },
                             onClick = toggle,
                         )
@@ -532,7 +534,7 @@ private fun MoreActionsTitle(container: AppContainer, topPadding: Dp = 16.dp) {
     }
 }
 
-/** Every More actions button that the sheets' ⋮ › Action visibility can switch off, in grid order. */
+/** Every More actions button that the sheets' ⋮ › Action visibility can switch off, in grid order: their English keys. */
 val QUICK_ACTION_LABELS = listOf(
     "Search", "Profile", "Hide read", "About", "Submit", "Random", "Dark mode", "Settings",
     "Swipe mode", "Change view", "Refresh", "Saved", "Dark overlay", "Data saving", ACTION_EXPLORE, "Filters", "Inbox", "Random nsfw",
@@ -555,13 +557,13 @@ private fun HomeNavigationBar(
         unselectedTextColor = MaterialTheme.colorScheme.onSurface,
     )
     NavigationBar(modifier = modifier, containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
-        NavItem("Posts", if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, tab == HomeTab.POSTS, onPosts, colors)
-        NavItem("Explore", AppIcons.Compass, false, onExplore, colors)
+        NavItem(t("Posts"), if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, tab == HomeTab.POSTS, onPosts, colors)
+        NavItem(t("Explore"), AppIcons.Compass, false, onExplore, colors)
         NavigationBarItem(
             selected = tab == HomeTab.INBOX,
             onClick = onInbox,
             colors = colors,
-            label = { Text("Inbox", style = NavLabel) },
+            label = { Text(t("Inbox"), style = NavLabel) },
             icon = {
                 BadgedBox(badge = { if (inboxCount > 0) Badge { Text("$inboxCount") } }) {
                     Icon(if (tab == HomeTab.INBOX) Icons.Filled.Email else Icons.Outlined.Email, null)
@@ -612,19 +614,19 @@ private fun HomeDrawer(
                     Avatar(avatar, size = 48)
                     Spacer(Modifier.width(16.dp))
                     Text(
-                        me ?: "Anonymous",
+                        me ?: t("Anonymous"),
                         style = MaterialTheme.typography.titleLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    Icon(Icons.Default.KeyboardArrowDown, "Accounts")
+                    Icon(Icons.Default.KeyboardArrowDown, t("Accounts"))
                 }
                 HorizontalDivider(Modifier.padding(bottom = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
             } }
             item(key = "posts") {
                 NavigationDrawerItem(
-                    label = { Text("Posts") },
+                    label = { Text(t("Posts")) },
                     icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) },
                     selected = tab == HomeTab.POSTS,
                     onClick = onPosts,
@@ -633,7 +635,7 @@ private fun HomeDrawer(
             }
             item(key = "inbox") {
                 NavigationDrawerItem(
-                    label = { Text("Inbox") },
+                    label = { Text(t("Inbox")) },
                     icon = { Icon(if (tab == HomeTab.INBOX) Icons.Filled.Email else Icons.Outlined.Email, null) },
                     badge = { if (inboxCount > 0) Badge { Text("$inboxCount") } },
                     selected = tab == HomeTab.INBOX,
@@ -643,7 +645,7 @@ private fun HomeDrawer(
             }
             item(key = "explore") {
                 NavigationDrawerItem(
-                    label = { Text("Explore") },
+                    label = { Text(t("Explore")) },
                     icon = { Icon(AppIcons.Compass, null) },
                     selected = false,
                     onClick = onExplore,
@@ -655,7 +657,7 @@ private fun HomeDrawer(
             item(key = "settings") { Column {
                 HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
                 NavigationDrawerItem(
-                    label = { Text("Settings") },
+                    label = { Text(t("Settings")) },
                     icon = { Icon(Icons.Outlined.Settings, null) },
                     selected = false,
                     onClick = onSettings,
@@ -718,7 +720,7 @@ private fun MoreFab(onClick: () -> Unit, onLongClick: () -> Unit, modifier: Modi
         modifier = modifier.size(FabSize),
     ) {
         Box(Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.MoreVert, "More actions", modifier = Modifier.rotate(90f))
+            Icon(Icons.Default.MoreVert, t("More actions"), modifier = Modifier.rotate(90f))
         }
     }
 }
@@ -736,9 +738,9 @@ private fun Avatar(url: String?, size: Int) {
         contentAlignment = Alignment.Center,
     ) {
         if (url != null) {
-            AsyncImage(model = url, contentDescription = "Account", contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            AsyncImage(model = url, contentDescription = t("Account"), contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
         } else {
-            Icon(Icons.Outlined.AccountCircle, "Account", modifier = Modifier.size((size * 0.8f).dp))
+            Icon(Icons.Outlined.AccountCircle, t("Account"), modifier = Modifier.size((size * 0.8f).dp))
         }
     }
 }
@@ -773,23 +775,23 @@ private fun AccountCard(container: AppContainer, onDismiss: () -> Unit) {
                         Avatar(avatar, size = 48)
                         Spacer(Modifier.width(16.dp))
                         Text(
-                            me ?: "Anonymous",
+                            me ?: t("Anonymous"),
                             style = MaterialTheme.typography.titleLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.weight(1f),
                         )
-                        if (me != null) IconButton(onClick = { confirmLogout = true }) { Icon(AppIcons.RemoveCircle, "Log out") }
+                        if (me != null) IconButton(onClick = { confirmLogout = true }) { Icon(AppIcons.RemoveCircle, t("Log out")) }
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     accounts.filter { it != me }.forEach { name ->
                         CardRow(name, Icons.Outlined.AccountCircle) { go { container.switchAccount(name) } }
                     }
-                    if (me != null) CardRow("Anonymous", Icons.Outlined.AccountCircle) { go { container.switchAccount(null) } }
-                    CardRow("Add account", AppIcons.PersonAdd) { go { nav.push(LoginRoute) } }
+                    if (me != null) CardRow(t("Anonymous"), Icons.Outlined.AccountCircle) { go { container.switchAccount(null) } }
+                    CardRow(t("Add account"), AppIcons.PersonAdd) { go { nav.push(LoginRoute) } }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    me?.let { name -> CardRow("Profile", Icons.Outlined.Person) { go { nav.push(UserRoute(name)) } } }
-                    CardRow("Settings", Icons.Outlined.Settings) { go { nav.push(SettingsRoute()) } }
+                    me?.let { name -> CardRow(t("Profile"), Icons.Outlined.Person) { go { nav.push(UserRoute(name)) } } }
+                    CardRow(t("Settings"), Icons.Outlined.Settings) { go { nav.push(SettingsRoute()) } }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Text(
                         "Faden ${BuildConfig.VERSION_NAME}",
@@ -804,10 +806,10 @@ private fun AccountCard(container: AppContainer, onDismiss: () -> Unit) {
     if (confirmLogout) {
         AlertDialog(
             onDismissRequest = { confirmLogout = false },
-            title = { Text("Log out u/$me?") },
-            text = { Text("Faden forgets this account on this device.") },
-            confirmButton = { TextButton(onClick = { confirmLogout = false; go(container::logout) }) { Text("Log out") } },
-            dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text("Cancel") } },
+            title = { Text(t("Log out u/{0}?", me)) },
+            text = { Text(t("Faden forgets this account on this device.")) },
+            confirmButton = { TextButton(onClick = { confirmLogout = false; go(container::logout) }) { Text(t("Log out")) } },
+            dismissButton = { TextButton(onClick = { confirmLogout = false }) { Text(t("Cancel")) } },
         )
     }
 }

@@ -149,11 +149,15 @@ fun OptionRow(
     }
 }
 
-/** One button in Sync's More actions grid. [active] marks a toggle that's on (e.g. Dark mode). */
+/**
+ * One button in Sync's More actions grid. [active] marks a toggle that's on (e.g. Dark mode). [label] is shown as
+ * given (already translated); [key] names the action for settings that persist it, and stays English.
+ */
 class QuickAction(
     val label: String,
     val icon: ImageVector,
     val active: Boolean = false,
+    val key: String = label,
     val onClick: () -> Unit,
 )
 
