@@ -116,11 +116,10 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
                 items(entries, key = { it }) { entry ->
                     val label = type.describe(entry)
                     ListItem(
-                        headlineContent = { Text(label) },
                         trailingContent = {
                             IconButton(onClick = { container.filters.remove(type, entry) }) { Icon(Icons.Default.Close, t("Stop filtering {0}", label)) }
                         },
-                    )
+                    ) { Text(label) }
                 }
             }
         }

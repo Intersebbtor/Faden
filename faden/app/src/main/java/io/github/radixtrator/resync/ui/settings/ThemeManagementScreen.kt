@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.settings
 
@@ -6,6 +6,11 @@ import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +36,14 @@ import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -94,11 +106,14 @@ fun ThemeManagementScreen(container: AppContainer) {
     var viewingPalette by rememberSaveable { mutableStateOf(false) }
 
     SwipeBack(enabled = settings.swipeBack, onBack = nav::pop) {
+        val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                TopAppBar(
+                LargeFlexibleTopAppBar(
                     navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = { Text(t("Theme management")) },
+                    scrollBehavior = scrollBehavior,
                 )
             },
         ) { padding ->
@@ -116,22 +131,17 @@ fun ThemeManagementScreen(container: AppContainer) {
                 val canDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                 val manual = !dynamic && settings.seedColor != null
                 val automatic = if (canDynamic) dynamic else settings.seedColor == null
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    SegmentedButton(
                         selected = automatic,
                         onClick = { update { it.copy(dynamicColor = canDynamic, seedColor = null) } },
-                        label = { Text(t("Automatic")) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    FilterChip(
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    ) { Text(t("Automatic"), maxLines = 1) }
+                    SegmentedButton(
                         selected = manual,
                         onClick = { update { it.copy(dynamicColor = false, seedColor = it.seedColor ?: THEME_SEEDS.first()) } },
-                        label = { Text(t("Manual selection")) },
-                        modifier = Modifier.weight(1f),
-                    )
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    ) { Text(t("Manual selection"), maxLines = 1) }
                 }
                 Text(
                     when {
@@ -162,7 +172,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                 Section(t("Theme color"))
                 val swatchDark = LocalDarkTheme.current
                 Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
@@ -193,13 +203,13 @@ fun ThemeManagementScreen(container: AppContainer) {
                 Section(t("Saved themes"))
                 if (settings.savedThemes.isEmpty()) {
                     ListItem(
-                        headlineContent = { Text(t("None yet")) },
                         supportingContent = { Text(t("Save the theme you're using to switch back to it later")) },
-                    )
+                    ) { Text(t("None yet")) }
                 }
                 settings.savedThemes.forEach { theme ->
                     val inUse = !dynamic && theme.matches(settings)
                     ListItem(
+                        onClick = { update { theme.applyTo(it) } },
                         leadingContent = {
                             val dark = when (theme.mode) {
                                 ThemeMode.SYSTEM -> systemDark
@@ -213,7 +223,6 @@ fun ThemeManagementScreen(container: AppContainer) {
                                 onClick = null,
                             )
                         },
-                        headlineContent = { Text(theme.name) },
                         supportingContent = { Text(if (inUse) t("{0} · In use", describe(theme)) else describe(theme)) },
                         trailingContent = {
                             Row {
@@ -223,34 +232,29 @@ fun ThemeManagementScreen(container: AppContainer) {
                                 IconButton(onClick = { deleting = theme }) { Icon(Icons.Outlined.Delete, t("Delete {0}", theme.name)) }
                             }
                         },
-                        modifier = Modifier.clickable { update { theme.applyTo(it) } },
-                    )
+                    ) { Text(theme.name) }
                 }
                 ListItem(
-                    headlineContent = { Text(t("Save current theme")) },
+                    onClick = { saving = true },
                     supportingContent = { Text(describe(SavedTheme.from(settings, ""))) },
-                    modifier = Modifier.clickable { saving = true },
-                )
+                ) { Text(t("Save current theme")) }
 
                 Section(t("Extra"))
                 ListItem(
-                    headlineContent = { Text(t("View palette")) },
+                    onClick = { viewingPalette = true },
                     supportingContent = { Text(t("The colors the theme in use is built from")) },
-                    modifier = Modifier.clickable { viewingPalette = true },
-                )
+                ) { Text(t("View palette")) }
                 ListItem(
-                    headlineContent = { Text(t("Share theme")) },
-                    supportingContent = { Text(t("Send the theme you're using as a code to paste")) },
-                    modifier = Modifier.clickable {
+                    onClick = {
                         val name = settings.savedThemes.firstOrNull { it.matches(settings) }?.name ?: t("Faden theme")
                         nav.share(ThemeCode.encode(SavedTheme.from(settings, name)), name)
                     },
-                )
+                    supportingContent = { Text(t("Send the theme you're using as a code to paste")) },
+                ) { Text(t("Share theme")) }
                 ListItem(
-                    headlineContent = { Text(t("Load theme")) },
+                    onClick = { loading = true },
                     supportingContent = { Text(t("Paste a shared theme code")) },
-                    modifier = Modifier.clickable { loading = true },
-                )
+                ) { Text(t("Load theme")) }
                 Spacer(Modifier.height(16.dp))
             }
         }
@@ -478,7 +482,13 @@ private fun ThemeSwatch(scheme: ColorScheme, selected: Boolean, description: Str
                 if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                 CircleShape,
             )
-            .then(if (onClick != null) Modifier.clickable(onClickLabel = description, onClick = onClick) else Modifier),
+            .then(
+                if (onClick != null) {
+                    Modifier
+                        .semantics { if (description != null) contentDescription = description }
+                        .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+                } else Modifier,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(size * 0.45f).clip(CircleShape).background(scheme.primary))

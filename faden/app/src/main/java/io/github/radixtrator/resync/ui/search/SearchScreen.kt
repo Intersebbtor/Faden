@@ -30,6 +30,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -87,6 +89,7 @@ import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.ChipMenu
 import io.github.radixtrator.resync.ui.common.Format
 import io.github.radixtrator.resync.ui.common.HeaderChip
+import io.github.radixtrator.resync.ui.common.HeaderFilterChip
 import io.github.radixtrator.resync.ui.common.LargeHeader
 import io.github.radixtrator.resync.ui.common.ListingViewModel
 import io.github.radixtrator.resync.ui.common.MessageEffect
@@ -233,10 +236,11 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                 ),
                 navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                 title = {
+                    val searchLabel = if (subreddit != null && restrict) t("Search r/{0}", subreddit) else t("Search Reddit")
                     TextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text(if (subreddit != null && restrict) t("Search r/{0}", subreddit) else t("Search Reddit")) },
+                        placeholder = { Text(searchLabel) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { submit() }),
@@ -249,7 +253,8 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
                         ),
-                        modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                        // The placeholder vanishes once there's text and isn't a label for TalkBack, so name the field.
+                        modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = searchLabel },
                     )
                 },
                 actions = { if (tab == 0) SearchSortMenu(posts::setSort) },
@@ -277,15 +282,11 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                                         ChipMenu(sort.label, searchSortIcon(sort), SearchSort.entries, { it.label }, posts::setSort)
                                         HeaderChip(if (mode == SearchMode.SEARCH) t("Options") else "${mode.label}: $target", Icons.Outlined.Settings, { optionsOpen = true })
                                         if (subreddit != null && mode == SearchMode.SEARCH) {
-                                            HeaderChip(
-                                                t("Only in r/{0}", subreddit),
-                                                if (restrict) Icons.Outlined.Check else null,
-                                                { posts.setRestrict(!restrict) },
-                                                container = if (restrict) {
-                                                    MaterialTheme.colorScheme.secondaryContainer
-                                                } else {
-                                                    MaterialTheme.colorScheme.surfaceContainerLow
-                                                },
+                                            HeaderFilterChip(
+                                                label = t("Only in r/{0}", subreddit),
+                                                selected = restrict,
+                                                onClick = { posts.setRestrict(!restrict) },
+                                                icon = if (restrict) Icons.Outlined.Check else null,
                                             )
                                         }
                                     }

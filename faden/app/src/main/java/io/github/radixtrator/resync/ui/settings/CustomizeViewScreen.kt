@@ -40,7 +40,7 @@ import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.PostMedia
 import io.github.radixtrator.resync.data.TitleSize
 import io.github.radixtrator.resync.data.ViewOptions
-import io.github.radixtrator.resync.ui.common.HeaderChip
+import io.github.radixtrator.resync.ui.common.HeaderFilterChip
 import io.github.radixtrator.resync.ui.common.LargeHeader
 import io.github.radixtrator.resync.ui.common.PostActions
 import io.github.radixtrator.resync.ui.common.PostLayoutItem
@@ -94,13 +94,10 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
                 // Sync's chip row runs from the richest layout to the plainest.
                 LargeHeader(title = t("View type")) {
                     PostLayout.entries.reversed().forEach { option ->
-                        HeaderChip(
+                        HeaderFilterChip(
                             label = option.label,
-                            icon = null,
+                            selected = option == layout,
                             onClick = { layout = option },
-                            container = if (option == layout) {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            } else MaterialTheme.colorScheme.surfaceContainerLow,
                         )
                     }
                 }

@@ -157,6 +157,8 @@ internal fun germanPost(): Map<String, String> = mapOf(
     "Tag u/{0}" to "u/{0} markieren",
     "Tag" to "Markierung",
     "Tag name must not be empty." to "Die Markierung darf nicht leer sein.",
+    "Tag color {0}" to "Markierungsfarbe {0}",
+    "Default tag color" to "Standardfarbe der Markierung",
     "Tag added: {0}" to "Markierung hinzugefügt: {0}",
     "Tag removed" to "Markierung entfernt",
     "Remove tag" to "Markierung entfernen",

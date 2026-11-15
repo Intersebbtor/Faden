@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.settings
 
@@ -26,8 +26,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,10 +43,15 @@ import androidx.compose.material.icons.outlined.Settings as SettingsGlyph
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LargeFlexibleTopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -169,17 +178,30 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
     BackHandler(enabled = query != null) { query = null }
 
     SwipeBack(enabled = settings.swipeBack, onBack = nav::pop) {
+        // The title collapses as the page scrolls; while searching, the bar is a plain one holding the field.
+        val collapsing = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+        val pinned = TopAppBarDefaults.pinnedScrollBehavior()
+        val scrollBehavior = if (query != null) pinned else collapsing
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
-                TopAppBar(
-                    navigationIcon = {
-                        IconButton(onClick = { if (query != null) query = null else nav.pop() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
-                    },
-                    title = {
-                        val q = query
-                        if (q == null) {
-                            Text(category?.title ?: t("Settings"))
-                        } else {
+                val back: @Composable () -> Unit = {
+                    IconButton(onClick = { if (query != null) query = null else nav.pop() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
+                }
+                val q = query
+                if (q == null) {
+                    LargeFlexibleTopAppBar(
+                        title = { Text(category?.title ?: t("Settings")) },
+                        navigationIcon = back,
+                        actions = {
+                            if (category == null) IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Search, t("Search settings")) }
+                        },
+                        scrollBehavior = collapsing,
+                    )
+                } else {
+                    TopAppBar(
+                        navigationIcon = back,
+                        title = {
                             TextField(
                                 value = q,
                                 onValueChange = { query = it },
@@ -191,19 +213,17 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                 ),
-                                modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                                // The placeholder isn't a label for TalkBack, so name the field.
+                                modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = t("Search settings") },
                             )
                             LaunchedEffect(Unit) { focus.requestFocus() }
-                        }
-                    },
-                    actions = {
-                        when {
-                            category != null -> Unit
-                            query == null -> IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Search, t("Search settings")) }
-                            query!!.isNotEmpty() -> IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, t("Clear")) }
-                        }
-                    },
-                )
+                        },
+                        actions = {
+                            if (q.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, t("Clear")) }
+                        },
+                        scrollBehavior = pinned,
+                    )
+                }
             },
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -215,11 +235,10 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                         Section(group, divider = i > 0)
                         entries.forEach { entry ->
                             ListItem(
-                                headlineContent = { Text(entry.title) },
+                                onClick = { nav.push(SettingsRoute(entry)) },
                                 supportingContent = { Text(entry.summary) },
                                 leadingContent = { Icon(entry.icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-                                modifier = Modifier.clickable { nav.push(SettingsRoute(entry)) },
-                            )
+                            ) { Text(entry.title) }
                         }
                     }
                 } else {
@@ -246,11 +265,10 @@ private fun SearchResults(query: String, layout: PostLayout) {
     }
     results.forEach { entry ->
         ListItem(
+            onClick = { nav.push(entry.open(layout)) },
             overlineContent = { Text(entry.place) },
-            headlineContent = { Text(entry.title) },
             supportingContent = entry.summary?.let { { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) } },
-            modifier = Modifier.clickable { nav.push(entry.open(layout)) },
-        )
+        ) { Text(entry.title) }
     }
 }
 
@@ -301,7 +319,7 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
             }
             if (!(settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
                 Text(t("Theme color"), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
-                Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
                         val selected = settings.seedColor == seed
                         Box(
@@ -310,7 +328,8 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                                 .clip(CircleShape)
                                 .background(seed?.let { Color(it) } ?: MaterialTheme.colorScheme.surfaceVariant)
                                 .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                                .clickable { update { it.copy(seedColor = seed) } },
+                                .semantics { contentDescription = seed?.let { c -> t("Theme color {0}", "#%06X".format(c and 0xFFFFFF)) } ?: t("Default theme color") }
+                                .selectable(selected = selected, role = Role.RadioButton) { update { it.copy(seedColor = seed) } },
                         )
                     }
                 }
@@ -319,10 +338,9 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                 }
             }
             ListItem(
-                headlineContent = { Text(t("Saved themes")) },
+                onClick = { nav.push(ThemeManagementRoute) },
                 supportingContent = { Text(t("Preview, save, share and load themes")) },
-                modifier = Modifier.clickable { nav.push(ThemeManagementRoute) },
-            )
+            ) { Text(t("Saved themes")) }
         }
         SettingsCategory.DARK_MODE -> {
             Choice(t("Theme"), ThemeMode.entries, settings.theme, ThemeMode::label) { v -> update { it.copy(theme = v) } }
@@ -331,10 +349,9 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
         SettingsCategory.VIEW_TYPE -> {
             Choice(t("Default post layout"), PostLayout.entries, settings.layout, PostLayout::label) { v -> update { it.copy(layout = v) } }
             ListItem(
-                headlineContent = { Text(t("Customize view")) },
+                onClick = { nav.push(CustomizeViewRoute(settings.layout)) },
                 supportingContent = { Text(t("Each layout's previews, sizes and buttons")) },
-                modifier = Modifier.clickable { nav.push(CustomizeViewRoute(settings.layout)) },
-            )
+            ) { Text(t("Customize view")) }
             Choice(t("Post media preview size"), MediaPreviewSize.entries, settings.postMediaPreview, MediaPreviewSize::label) { v -> update { it.copy(postMediaPreview = v) } }
         }
         SettingsCategory.COMMENTS -> {
@@ -404,15 +421,14 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
             // Faden can't verify reddit.com as its own, so Android 12+ leaves its links off until they're allowed here.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 ListItem(
-                    headlineContent = { Text(t("Open Reddit links in Faden")) },
-                    supportingContent = { Text(t("Under \"Open by default\", add reddit.com and redd.it, so links from other apps open here")) },
-                    modifier = Modifier.clickable {
+                    onClick = {
                         val intent = Intent(android.provider.Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS, "package:${context.packageName}".toUri())
                         runCatching { context.startActivity(intent) }.onFailure {
                             Toast.makeText(context, t("Couldn't open the app's link settings"), Toast.LENGTH_SHORT).show()
                         }
                     },
-                )
+                    supportingContent = { Text(t("Under \"Open by default\", add reddit.com and redd.it, so links from other apps open here")) },
+                ) { Text(t("Open Reddit links in Faden")) }
             }
         }
         SettingsCategory.HISTORY -> {
@@ -435,29 +451,25 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
             FilterType.entries.forEach { type ->
                 val count = type.of(filters).size
                 ListItem(
-                    headlineContent = { Text(type.title) },
+                    onClick = { nav.push(FilterEditorRoute(type)) },
                     supportingContent = { Text(if (count == 0) type.summary else "${type.summary} · $count") },
-                    modifier = Modifier.clickable { nav.push(FilterEditorRoute(type)) },
-                )
+                ) { Text(type.title) }
             }
         }
         SettingsCategory.BACKUP -> BackupSection(container)
         SettingsCategory.OTHER -> {
             ListItem(
-                headlineContent = { Text(t("Reddit API")) },
+                onClick = { nav.push(SetupRoute) },
                 supportingContent = { Text(t("Client ID, redirect URI, user agent")) },
-                modifier = Modifier.clickable { nav.push(SetupRoute) },
-            )
+            ) { Text(t("Reddit API")) }
             var notesOpen by remember { mutableStateOf(false) }
             ListItem(
-                headlineContent = { Text(t("Version")) },
                 supportingContent = { Text(BuildConfig.VERSION_NAME) },
-            )
+            ) { Text(t("Version")) }
             ListItem(
-                headlineContent = { Text(t("What's new")) },
+                onClick = { notesOpen = true },
                 supportingContent = { Text(t("What changed in each version")) },
-                modifier = Modifier.clickable { notesOpen = true },
-            )
+            ) { Text(t("What's new")) }
             Toggle(t("Check for updates"), t("Say when a new version is out on GitHub"), settings.checkForUpdates) { v -> update { it.copy(checkForUpdates = v) } }
             if (notesOpen) WhatsNewDialog(t("What's new"), container.whatsNew, onDismiss = { notesOpen = false })
         }
@@ -481,47 +493,42 @@ private fun MessagingRows(container: AppContainer, settings: Settings) {
     }
     if (settings.messageCheck != MessageCheck.OFF) {
         ListItem(
-            headlineContent = { Text(t("Check now")) },
+            onClick = { InboxWorker.checkNow(context) },
             supportingContent = { Text(t("Look for new messages without waiting for the next check")) },
-            modifier = Modifier.clickable { InboxWorker.checkNow(context) },
-        )
+        ) { Text(t("Check now")) }
     }
 
     Section(t("Watched communities"))
     if (watched.isEmpty()) {
         ListItem(
-            headlineContent = { Text(t("None yet")) },
             supportingContent = { Text(t("Tap Watch on a community to get a notification for each new post")) },
-        )
+        ) { Text(t("None yet")) }
     }
     if (watched.isNotEmpty() || watchedPosts.isNotEmpty()) {
         ListItem(
-            headlineContent = { Text(t("Check now")) },
+            onClick = { WatchWorker.checkNow(context) },
             supportingContent = { Text(t("Look for new posts and comments without waiting for the hourly check")) },
-            modifier = Modifier.clickable { WatchWorker.checkNow(context) },
-        )
+        ) { Text(t("Check now")) }
     }
     watched.values.sortedBy { it.name.lowercase() }.forEach { community ->
         ListItem(
-            headlineContent = { Text("r/${community.name}") },
             supportingContent = { Text(t("Checked every hour")) },
             trailingContent = {
                 IconButton(onClick = { container.setWatching(community.name, false) }) {
                     Icon(Icons.Default.Close, t("Stop watching r/{0}", community.name))
                 }
             },
-        )
+        ) { Text("r/${community.name}") }
     }
     if (watchedPosts.isNotEmpty()) {
         Section(t("Watched posts"))
         watchedPosts.values.sortedBy { it.title.lowercase() }.forEach { post ->
             ListItem(
-                headlineContent = { Text(post.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                 supportingContent = { Text(t("r/{0} · new comments are checked every hour", post.subreddit)) },
                 trailingContent = {
                     IconButton(onClick = { container.unwatchPost(post.id) }) { Icon(Icons.Default.Close, t("Stop watching")) }
                 },
-            )
+            ) { Text(post.title, maxLines = 2, overflow = TextOverflow.Ellipsis) }
         }
     }
 }
@@ -558,12 +565,13 @@ internal fun Section(title: String, divider: Boolean = true) {
 /** A switch row; tapping anywhere on it flips the switch. */
 @Composable
 internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit) {
+    // One target with toggle semantics: the row is the toggleable, the switch only shows the state.
     ListItem(
-        headlineContent = { Text(title) },
+        checked = checked,
+        onCheckedChange = onChange,
         supportingContent = subtitle?.let { { Text(it) } },
-        trailingContent = { Switch(checked = checked, onCheckedChange = onChange) },
-        modifier = Modifier.clickable { onChange(!checked) },
-    )
+        trailingContent = { Switch(checked = checked, onCheckedChange = null) },
+    ) { Text(title) }
 }
 
 /** A row showing [selected]; tapping it opens a dialog of radio [options]. */
@@ -571,10 +579,9 @@ internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange
 internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T) -> String, onPick: (T) -> Unit) {
     var open by remember { mutableStateOf(false) }
     ListItem(
-        headlineContent = { Text(title) },
+        onClick = { open = true },
         supportingContent = { Text(label(selected)) },
-        modifier = Modifier.clickable { open = true },
-    )
+    ) { Text(title) }
     if (open) {
         AlertDialog(
             onDismissRequest = { open = false },
@@ -582,19 +589,16 @@ internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T)
             text = {
                 Column {
                     options.forEach { option ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .selectable(selected = option == selected, role = Role.RadioButton) {
-                                    open = false
-                                    onPick(option)
-                                }
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            RadioButton(selected = option == selected, onClick = null)
-                            Text(label(option), Modifier.padding(start = 12.dp))
-                        }
+                        ListItem(
+                            selected = option == selected,
+                            onClick = {
+                                open = false
+                                onPick(option)
+                            },
+                            leadingContent = { RadioButton(selected = option == selected, onClick = null) },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent, selectedContainerColor = Color.Transparent),
+                            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+                        ) { Text(label(option)) }
                     }
                 }
             },
