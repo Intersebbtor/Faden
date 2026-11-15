@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.CircularProgressIndicator
@@ -167,11 +169,16 @@ internal fun CommentRow(
     val nav = LocalNavigator.current
     val display = LocalFeedDisplay.current
     val headerY = headerCentre(MaterialTheme.typography.bodyMedium.lineHeight)
-    Column {
-        if (separated) Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
+    // A top-level thread starts as a panel: the window shows in the 8dp gap above it and in its rounded top corners.
+    val cardTop = MaterialTheme.shapes.large.copy(bottomStart = CornerSize(0.dp), bottomEnd = CornerSize(0.dp))
+    Column(if (separated) Modifier.background(MaterialTheme.colorScheme.background) else Modifier) {
+        if (separated) Spacer(Modifier.height(8.dp))
         SwipeActions(
             stages = display.commentSwipeStages,
             enabled = display.commentSwipe,
+            // Also as a modifier: with swipe off the shape isn't applied.
+            modifier = if (separated) Modifier.clip(cardTop) else Modifier,
+            shape = if (separated) cardTop else RectangleShape,
             onAction = { action ->
                 when (action) {
                     SwipeAction.UPVOTE -> onVote(if (comment.likes == true) 0 else 1)
