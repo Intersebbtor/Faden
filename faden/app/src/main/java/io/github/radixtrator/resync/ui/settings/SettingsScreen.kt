@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -193,7 +195,8 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
                                 ),
-                                modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                                // The placeholder isn't a label for TalkBack, so name the field.
+                                modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = t("Search settings") },
                             )
                             LaunchedEffect(Unit) { focus.requestFocus() }
                         }

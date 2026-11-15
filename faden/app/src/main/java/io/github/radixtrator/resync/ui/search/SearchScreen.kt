@@ -30,6 +30,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -234,10 +236,11 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                 ),
                 navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                 title = {
+                    val searchLabel = if (subreddit != null && restrict) t("Search r/{0}", subreddit) else t("Search Reddit")
                     TextField(
                         value = query,
                         onValueChange = { query = it },
-                        placeholder = { Text(if (subreddit != null && restrict) t("Search r/{0}", subreddit) else t("Search Reddit")) },
+                        placeholder = { Text(searchLabel) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { submit() }),
@@ -250,7 +253,8 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
                         ),
-                        modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                        // The placeholder vanishes once there's text and isn't a label for TalkBack, so name the field.
+                        modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = searchLabel },
                     )
                 },
                 actions = { if (tab == 0) SearchSortMenu(posts::setSort) },
