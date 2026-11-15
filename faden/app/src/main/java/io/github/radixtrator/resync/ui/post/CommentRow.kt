@@ -239,13 +239,14 @@ internal fun CommentRow(
 @Composable
 private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boolean, hiddenCount: Int, isNew: Boolean) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    val nameColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
+    // OP's name sits on its orange pill, so it takes the pill's own content colour.
+    val nameColor = if (comment.isSubmitter) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
     val scoreColor = when (comment.likes) {
         true -> FadenColors.Upvote
         false -> FadenColors.Downvote
         null -> muted
     }
-    val opPill = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+    val opPill = MaterialTheme.colorScheme.tertiaryContainer
     val flairBackground = MaterialTheme.colorScheme.surfaceVariant
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
     val tag = LocalUserTags.current[comment.author.lowercase()]
@@ -319,11 +320,11 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
             Text(
                 t("New"),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier
                     .padding(start = 8.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.tertiaryContainer)
+                    .background(MaterialTheme.colorScheme.primaryContainer)
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             )
         }
@@ -346,11 +347,12 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
 @Composable
 private fun commentMarks(): Map<String, InlineTextContent> {
     val accent = MaterialTheme.colorScheme.primary
+    val op = MaterialTheme.colorScheme.tertiary
     val base = distinguishedMarks()
     val language = I18n.language
-    return remember(base, accent, language) {
+    return remember(base, accent, op, language) {
         base + mapOf(
-            "op" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Speaker, "OP", tint = accent) },
+            "op" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Speaker, "OP", tint = op) },
             "pin" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Pin, t("Pinned"), tint = accent) },
         )
     }
