@@ -6,6 +6,11 @@ import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -160,7 +165,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                 Section(t("Theme color"))
                 val swatchDark = LocalDarkTheme.current
                 Row(
-                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
@@ -470,7 +475,13 @@ private fun ThemeSwatch(scheme: ColorScheme, selected: Boolean, description: Str
                 if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                 CircleShape,
             )
-            .then(if (onClick != null) Modifier.clickable(onClickLabel = description, onClick = onClick) else Modifier),
+            .then(
+                if (onClick != null) {
+                    Modifier
+                        .semantics { if (description != null) contentDescription = description }
+                        .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+                } else Modifier,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(size * 0.45f).clip(CircleShape).background(scheme.primary))

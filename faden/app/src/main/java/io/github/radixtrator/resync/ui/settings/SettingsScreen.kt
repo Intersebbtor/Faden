@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.verticalScroll
@@ -304,7 +305,7 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
             }
             if (!(settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
                 Text(t("Theme color"), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
-                Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
                         val selected = settings.seedColor == seed
                         Box(
@@ -313,7 +314,8 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                                 .clip(CircleShape)
                                 .background(seed?.let { Color(it) } ?: MaterialTheme.colorScheme.surfaceVariant)
                                 .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                                .clickable { update { it.copy(seedColor = seed) } },
+                                .semantics { contentDescription = seed?.let { c -> t("Theme color {0}", "#%06X".format(c and 0xFFFFFF)) } ?: t("Default theme color") }
+                                .selectable(selected = selected, role = Role.RadioButton) { update { it.copy(seedColor = seed) } },
                         )
                     }
                 }

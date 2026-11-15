@@ -4,6 +4,11 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -134,7 +139,7 @@ fun TagUserDialog(user: String, onDismiss: () -> Unit) {
                 isError = empty,
                 supportingText = if (empty) ({ Text(t("Tag name must not be empty.")) }) else null,
             )
-            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.selectableGroup().padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf<Int?>(null) .plus(TAG_COLORS).forEach { swatch ->
                     val selected = swatch == color
                     Box(
@@ -143,7 +148,8 @@ fun TagUserDialog(user: String, onDismiss: () -> Unit) {
                             .clip(CircleShape)
                             .background(swatch?.let { Color(it) } ?: MaterialTheme.colorScheme.tertiaryContainer)
                             .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                            .clickable { color = swatch },
+                            .semantics { contentDescription = swatch?.let { c -> t("Tag color {0}", "#%06X".format(c and 0xFFFFFF)) } ?: t("Default tag color") }
+                            .selectable(selected = selected, role = Role.RadioButton) { color = swatch },
                     )
                 }
             }
