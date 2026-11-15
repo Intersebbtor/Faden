@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
@@ -91,6 +92,12 @@ private val DarkColors = darkColorScheme(
     outline = Color(0xFF8E909A),
     outlineVariant = Color(0xFF2E3038),
 )
+
+/** Where Faden puts its signature accent: every FAB is the tertiary container, which is the upvote orange in the default palette. */
+object FadenAccents {
+    val fabContainer: Color @Composable get() = MaterialTheme.colorScheme.tertiaryContainer
+    val onFab: Color @Composable get() = MaterialTheme.colorScheme.onTertiaryContainer
+}
 
 object FadenColors {
     val Upvote = Color(0xFFFF7500)

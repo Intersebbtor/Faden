@@ -122,6 +122,7 @@ import io.github.radixtrator.resync.ui.settings.SettingsCategory
 import io.github.radixtrator.resync.ui.navigation.SwipeModeRoute
 import io.github.radixtrator.resync.ui.navigation.SubmitRoute
 import io.github.radixtrator.resync.ui.navigation.UserRoute
+import io.github.radixtrator.resync.ui.theme.FadenAccents
 import io.github.radixtrator.resync.ui.theme.LocalDarkTheme
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.I18n
@@ -707,8 +708,8 @@ private fun LazyListScope.drawerFeeds(
 private fun MoreFab(onClick: () -> Unit, onLongClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         shape = FloatingActionButtonDefaults.shape,
-        color = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        color = FadenAccents.fabContainer,
+        contentColor = FadenAccents.onFab,
         // FloatingActionButtonDefaults.elevation()'s default (Level3); its shadowElevation accessor is internal.
         shadowElevation = 6.dp,
         modifier = modifier.size(FabSize),
