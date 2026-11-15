@@ -21,6 +21,10 @@ class FadenApp : Application(), SingletonImageLoader.Factory {
     lateinit var container: AppContainer
         private set
 
+    /** The container once [onCreate] has built it; null before that, and in the crash report's process. */
+    val containerOrNull: AppContainer?
+        get() = if (::container.isInitialized) container else null
+
     override fun onCreate() {
         super.onCreate()
         // The crash report screen's process shows a saved report and nothing else.

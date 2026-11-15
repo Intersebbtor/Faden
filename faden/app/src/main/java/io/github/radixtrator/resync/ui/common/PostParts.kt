@@ -34,7 +34,6 @@ import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostMedia
 import io.github.radixtrator.resync.ui.navigation.LocalFrontpageOrAllFeed
-import io.github.radixtrator.resync.ui.navigation.LocalSettings
 
 private fun PostMedia.largePreview(): ImageSource? = when (this) {
     is PostMedia.Image -> preview ?: ImageSource(url, 0, 0)
@@ -50,17 +49,10 @@ fun Post.thumbnail(): ImageSource? = when (val m = media) {
 
 /**
  * Whether Sync's "Data saving mode" applies right now: feeds then leave thumbnails and card previews unloaded,
- * and Reddit videos open in SD. "On mobile data" means any metered connection, checked once per item.
+ * and Reddit videos open in SD. "On mobile data" means any metered connection, tracked app-wide by [meteredNetworkFlow].
  */
 @Composable
-fun dataSavingActive(): Boolean {
-    val context = LocalContext.current
-    return when (LocalSettings.current.dataSaving) {
-        DataSaving.NEVER -> false
-        DataSaving.ALWAYS -> true
-        DataSaving.MOBILE -> remember(context) { context.onMeteredNetwork() }
-    }
-}
+fun dataSavingActive(): Boolean = LocalFeedDisplay.current.dataSavingActive
 
 /** True on a metered connection (mobile data, a metered Wi-Fi), as Android reports it. */
 fun Context.onMeteredNetwork(): Boolean =
@@ -68,12 +60,17 @@ fun Context.onMeteredNetwork(): Boolean =
 
 /** Whether this post's preview should be blurred under the current settings. */
 @Composable
-fun Post.shouldBlur(): Boolean = shouldBlur(LocalSettings.current, LocalFrontpageOrAllFeed.current)
+fun Post.shouldBlur(): Boolean = shouldBlur(LocalFeedDisplay.current, LocalFrontpageOrAllFeed.current)
 
 /** [frontpageOrAll]: shown in the Frontpage, r/popular or r/all feed, which matters with "Blur NSFW only on Frontpage, Popular & All". */
 fun Post.shouldBlur(settings: Settings, frontpageOrAll: Boolean): Boolean =
-    (over18 && settings.nsfw == NsfwMode.BLUR && (frontpageOrAll || !settings.blurNsfwOnlyFrontpageAndAll)) ||
-        (spoiler && settings.blurSpoilers)
+    shouldBlur(settings.nsfw, settings.blurSpoilers, settings.blurNsfwOnlyFrontpageAndAll, frontpageOrAll)
+
+fun Post.shouldBlur(display: FeedDisplay, frontpageOrAll: Boolean): Boolean =
+    shouldBlur(display.nsfw, display.blurSpoilers, display.blurNsfwOnlyFrontpageAndAll, frontpageOrAll)
+
+private fun Post.shouldBlur(nsfw: NsfwMode, blurSpoilers: Boolean, nsfwOnlyFrontpageAndAll: Boolean, frontpageOrAll: Boolean): Boolean =
+    (over18 && nsfw == NsfwMode.BLUR && (frontpageOrAll || !nsfwOnlyFrontpageAndAll)) || (spoiler && blurSpoilers)
 
 @Composable
 fun LinkRow(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier) {

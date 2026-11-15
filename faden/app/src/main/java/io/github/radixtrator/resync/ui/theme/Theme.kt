@@ -11,6 +11,8 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -232,25 +234,46 @@ fun FullSizeText(content: @Composable () -> Unit) {
     CompositionLocalProvider(LocalDensity provides Density(density.density, density.fontScale / LocalBaseFontScale.current), content = content)
 }
 
+/** The settings that decide how the app is themed; [FadenTheme] takes only these so unrelated settings writes leave the theme alone. */
+@Immutable
+data class ThemeSpec(
+    val theme: ThemeMode = ThemeMode.SYSTEM,
+    val dynamicColor: Boolean = false,
+    val seedColor: Int? = null,
+    val extraColorful: Boolean = false,
+    val colorIntensity: Float = 1.0f,
+    val typeface: Typeface = Typeface.ROBOTO,
+) {
+    companion object {
+        fun of(settings: Settings) = ThemeSpec(
+            settings.theme, settings.dynamicColor, settings.seedColor, settings.extraColorful, settings.colorIntensity, settings.typeface,
+        )
+    }
+}
+
 @Composable
-fun FadenTheme(settings: Settings, content: @Composable () -> Unit) {
-    val dark = when (settings.theme) {
+fun FadenTheme(spec: ThemeSpec, content: @Composable () -> Unit) {
+    val dark = when (spec.theme) {
         ThemeMode.SYSTEM -> isSystemInDarkTheme()
         ThemeMode.LIGHT -> false
         ThemeMode.DARK, ThemeMode.BLACK -> true
     }
     val context = LocalContext.current
-    val black = settings.theme == ThemeMode.BLACK
-    val scheme = if (settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        val dynamic = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        if (black) dynamic.blackened() else dynamic
-    } else {
-        fadenColorScheme(dark, black, settings.seedColor, settings.extraColorful, settings.colorIntensity)
+    val black = spec.theme == ThemeMode.BLACK
+    // MaterialTheme provides its colors through a static local and ColorScheme has no equals, so a fresh instance
+    // on every call would recompose the whole app on any settings write.
+    val scheme = remember(dark, black, spec.dynamicColor, spec.seedColor, spec.extraColorful, spec.colorIntensity, context) {
+        if (spec.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val dynamic = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (black) dynamic.blackened() else dynamic
+        } else {
+            fadenColorScheme(dark, black, spec.seedColor, spec.extraColorful, spec.colorIntensity)
+        }
     }
     CompositionLocalProvider(LocalDarkTheme provides dark) {
         MaterialTheme(
             colorScheme = scheme,
-            typography = Typographies.getValue(settings.typeface),
+            typography = Typographies.getValue(spec.typeface),
             content = content,
         )
     }

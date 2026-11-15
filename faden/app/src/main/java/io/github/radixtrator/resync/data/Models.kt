@@ -60,6 +60,8 @@ data class Post(
     val distinguished: String? = null,
     /** When the post was last edited (epoch seconds); null if never. */
     val editedUtc: Long? = null,
+    /** A text post's feed preview (its first paragraph, "…" under it if more follows), made once when parsed; null if it has no text. */
+    val previewText: String? = null,
 )
 
 sealed interface CommentNode {

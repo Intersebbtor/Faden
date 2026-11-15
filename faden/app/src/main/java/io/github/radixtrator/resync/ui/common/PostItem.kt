@@ -59,7 +59,6 @@ import io.github.radixtrator.resync.ui.navigation.FeedRoute
 import io.github.radixtrator.resync.ui.navigation.LocalAccount
 import io.github.radixtrator.resync.ui.navigation.LocalContainer
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
-import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.navigation.UserRoute
 
 /** Things a list can do to a post; implemented by [ListingViewModel]. */
@@ -82,7 +81,7 @@ fun ListingViewModel<*>.postCallbacks(allowHide: Boolean = true) = PostCallbacks
 /** Applies the NSFW "hide" setting to a list of posts. */
 @Composable
 fun <T> List<T>.visiblePosts(postOf: (T) -> Post?): List<T> {
-    val hideNsfw = LocalSettings.current.nsfw == NsfwMode.HIDE
+    val hideNsfw = LocalFeedDisplay.current.nsfw == NsfwMode.HIDE
     return remember(this, hideNsfw) { if (hideNsfw) filterNot { postOf(it)?.over18 == true } else this }
 }
 
@@ -95,7 +94,7 @@ fun PostListItem(
     post: Post,
     showSubreddit: Boolean,
     callbacks: PostCallbacks,
-    layout: PostLayout = LocalSettings.current.layout,
+    layout: PostLayout = LocalFeedDisplay.current.layout,
     standalone: Boolean = true,
 ) {
     val nav = LocalNavigator.current
@@ -111,14 +110,14 @@ fun PostListItem(
             onHide = callbacks.onHide?.let { hide -> { hide(post) } },
         )
     }
-    val settings = LocalSettings.current
+    val display = LocalFeedDisplay.current
     val margins = if (standalone) Modifier.padding(horizontal = layout.gutter, vertical = layout.spacing / 2) else Modifier
     // Hide only exists where the list can drop the post (not on profiles' own lists, for instance).
     val canHide = callbacks.onHide != null
-    val stages = remember(settings.postSwipeStages, canHide) { settings.postSwipeStages.filter { it != SwipeAction.HIDE || canHide } }
+    val stages = remember(display.postSwipeStages, canHide) { display.postSwipeStages.filter { it != SwipeAction.HIDE || canHide } }
     SwipeActions(
         stages = stages,
-        enabled = settings.postSwipe,
+        enabled = display.postSwipe,
         shape = layout.swipeShape,
         modifier = margins,
         onAction = { action ->

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntOffset
 import io.github.radixtrator.resync.ui.common.SwipeBackState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +72,11 @@ import io.github.radixtrator.resync.ui.navigation.LocalAccount
 import io.github.radixtrator.resync.ui.navigation.LocalContainer
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
+import io.github.radixtrator.resync.ui.common.FeedDisplay
+import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
+import io.github.radixtrator.resync.ui.common.LocalMinuteClock
+import io.github.radixtrator.resync.ui.common.meteredNetworkFlow
+import io.github.radixtrator.resync.ui.common.rememberMinuteClock
 import io.github.radixtrator.resync.ui.navigation.LocalUserTagColors
 import io.github.radixtrator.resync.ui.navigation.LocalUserTags
 import io.github.radixtrator.resync.ui.navigation.LocalVisited
@@ -111,13 +117,17 @@ import io.github.radixtrator.resync.ui.theme.LocalBaseFontScale
 import io.github.radixtrator.resync.ui.theme.FullSizeText
 import io.github.radixtrator.resync.ui.theme.Motion
 import io.github.radixtrator.resync.ui.theme.FadenTheme
+import io.github.radixtrator.resync.ui.theme.ThemeSpec
 import io.github.radixtrator.resync.i18n.t
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(newBase)
         // Only fontScale is set, so every other setting still follows the device.
-        applyOverrideConfiguration(Configuration().apply { fontScale = newBase.resources.configuration.fontScale * savedBaseFontScale(newBase.getSharedPreferences("resync", Context.MODE_PRIVATE)) })
+        // The app's container already holds the settings (Application.onCreate runs first), so they're not decoded again.
+        val saved = (newBase.applicationContext as? FadenApp)?.containerOrNull?.settings?.settings?.value?.baseFontSize?.scale
+            ?: savedBaseFontScale(newBase.getSharedPreferences("resync", Context.MODE_PRIVATE))
+        applyOverrideConfiguration(Configuration().apply { fontScale = newBase.resources.configuration.fontScale * saved })
     }
 
     /** A page to open, from a tapped notification (a watched community's post, an inbox message). */
@@ -135,18 +145,24 @@ class MainActivity : ComponentActivity() {
         }
         val container = (application as FadenApp).container
         setContent {
-            val settings by container.settings.settings.collectAsStateWithLifecycle()
-            CompositionLocalProvider(LocalBaseFontScale provides settings.baseFontSize.scale) {
-                FadenTheme(settings) {
+            val settingsState = container.settings.settings.collectAsStateWithLifecycle()
+            // Narrow views of the settings, so a write to an unrelated one doesn't recompose the app's root.
+            val baseFontScale by remember { derivedStateOf { settingsState.value.baseFontSize.scale } }
+            val themeSpec by remember { derivedStateOf { ThemeSpec.of(settingsState.value) } }
+            val overlayAlpha by remember {
+                derivedStateOf {
+                    val s = settingsState.value
+                    if (s.darkOverlay) s.darkOverlayLevel.coerceIn(Settings.DARK_OVERLAY_MIN, Settings.DARK_OVERLAY_MAX) else 0f
+                }
+            }
+            CompositionLocalProvider(LocalBaseFontScale provides baseFontScale) {
+                FadenTheme(themeSpec) {
                     // Sync's "Dark overlay": a black layer drawn over everything after it, so it dims without
                     // taking touches. Dialogs and sheets are their own windows and stay undimmed.
                     Box(
                         Modifier.fillMaxSize().drawWithContent {
                             drawContent()
-                            if (settings.darkOverlay) {
-                                val alpha = settings.darkOverlayLevel.coerceIn(Settings.DARK_OVERLAY_MIN, Settings.DARK_OVERLAY_MAX)
-                                drawRect(Color.Black.copy(alpha = alpha))
-                            }
+                            if (overlayAlpha > 0f) drawRect(Color.Black.copy(alpha = overlayAlpha))
                         },
                     ) {
                         FadenNavHost(
@@ -188,6 +204,11 @@ private fun FadenNavHost(
     val tagColors by container.tags.colors.collectAsStateWithLifecycle()
     val currentSettings by rememberUpdatedState(settings)
     val scope = rememberCoroutineScope()
+    // One network callback and one lowercase set of moderated communities for every feed row.
+    val metered by remember { meteredNetworkFlow(context, scope) }.collectAsStateWithLifecycle()
+    val moderated by container.moderated.collectAsStateWithLifecycle()
+    val moderatedNames = remember(moderated) { moderated.mapTo(HashSet()) { it.lowercase() } }
+    val feedDisplay = remember(settings, metered, moderatedNames) { FeedDisplay.of(settings, metered, moderatedNames) }
     val navigator = remember(backStack) {
         Navigator(context, backStack, { currentSettings }, scope, { container.configStore.load()?.userAgent ?: ApiConfig.DEFAULT_USER_AGENT })
     }
@@ -204,6 +225,8 @@ private fun FadenNavHost(
         LocalNavigator provides navigator,
         LocalUriHandler provides navigator,
         LocalSettings provides settings,
+        LocalFeedDisplay provides feedDisplay,
+        LocalMinuteClock provides rememberMinuteClock(),
         LocalAccount provides username,
         LocalVisited provides visited,
         LocalUserTags provides tags,
