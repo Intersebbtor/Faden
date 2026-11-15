@@ -1,7 +1,6 @@
 package io.github.radixtrator.resync.data
 
 import android.content.SharedPreferences
-import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,7 +16,7 @@ data class RecentPost(val id: String, val title: String, val subreddit: String)
  * Sync's "Recents" on the comment page: the posts opened most recently, newest first, keeping [MAX].
  * Reopening a post moves it back to the top. Local only.
  */
-class RecentPostsStore(private val prefs: SharedPreferences) {
+class RecentPostsStore(private val prefs: SharedPreferences, private val writes: DeferredWrites = DeferredWrites()) {
     private val json = Json { ignoreUnknownKeys = true }
     private val _posts = MutableStateFlow(load())
     val posts: StateFlow<List<RecentPost>> = _posts.asStateFlow()
@@ -28,12 +27,12 @@ class RecentPostsStore(private val prefs: SharedPreferences) {
         val next = (listOf(post) + _posts.value.filter { it.id != post.id }).take(MAX)
         if (next == _posts.value) return
         _posts.value = next
-        prefs.edit { putString(KEY, json.encodeToString(ListSerializer(RecentPost.serializer()), next)) }
+        writes.put(prefs, KEY) { json.encodeToString(ListSerializer(RecentPost.serializer()), next) }
     }
 
     fun clear() {
         _posts.value = emptyList()
-        prefs.edit { remove(KEY) }
+        writes.put(prefs, KEY) { null }
     }
 
     private fun load(): List<RecentPost> =
