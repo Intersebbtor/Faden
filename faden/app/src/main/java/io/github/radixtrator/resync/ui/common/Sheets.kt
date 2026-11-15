@@ -68,8 +68,8 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /**
- * Sync's drop-down sheet: slides from the top edge over a scrim. Used for sort and More actions,
- * which Sync anchors to the toolbar rather than the bottom of the screen.
+ * A drop-down sheet: slides from the top edge over a scrim. Used for sort and More actions,
+ * which, as in Sync, hang from the toolbar rather than rising from the bottom of the screen.
  */
 @Composable
 fun TopSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
@@ -153,7 +153,7 @@ fun SheetHandle() {
 
 /**
  * A 48dp sheet row: icon (or a radio button when [radio] is set), label, optional trailing slot.
- * A non-null [selected] makes the row a choice: it draws Sync's rounded highlight and exposes a radio-button
+ * A non-null [selected] makes the row a choice: it draws a rounded highlight and exposes a radio-button
  * role; a non-null [radio] does the same for rows led by a radio button. A non-null [toggled] makes it a switch
  * (or a checkbox when [toggleRole] says so). With none of them set it is a plain action button.
  */

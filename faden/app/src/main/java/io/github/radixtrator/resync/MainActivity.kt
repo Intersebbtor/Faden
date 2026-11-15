@@ -328,7 +328,7 @@ private val MediaFade = NavDisplay.transitionSpec { ContentTransform(fadeIn(Moti
 private val CardSpec = Motion.page<IntOffset>()
 private val GestureSpec = tween<IntOffset>(Motion.PAGE, easing = LinearEasing)
 
-/** Sync's card push: the new screen slides in over the old one, which stays where it is underneath. */
+/** The card push: the new screen slides in over the old one, which stays where it is underneath. */
 private fun cardPush() = ContentTransform(
     targetContentEnter = slideInHorizontally(CardSpec) { it },
     // A zero-length slide, timed like the push, keeps the old screen drawn until the new one has covered it.

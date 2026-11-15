@@ -129,9 +129,9 @@ private val Figtree = FontFamily(
 )
 
 /**
- * Sync bundles Roboto and draws everything in it rather than the device font (One UI's is wider, and
- * drew italics upright). res/font/roboto.ttf is Android's variable Roboto: one file, every weight. Kept for
- * those who pick it.
+ * Roboto, for those who pick it (Faden's own face is Figtree). Sync draws everything in it rather than the device
+ * font (One UI's is wider, and drew italics upright). res/font/roboto.ttf is Android's variable Roboto: one file,
+ * every weight.
  */
 private val Roboto = FontFamily(
     (100..900 step 100).flatMap { weight ->

@@ -608,7 +608,7 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
             CardPreview(post, onClick = { nav.openMedia(post) }, maxHeight = if (cropped) 180.dp else null)
         }
         Column(Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp)) {
-            // Sync draws its titles in Product Sans, which can't be bundled; Roboto at 16sp is as wide.
+            // 16sp keeps the title as wide as Sync's Product Sans, which can't be bundled.
             PostTitle(post, MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = TextUnit.Unspecified), dimWhenRead = false)
             Spacer(Modifier.height(4.dp))
             PostMeta(post, showSubreddit = false, maxLines = 3, suffix = post.upvoteRatio?.let { t("{0}% upvoted", (it * 100).roundToInt()) })

@@ -594,8 +594,7 @@ private fun VotePill(likes: Boolean?, score: Int, onVote: (Int) -> Unit) {
 
 // --- Shared pieces ---
 
-// Feed text, measured from Sync's screenshots: cards read a size up from rows, and lines sit 1.2em apart
-// like Sync's Roboto (its titles are Product Sans, a little taller).
+// Feed text, sized from Sync's screenshots: cards read a size up from rows, and lines sit 1.2em apart.
 private val CardTitle: TextStyle
     @Composable get() = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 20.sp)
 private val CardMeta: TextStyle
