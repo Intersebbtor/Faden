@@ -1,5 +1,6 @@
 package io.github.radixtrator.resync.ui.media
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -16,9 +17,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -56,7 +54,7 @@ internal fun MediaLinkInfo(url: String, details: List<String>) {
     val host = url.substringAfter("://").substringBefore('/')
     // Sync indents the text to 62dp, past the 🔍.
     Row(Modifier.fillMaxWidth().padding(start = 18.dp, end = 16.dp, top = 8.dp, bottom = 16.dp)) {
-        Icon(Icons.Default.Search, null, tint = Color.White, modifier = Modifier.size(24.dp))
+        Icon(Symbols.Search, null, tint = Color.White, modifier = Modifier.size(24.dp))
         Spacer(Modifier.width(20.dp))
         Column {
             (listOf(host, url) + details).forEach { Text(it, color = Color.White, style = MaterialTheme.typography.bodyMedium) }
@@ -83,7 +81,7 @@ internal fun MediaActionBar(url: String, postId: String?) {
             clipboard.setText(AnnotatedString(url))
             Toast.makeText(context, t("Link copied"), Toast.LENGTH_SHORT).show()
         }) { Icon(AppIcons.Copy, t("Copy link"), tint = Color.White) }
-        IconButton(onClick = { nav.share(url, "") }) { Icon(Icons.Default.Share, t("Share"), tint = Color.White) }
+        IconButton(onClick = { nav.share(url, "") }) { Icon(Symbols.ShareFilled, t("Share"), tint = Color.White) }
     }
 }
 

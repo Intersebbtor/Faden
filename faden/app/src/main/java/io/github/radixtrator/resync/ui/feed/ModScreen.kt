@@ -2,15 +2,13 @@
 
 package io.github.radixtrator.resync.ui.feed
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -113,7 +111,7 @@ fun ModScreen(subreddit: String, container: AppContainer) {
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.ArrowBack, t("Back")) } },
                     title = {
                         Column {
                             Text(t("Moderator"), style = MaterialTheme.typography.titleMedium)
@@ -121,7 +119,7 @@ fun ModScreen(subreddit: String, container: AppContainer) {
                         }
                     },
                     actions = {
-                        IconButton(onClick = { nav.push(ModMailRoute(subreddit)) }) { Icon(Icons.Outlined.Email, t("Mod mail")) }
+                        IconButton(onClick = { nav.push(ModMailRoute(subreddit)) }) { Icon(Symbols.Mail, t("Mod mail")) }
                         TextButton(onClick = { menuOpen = true }) { Text("${section.label} ▾") }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             ModSection.entries.forEach { s ->

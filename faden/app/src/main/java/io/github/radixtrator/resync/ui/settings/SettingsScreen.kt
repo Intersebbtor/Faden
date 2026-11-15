@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.settings
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -35,13 +36,6 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings as SettingsGlyph
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -151,7 +145,7 @@ enum class SettingsCategory(private val enGroup: String, private val enTitle: St
 /** The glyph beside each category on the root screen. */
 private val SettingsCategory.icon: ImageVector
     get() = when (this) {
-        SettingsCategory.GENERAL -> Icons.Outlined.SettingsGlyph
+        SettingsCategory.GENERAL -> Symbols.Settings
         SettingsCategory.TABLET -> AppIcons.Tablet
         SettingsCategory.THEME -> AppIcons.Palette
         SettingsCategory.DARK_MODE -> AppIcons.Moon
@@ -159,14 +153,14 @@ private val SettingsCategory.icon: ImageVector
         SettingsCategory.COMMENTS -> AppIcons.Comment
         SettingsCategory.POSTS -> AppIcons.Text
         SettingsCategory.COMMENT_OPTIONS -> AppIcons.Reply
-        SettingsCategory.MESSAGING -> Icons.Outlined.Email
+        SettingsCategory.MESSAGING -> Symbols.Mail
         SettingsCategory.MEDIA -> AppIcons.Image
         SettingsCategory.LINKS -> AppIcons.Link
         SettingsCategory.HISTORY -> AppIcons.Clock
         SettingsCategory.DATA -> AppIcons.DataTransfer
         SettingsCategory.FILTERS -> AppIcons.Filter
         SettingsCategory.BACKUP -> AppIcons.Backup
-        SettingsCategory.OTHER -> Icons.Outlined.Info
+        SettingsCategory.OTHER -> Symbols.Info
     }
 
 /** Sync's settings: the categories at [category] null, else that category's page. */
@@ -188,7 +182,7 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 val back: @Composable () -> Unit = {
-                    IconButton(onClick = { if (query != null) query = null else nav.pop() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
+                    IconButton(onClick = { if (query != null) query = null else nav.pop() }) { Icon(Symbols.ArrowBack, t("Back")) }
                 }
                 val q = query
                 if (q == null) {
@@ -196,7 +190,7 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                         title = { Text(category?.title ?: t("Settings")) },
                         navigationIcon = back,
                         actions = {
-                            if (category == null) IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Search, t("Search settings")) }
+                            if (category == null) IconButton(onClick = { query = "" }) { Icon(Symbols.Search, t("Search settings")) }
                         },
                         scrollBehavior = collapsing,
                     )
@@ -221,7 +215,7 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                             LaunchedEffect(Unit) { focus.requestFocus() }
                         },
                         actions = {
-                            if (q.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, t("Clear")) }
+                            if (q.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Symbols.Close, t("Clear")) }
                         },
                         scrollBehavior = pinned,
                     )
@@ -520,7 +514,7 @@ private fun MessagingRows(container: AppContainer, settings: Settings) {
             supportingContent = { Text(t("Checked every hour")) },
             trailingContent = {
                 IconButton(onClick = { container.setWatching(community.name, false) }) {
-                    Icon(Icons.Default.Close, t("Stop watching r/{0}", community.name))
+                    Icon(Symbols.Close, t("Stop watching r/{0}", community.name))
                 }
             },
         ) { Text("r/${community.name}") }
@@ -531,7 +525,7 @@ private fun MessagingRows(container: AppContainer, settings: Settings) {
             ListItem(
                 supportingContent = { Text(t("r/{0} · new comments are checked every hour", post.subreddit)) },
                 trailingContent = {
-                    IconButton(onClick = { container.unwatchPost(post.id) }) { Icon(Icons.Default.Close, t("Stop watching")) }
+                    IconButton(onClick = { container.unwatchPost(post.id) }) { Icon(Symbols.Close, t("Stop watching")) }
                 },
             ) { Text(post.title, maxLines = 2, overflow = TextOverflow.Ellipsis) }
         }

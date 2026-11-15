@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.search
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -21,11 +22,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -235,7 +231,7 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
-                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.ArrowBack, t("Back")) } },
                 title = {
                     val searchLabel = if (subreddit != null && restrict) t("Search r/{0}", subreddit) else t("Search Reddit")
                     TextField(
@@ -246,7 +242,7 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                         keyboardActions = KeyboardActions(onSearch = { submit() }),
                         trailingIcon = {
-                            if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Icons.Default.Clear, t("Clear")) }
+                            if (query.isNotEmpty()) IconButton(onClick = { query = "" }) { Icon(Symbols.Close, t("Clear")) }
                         },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -281,13 +277,13 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                                 item(key = "header") {
                                     LargeHeader(t("\"{0}\"", searched)) {
                                         ChipMenu(sort.label, searchSortIcon(sort), SearchSort.entries, { it.label }, posts::setSort)
-                                        HeaderChip(if (mode == SearchMode.SEARCH) t("Options") else "${mode.label}: $target", Icons.Outlined.Settings, { optionsOpen = true })
+                                        HeaderChip(if (mode == SearchMode.SEARCH) t("Options") else "${mode.label}: $target", Symbols.Settings, { optionsOpen = true })
                                         if (subreddit != null && mode == SearchMode.SEARCH) {
                                             HeaderFilterChip(
                                                 label = t("Only in r/{0}", subreddit),
                                                 selected = restrict,
                                                 onClick = { posts.setRestrict(!restrict) },
-                                                icon = if (restrict) Icons.Outlined.Check else null,
+                                                icon = if (restrict) Symbols.Check else null,
                                             )
                                         }
                                     }

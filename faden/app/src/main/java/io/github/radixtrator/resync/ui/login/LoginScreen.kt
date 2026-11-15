@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.login
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import android.annotation.SuppressLint
@@ -15,8 +16,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -82,7 +81,7 @@ fun LoginScreen(container: AppContainer, onFinished: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text(t("Log in to Reddit")) },
-                navigationIcon = { IconButton(onClick = onFinished) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                navigationIcon = { IconButton(onClick = onFinished) { Icon(Symbols.ArrowBack, t("Back")) } },
             )
         },
     ) { padding ->

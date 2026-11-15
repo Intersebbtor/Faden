@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.feed
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import io.github.radixtrator.resync.ui.common.Avatar
@@ -23,15 +24,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,11 +65,11 @@ enum class AboutAction(private val en: String, val icon: ImageVector) {
     WIKI("View wiki", AppIcons.Book),
     FLAIRS("Filter by flair", AppIcons.Tag),
     RULES("View rules", AppIcons.Text),
-    ADD_TO_MULTI("Add to multi", Icons.Default.Add),
+    ADD_TO_MULTI("Add to multi", Symbols.Add),
     EDIT_FLAIR("Edit flair", AppIcons.Tag),
-    SHARE("Share", Icons.Outlined.Share),
-    MESSAGE_MODS("Message mods", Icons.Outlined.Email),
-    MODS("View mods", Icons.Outlined.Person),
+    SHARE("Share", Symbols.Share),
+    MESSAGE_MODS("Message mods", Symbols.Mail),
+    MODS("View mods", Symbols.Person),
     MOD_TOOLS("Mod tools", AppIcons.Shield),
     ;
 
@@ -111,14 +103,14 @@ fun SubredditInfoSheet(
         }
         // No online count: Reddit reports 0 for every community now.
         AboutHeader(about.bannerUrl, about.iconUrl, about.name, menu = { AboutMenu(about.name, onAction, it) }) {
-            AboutStat(Icons.Outlined.Person, Format.members(about.subscribers))
+            AboutStat(Symbols.Person, Format.members(about.subscribers))
         }
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
                 val chip = MaterialTheme.colorScheme.surfaceVariant
                 val joined = about.isSubscribed
-                HeaderChip(if (joined) t("Joined") else t("Join"), if (joined) Icons.Outlined.Check else AppIcons.PlaylistAdd, onToggleSubscribe, container = chip)
-                HeaderChip(if (watching) t("Watching") else t("Watch"), if (watching) Icons.Filled.Notifications else Icons.Outlined.Notifications, onToggleWatch, container = chip)
+                HeaderChip(if (joined) t("Joined") else t("Join"), if (joined) Symbols.Check else AppIcons.PlaylistAdd, onToggleSubscribe, container = chip)
+                HeaderChip(if (watching) t("Watching") else t("Watch"), if (watching) Symbols.NotificationsFilled else Symbols.Notifications, onToggleWatch, container = chip)
                 HeaderChip(t("Favorite"), if (favorite) AppIcons.BookmarkFilled else AppIcons.Bookmark, onToggleFavorite, container = chip)
             }
             about.descriptionHtml?.takeIf { it.isNotBlank() }?.let { html ->
@@ -198,7 +190,7 @@ fun AboutStat(icon: ImageVector, text: String) {
 private fun AboutMenu(community: String, onAction: (AboutAction) -> Unit, modifier: Modifier) {
     var open by remember { mutableStateOf(false) }
     Box(modifier) {
-        IconButton(onClick = { open = true }) { Icon(Icons.Default.MoreVert, t("More"), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+        IconButton(onClick = { open = true }) { Icon(Symbols.MoreVert, t("More"), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             // Mod tools only for communities you moderate.
             val moderated = LocalContainer.current.moderated.collectAsStateWithLifecycle().value

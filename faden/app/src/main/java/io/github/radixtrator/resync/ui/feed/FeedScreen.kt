@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.feed
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -23,14 +24,6 @@ import io.github.radixtrator.resync.ui.common.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -363,7 +356,7 @@ private fun FeedHeader(
         overline = about?.let { sub ->
             {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Person, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Symbols.Person, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.width(4.dp))
                     Text(Format.members(sub.subscribers), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -373,13 +366,13 @@ private fun FeedHeader(
         HeaderChip(sort.label, sortIcon(sort.kind), onSort, dropdown = true)
         if (isCommunity) {
             val joined = about?.isSubscribed == true
-            HeaderChip(if (joined) t("Joined") else t("Join"), if (joined) Icons.Outlined.Check else AppIcons.PlaylistAdd, onJoin)
-            HeaderChip(t("About"), Icons.Outlined.Info, onAbout)
+            HeaderChip(if (joined) t("Joined") else t("Join"), if (joined) Symbols.Check else AppIcons.PlaylistAdd, onJoin)
+            HeaderChip(t("About"), Symbols.Info, onAbout)
             HeaderChip(t("Wiki"), AppIcons.Book, onWiki)
             HeaderChip(t("Flairs"), AppIcons.Tag, onFlairs, dropdown = true)
             HeaderChip(
                 if (watching) t("Watching") else t("Watch"),
-                if (watching) Icons.Filled.Notifications else Icons.Outlined.Notifications,
+                if (watching) Symbols.NotificationsFilled else Symbols.Notifications,
                 onWatch,
             )
         }
@@ -389,7 +382,7 @@ private fun FeedHeader(
 }
 
 private fun sortIcon(kind: SortKind): ImageVector = when (kind) {
-    SortKind.BEST -> Icons.Outlined.Star
+    SortKind.BEST -> Symbols.Star
     SortKind.HOT -> AppIcons.Flame
     SortKind.NEW -> AppIcons.Burst
     SortKind.RISING -> AppIcons.TrendingUp
@@ -466,7 +459,7 @@ internal fun SortSheet(current: Sort, options: List<SortKind>, onDismiss: () -> 
                     selected = option == current.kind,
                     onClick = { if (option.timed) timedKind = option else pick(Sort(option)) },
                     trailing = if (option.timed) {
-                        { Icon(Icons.Default.KeyboardArrowDown, null, Modifier.padding(end = 8.dp)) }
+                        { Icon(Symbols.KeyboardArrowDown, null, Modifier.padding(end = 8.dp)) }
                     } else null,
                 )
             }

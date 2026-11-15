@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.feed
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -13,10 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -113,7 +110,7 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
         Scaffold(
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.ArrowBack, t("Back")) } },
                     title = {
                         // Sync: the feed name with ▾ over the sort; tapping it opens Explore to switch feeds.
                         Column(Modifier.clickable { exploreOpen = true }) {
@@ -125,13 +122,13 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f, fill = false),
                                 )
-                                Icon(Icons.Default.KeyboardArrowDown, t("Switch feed"), Modifier.size(20.dp))
+                                Icon(Symbols.KeyboardArrowDown, t("Switch feed"), Modifier.size(20.dp))
                             }
                             Text(sort.label, style = MaterialTheme.typography.labelSmall)
                         }
                     },
                     actions = {
-                        IconButton(onClick = { nav.push(SearchRoute(subreddit = subreddit)) }) { Icon(Icons.Outlined.Search, t("Search")) }
+                        IconButton(onClick = { nav.push(SearchRoute(subreddit = subreddit)) }) { Icon(Symbols.Search, t("Search")) }
                         IconButton(onClick = { sortOpen = true }) { Icon(AppIcons.Sort, t("Sort")) }
                     },
                 )

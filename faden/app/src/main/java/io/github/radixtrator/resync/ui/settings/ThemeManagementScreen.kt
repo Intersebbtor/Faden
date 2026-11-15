@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.settings
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -28,10 +29,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -111,7 +108,7 @@ fun ThemeManagementScreen(container: AppContainer) {
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
                 LargeFlexibleTopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.ArrowBack, t("Back")) } },
                     title = { Text(t("Theme management")) },
                     scrollBehavior = scrollBehavior,
                 )
@@ -235,9 +232,9 @@ fun ThemeManagementScreen(container: AppContainer) {
                         trailingContent = {
                             Row {
                                 IconButton(onClick = { nav.share(ThemeCode.encode(theme), theme.name) }) {
-                                    Icon(Icons.Outlined.Share, t("Share {0}", theme.name))
+                                    Icon(Symbols.Share, t("Share {0}", theme.name))
                                 }
-                                IconButton(onClick = { deleting = theme }) { Icon(Icons.Outlined.Delete, t("Delete {0}", theme.name)) }
+                                IconButton(onClick = { deleting = theme }) { Icon(Symbols.Delete, t("Delete {0}", theme.name)) }
                             }
                         },
                     ) { Text(theme.name) }

@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.settings
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,9 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -79,13 +77,13 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.ArrowBack, t("Back")) } },
                     title = {},
                     actions = {
                         IconButton(
                             onClick = { container.settings.update { it.copy(viewOptions = it.viewOptions - layout) } },
                             enabled = customized,
-                        ) { Icon(Icons.Outlined.Refresh, t("Reset {0} to defaults", layout.label)) }
+                        ) { Icon(Symbols.Refresh, t("Reset {0} to defaults", layout.label)) }
                     },
                 )
             },

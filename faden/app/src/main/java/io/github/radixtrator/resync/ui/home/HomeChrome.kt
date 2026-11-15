@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.home
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -26,25 +27,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.ui.unit.Dp
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Create
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -76,7 +62,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -130,8 +115,6 @@ import android.widget.Toast
 import androidx.compose.ui.platform.LocalContext
 import io.github.radixtrator.resync.ui.navigation.InboxRoute
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.filled.Check
 import io.github.radixtrator.resync.ui.navigation.LocalAccount
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.LoginRoute
@@ -254,16 +237,16 @@ fun ShellScaffold(
                             }
                         })
                     } else {
-                        IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
+                        IconButton(onClick = nav::pop) { Icon(Symbols.ArrowBack, t("Back")) }
                     }
                 },
                 title = {
                     if (smallTitle != null) Text(smallTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 },
                 actions = {
-                    if (showSearch) IconButton(onClick = { explore = ExploreMode.SEARCH }) { Icon(Icons.Outlined.Search, t("Search")) }
+                    if (showSearch) IconButton(onClick = { explore = ExploreMode.SEARCH }) { Icon(Symbols.Search, t("Search")) }
                     actions()
-                    IconButton(onClick = { moreOpen = true }) { Icon(Icons.Default.MoreVert, t("More actions")) }
+                    IconButton(onClick = { moreOpen = true }) { Icon(Symbols.MoreVert, t("More actions")) }
                 },
             )
         },
@@ -300,7 +283,7 @@ fun ShellScaffold(
                 ) {
                     WideNavigationRailItem(
                         selected = tab == HomeTab.POSTS, onClick = { if (tab == HomeTab.POSTS) onReselectTab() else nav.popWhile { it is InboxRoute } },
-                        icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) }, label = { Text(t("Posts")) },
+                        icon = { Icon(if (tab == HomeTab.POSTS) Symbols.HomeFilled else Symbols.Home, null) }, label = { Text(t("Posts")) },
                         railExpanded = false,
                     )
                     WideNavigationRailItem(
@@ -312,7 +295,7 @@ fun ShellScaffold(
                         selected = tab == HomeTab.INBOX, onClick = { if (tab == HomeTab.INBOX) onReselectTab() else nav.push(InboxRoute(home = true)) },
                         icon = {
                             BadgedBox(badge = { if (inboxCount > 0) Badge { Text("$inboxCount") } }) {
-                                Icon(if (tab == HomeTab.INBOX) Icons.Filled.Email else Icons.Outlined.Email, null)
+                                Icon(if (tab == HomeTab.INBOX) Symbols.MailFilled else Symbols.Mail, null)
                             }
                         },
                         label = { Text(t("Inbox")) },
@@ -450,21 +433,21 @@ fun quickActions(
     // Built again only when something it shows or does changes, so the shell doesn't see a fresh list on every pass.
     return remember(container, nav, me, dark, settings, context, scope, accounts, subreddit, onRefresh, onAbout, onChangeView, onScrollToTop, language) {
     buildList {
-        add(QuickAction(t("Search"), Icons.Outlined.Search, key = "Search") { nav.push(SearchRoute(subreddit = subreddit)) })
-        if (me != null) add(QuickAction(t("Profile"), Icons.Outlined.Person, key = "Profile") { nav.push(UserRoute(me)) })
-        add(QuickAction(t("Hide read"), Icons.Default.Check, key = "Hide read", active = settings.hideRead) {
+        add(QuickAction(t("Search"), Symbols.Search, key = "Search") { nav.push(SearchRoute(subreddit = subreddit)) })
+        if (me != null) add(QuickAction(t("Profile"), Symbols.Person, key = "Profile") { nav.push(UserRoute(me)) })
+        add(QuickAction(t("Hide read"), Symbols.Check, key = "Hide read", active = settings.hideRead) {
             container.settings.update { it.copy(hideRead = !it.hideRead) }
         })
-        onAbout?.let { add(QuickAction(t("About"), Icons.Outlined.Info, key = "About", onClick = it)) }
-        add(QuickAction(t("Submit"), Icons.Outlined.Create, key = "Submit") { nav.push(SubmitRoute(subreddit)) })
+        onAbout?.let { add(QuickAction(t("About"), Symbols.Info, key = "About", onClick = it)) }
+        add(QuickAction(t("Submit"), Symbols.Edit, key = "Submit") { nav.push(SubmitRoute(subreddit)) })
         add(QuickAction(t("Random"), AppIcons.Dice, key = "Random") { scope.launch { nav.openRandomCommunity(container.api) } })
         add(QuickAction(t("Dark mode"), AppIcons.Moon, key = "Dark mode", active = dark) {
             container.settings.update { it.copy(theme = if (dark) ThemeMode.LIGHT else ThemeMode.DARK) }
         })
-        add(QuickAction(t("Settings"), Icons.Outlined.Settings, key = "Settings") { nav.push(SettingsRoute()) })
+        add(QuickAction(t("Settings"), Symbols.Settings, key = "Settings") { nav.push(SettingsRoute()) })
         add(QuickAction(t("Swipe mode"), AppIcons.Gallery, key = "Swipe mode") { nav.push(SwipeModeRoute(subreddit)) })
         onChangeView?.let { add(QuickAction(t("Change view"), AppIcons.ViewStack, key = "Change view", onClick = it)) }
-        add(QuickAction(t("Refresh"), Icons.Outlined.Refresh, key = "Refresh", onClick = onRefresh))
+        add(QuickAction(t("Refresh"), Symbols.Refresh, key = "Refresh", onClick = onRefresh))
         if (me != null) add(QuickAction(t("Saved"), AppIcons.Bookmark, key = "Saved") { nav.push(UserRoute(me, UserWhere.SAVED)) })
         add(QuickAction(t("Dark overlay"), AppIcons.Contrast, key = "Dark overlay", active = settings.darkOverlay) {
             container.settings.update { it.copy(darkOverlay = !it.darkOverlay) }
@@ -477,7 +460,7 @@ fun quickActions(
         })
         add(QuickAction(t("Explore"), AppIcons.Compass, key = ACTION_EXPLORE) {})
         add(QuickAction(t("Filters"), AppIcons.Filter, key = "Filters") { nav.push(SettingsRoute(SettingsCategory.FILTERS)) })
-        if (me != null) add(QuickAction(t("Inbox"), Icons.Outlined.Email, key = "Inbox") { nav.push(InboxRoute()) })
+        if (me != null) add(QuickAction(t("Inbox"), Symbols.Mail, key = "Inbox") { nav.push(InboxRoute()) })
         // A random NSFW community from all of Reddit (needs an account that allows NSFW).
         if (me != null && settings.nsfw != NsfwMode.HIDE) {
             add(QuickAction(t("Random nsfw"), AppIcons.Dice, key = "Random nsfw") { scope.launch { nav.openRandomCommunity(container.api, nsfw = true) } })
@@ -485,12 +468,12 @@ fun quickActions(
         add(QuickAction(t("Recently viewed"), AppIcons.Clock, key = ACTION_RECENTLY_VIEWED) {})
         onScrollToTop?.let { add(QuickAction(t("Scroll to top"), AppIcons.ArrowUp, key = "Scroll to top", onClick = it)) }
         nextAccount?.let { next ->
-            add(QuickAction(t("Toggle account"), Icons.Outlined.AccountCircle, key = "Toggle account") {
+            add(QuickAction(t("Toggle account"), Symbols.AccountCircle, key = "Toggle account") {
                 container.switchAccount(next)
                 Toast.makeText(context, t("Switched to u/{0}", next), Toast.LENGTH_SHORT).show()
             })
         }
-        add(QuickAction(t("Watched"), Icons.Outlined.Notifications, key = "Watched") { nav.push(SettingsRoute(SettingsCategory.MESSAGING)) })
+        add(QuickAction(t("Watched"), Symbols.Notifications, key = "Watched") { nav.push(SettingsRoute(SettingsCategory.MESSAGING)) })
     }.filterNot { it.key in settings.hiddenActions }
     }
 }
@@ -512,12 +495,12 @@ private fun MoreActionsTitle(container: AppContainer, topPadding: Dp = 16.dp) {
     Box(Modifier.fillMaxWidth()) {
         SheetTitle(t("More actions"), topPadding = topPadding)
         Box(Modifier.align(Alignment.TopEnd).padding(top = (topPadding - 12.dp).coerceAtLeast(0.dp), end = 4.dp)) {
-            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("More actions options")) }
+            IconButton(onClick = { menuOpen = true }) { Icon(Symbols.MoreVert, t("More actions options")) }
             DropdownMenu(expanded = menuOpen, onDismissRequest = ::close) {
                 if (!inVisibility) {
                     DropdownMenuItem(
                         text = { Text(t("Action visibility")) },
-                        trailingIcon = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
+                        trailingIcon = { Icon(Symbols.KeyboardArrowRight, null) },
                         onClick = { inVisibility = true },
                     )
                     DropdownMenuItem(
@@ -531,7 +514,7 @@ private fun MoreActionsTitle(container: AppContainer, topPadding: Dp = 16.dp) {
                 } else {
                     DropdownMenuItem(
                         text = { Text(t("Action visibility"), style = MaterialTheme.typography.titleSmall) },
-                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) },
+                        leadingIcon = { Icon(Symbols.ArrowBack, t("Back")) },
                         onClick = { inVisibility = false },
                     )
                     HorizontalDivider()
@@ -575,7 +558,7 @@ private fun HomeNavigationBar(
         ShortNavigationBarItem(
             selected = tab == HomeTab.POSTS,
             onClick = onPosts,
-            icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) },
+            icon = { Icon(if (tab == HomeTab.POSTS) Symbols.HomeFilled else Symbols.Home, null) },
             label = { Text(t("Posts")) },
         )
         ShortNavigationBarItem(
@@ -590,7 +573,7 @@ private fun HomeNavigationBar(
             label = { Text(t("Inbox")) },
             icon = {
                 BadgedBox(badge = { if (inboxCount > 0) Badge { Text("$inboxCount") } }) {
-                    Icon(if (tab == HomeTab.INBOX) Icons.Filled.Email else Icons.Outlined.Email, null)
+                    Icon(if (tab == HomeTab.INBOX) Symbols.MailFilled else Symbols.Mail, null)
                 }
             },
         )
@@ -644,14 +627,14 @@ private fun HomeDrawer(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    Icon(Icons.Default.KeyboardArrowDown, t("Accounts"))
+                    Icon(Symbols.KeyboardArrowDown, t("Accounts"))
                 }
                 HorizontalDivider(Modifier.padding(bottom = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
             } }
             item(key = "posts") {
                 NavigationDrawerItem(
                     label = { Text(t("Posts")) },
-                    icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) },
+                    icon = { Icon(if (tab == HomeTab.POSTS) Symbols.HomeFilled else Symbols.Home, null) },
                     selected = tab == HomeTab.POSTS,
                     onClick = onPosts,
                     modifier = itemPadding,
@@ -660,7 +643,7 @@ private fun HomeDrawer(
             item(key = "inbox") {
                 NavigationDrawerItem(
                     label = { Text(t("Inbox")) },
-                    icon = { Icon(if (tab == HomeTab.INBOX) Icons.Filled.Email else Icons.Outlined.Email, null) },
+                    icon = { Icon(if (tab == HomeTab.INBOX) Symbols.MailFilled else Symbols.Mail, null) },
                     badge = { if (inboxCount > 0) Badge { Text("$inboxCount") } },
                     selected = tab == HomeTab.INBOX,
                     onClick = onInbox,
@@ -682,7 +665,7 @@ private fun HomeDrawer(
                 HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
                 NavigationDrawerItem(
                     label = { Text(t("Settings")) },
-                    icon = { Icon(Icons.Outlined.Settings, null) },
+                    icon = { Icon(Symbols.Settings, null) },
                     selected = false,
                     onClick = onSettings,
                     modifier = itemPadding,
@@ -734,7 +717,7 @@ private fun MoreFab(onClick: () -> Unit, onLongClick: () -> Unit, modifier: Modi
         modifier = modifier.size(FabSize),
     ) {
         Box(Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick), contentAlignment = Alignment.Center) {
-            Icon(Icons.Default.MoreVert, t("More actions"), modifier = Modifier.rotate(90f))
+            Icon(Symbols.MoreVert, t("More actions"), modifier = Modifier.rotate(90f))
         }
     }
 }
@@ -754,7 +737,7 @@ private fun Avatar(url: String?, size: Int) {
         if (url != null) {
             AsyncImage(model = url, contentDescription = t("Account"), contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
         } else {
-            Icon(Icons.Outlined.AccountCircle, t("Account"), modifier = Modifier.size((size * 0.8f).dp))
+            Icon(Symbols.AccountCircle, t("Account"), modifier = Modifier.size((size * 0.8f).dp))
         }
     }
 }
@@ -799,13 +782,13 @@ private fun AccountCard(container: AppContainer, onDismiss: () -> Unit) {
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     accounts.filter { it != me }.forEach { name ->
-                        CardRow(name, Icons.Outlined.AccountCircle) { go { container.switchAccount(name) } }
+                        CardRow(name, Symbols.AccountCircle) { go { container.switchAccount(name) } }
                     }
-                    if (me != null) CardRow(t("Anonymous"), Icons.Outlined.AccountCircle) { go { container.switchAccount(null) } }
+                    if (me != null) CardRow(t("Anonymous"), Symbols.AccountCircle) { go { container.switchAccount(null) } }
                     CardRow(t("Add account"), AppIcons.PersonAdd) { go { nav.push(LoginRoute) } }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    me?.let { name -> CardRow(t("Profile"), Icons.Outlined.Person) { go { nav.push(UserRoute(name)) } } }
-                    CardRow(t("Settings"), Icons.Outlined.Settings) { go { nav.push(SettingsRoute()) } }
+                    me?.let { name -> CardRow(t("Profile"), Symbols.Person) { go { nav.push(UserRoute(name)) } } }
+                    CardRow(t("Settings"), Symbols.Settings) { go { nav.push(SettingsRoute()) } }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Text(
                         "Faden ${BuildConfig.VERSION_NAME}",

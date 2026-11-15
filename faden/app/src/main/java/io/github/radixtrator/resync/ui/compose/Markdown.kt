@@ -1,5 +1,6 @@
 package io.github.radixtrator.resync.ui.compose
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,8 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -308,7 +307,7 @@ private fun DraftsDialog(drafts: DraftStore, exclude: String?, onPick: (Draft) -
                             )
                             Text(draft.text, style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         }
-                        IconButton(onClick = { drafts.clear(draft.key) }) { Icon(Icons.Default.Delete, t("Delete draft")) }
+                        IconButton(onClick = { drafts.clear(draft.key) }) { Icon(Symbols.DeleteFilled, t("Delete draft")) }
                     }
                 }
             }

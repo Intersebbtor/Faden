@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.mod
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.foundation.layout.Box
@@ -16,9 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -154,7 +152,7 @@ fun ModMailConversationScreen(id: String, container: AppContainer) {
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.ArrowBack, t("Back")) } },
                     title = {
                         Column {
                             Text(
@@ -208,7 +206,7 @@ fun ModMailConversationScreen(id: String, container: AppContainer) {
                             Box(Modifier.padding(12.dp)) { CircularProgressIndicator(Modifier.size(24.dp)) }
                         } else {
                             IconButton(onClick = vm::send, enabled = state.draft.isNotBlank()) {
-                                Icon(Icons.AutoMirrored.Filled.Send, t("Send"))
+                                Icon(Symbols.SendFilled, t("Send"))
                             }
                         }
                     }

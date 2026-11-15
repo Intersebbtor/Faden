@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.compose
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,9 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -151,7 +149,7 @@ fun ComposeScreen(route: ComposeRoute, container: AppContainer) {
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.Default.Close, t("Discard")) } },
+                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.Close, t("Discard")) } },
                 title = {
                     Text(
                         when (route.mode) {
@@ -166,7 +164,7 @@ fun ComposeScreen(route: ComposeRoute, container: AppContainer) {
                         CircularProgressIndicator(Modifier.padding(12.dp).size(24.dp), strokeWidth = 2.dp)
                     } else {
                         IconButton(onClick = { vm.send(body.text, to, subject) }, enabled = canSend) {
-                            Icon(Icons.AutoMirrored.Filled.Send, t("Send"))
+                            Icon(Symbols.SendFilled, t("Send"))
                         }
                     }
                 },

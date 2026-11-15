@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.media
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ContainedLoadingIndicator
 import android.content.Context
@@ -26,11 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AddCircle
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -369,7 +365,7 @@ private fun VideoPlayer(
                                 if (player.playbackState == Player.STATE_ENDED) player.seekTo(0)
                                 player.play()
                             }
-                        }) { Icon(if (playing) AppIcons.Pause else Icons.Default.PlayArrow, if (playing) t("Pause") else t("Play"), tint = Color.White) }
+                        }) { Icon(if (playing) AppIcons.Pause else Symbols.PlayArrowFilled, if (playing) t("Pause") else t("Play"), tint = Color.White) }
                         IconButton(onClick = { muted = !muted }, modifier = Modifier.size(38.dp)) {
                             Icon(if (muted) AppIcons.VolumeOff else AppIcons.VolumeOn, if (muted) t("Unmute") else t("Mute"), tint = Color.White)
                         }
@@ -379,7 +375,7 @@ private fun VideoPlayer(
                         // The file itself when there's one to hand (RedGifs' HD mp4), else the link as given.
                         IconButton(onClick = { download(hdStream ?: url) }) { Icon(AppIcons.Download, t("Download"), tint = Color.White) }
                         IconButton(onClick = { panelOpen = !panelOpen }) {
-                            if (panelOpen) Icon(Icons.Default.Close, t("Close"), tint = Color.White) else Icon(Icons.Default.MoreVert, t("More"), tint = Color.White)
+                            if (panelOpen) Icon(Symbols.Close, t("Close"), tint = Color.White) else Icon(Symbols.MoreVert, t("More"), tint = Color.White)
                         }
                     }
                     if (panelOpen) {
@@ -472,7 +468,7 @@ private fun SpeedControl(speed: Float, onChange: (Float) -> Unit) {
             modifier = Modifier.width(56.dp),
         )
         IconButton(onClick = { onChange(SPEEDS[(index + 1).coerceAtMost(SPEEDS.lastIndex)]) }, enabled = index < SPEEDS.lastIndex) {
-            Icon(Icons.Default.AddCircle, t("Faster"), tint = Color.White)
+            Icon(Symbols.AddCircleFilled, t("Faster"), tint = Color.White)
         }
     }
 }

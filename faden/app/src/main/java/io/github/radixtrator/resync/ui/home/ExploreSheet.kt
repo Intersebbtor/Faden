@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.home
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import io.github.radixtrator.resync.ui.common.Avatar
 import android.util.Log
 import android.widget.Toast
@@ -31,15 +32,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -283,7 +275,7 @@ fun ExploreSheet(
                                     if (multi.subreddits.isEmpty()) managingFeed = multi else onOpenFeed(multi.feedName)
                                 }
                             }
-                            if (me != null) item(key = "new-custom-feed") { ActionRow(t("New custom feed"), Icons.Default.Add) { creatingFeed = true } }
+                            if (me != null) item(key = "new-custom-feed") { ActionRow(t("New custom feed"), Symbols.Add) { creatingFeed = true } }
                         }
                     }
                     section(
@@ -422,7 +414,7 @@ private fun LazyListScope.searchResults(
         }
     }
     group(t("Actions"), folds) {
-        item(key = "open-user") { ActionRow(t("Open u/{0}", q), Icons.Outlined.Person, onOpenUser) }
+        item(key = "open-user") { ActionRow(t("Open u/{0}", q), Symbols.Person, onOpenUser) }
         item(key = "open-sub") { ActionRow(t("Open r/{0}", q), AppIcons.Compass) { onOpenFeed(q) } }
     }
 }
@@ -465,7 +457,7 @@ private fun SectionHeader(title: String, open: Boolean, action: Pair<String, () 
             )
         }
         Icon(
-            if (open) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+            if (open) Symbols.KeyboardArrowUp else Symbols.KeyboardArrowDown,
             if (open) t("Collapse {0}", title) else t("Expand {0}", title),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 7.dp).size(18.dp),
@@ -612,7 +604,7 @@ private fun emphasize(label: String, match: String?): AnnotatedString = buildAnn
 @Composable
 private fun RowMenuButton(description: String, onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.size(ROW_HEIGHT)) {
-        Icon(Icons.Default.MoreVert, description, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+        Icon(Symbols.MoreVert, description, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -624,7 +616,7 @@ private fun QueryRow(recent: Recent, iconUrl: String?, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val sub = recent.subreddit
-        if (sub == null) Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { Icon(Icons.Outlined.Search, null) } else FeedIcon(sub, iconUrl)
+        if (sub == null) Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { Icon(Symbols.Search, null) } else FeedIcon(sub, iconUrl)
         Spacer(Modifier.width(16.dp))
         Text(
             if (sub == null) t("\"{0}\"", recent.query) else t("\"{0}\" in /r/{1}", recent.query, sub),
@@ -643,7 +635,7 @@ private fun QueryRow(recent: Recent, iconUrl: String?, onClick: () -> Unit) {
 internal fun FeedIcon(name: String, iconUrl: String?) {
     if (name.isEmpty()) {
         Box(Modifier.size(32.dp).clip(CircleShape).background(FrontpageOrange), contentAlignment = Alignment.Center) {
-            Icon(Icons.Outlined.Home, null, tint = Color.White, modifier = Modifier.size(20.dp))
+            Icon(Symbols.Home, null, tint = Color.White, modifier = Modifier.size(20.dp))
         }
         return
     }
@@ -665,7 +657,7 @@ private fun ExploreOptionsMenu(container: AppContainer, state: ExploreState) {
     val scope = rememberCoroutineScope()
     var open by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { open = true }) { Icon(Icons.Default.MoreVert, t("Explore options")) }
+        IconButton(onClick = { open = true }) { Icon(Symbols.MoreVert, t("Explore options")) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             ExploreSection.entries.forEach { section ->
                 val visible = section !in state.hidden
@@ -708,7 +700,7 @@ private fun SearchField(
             .padding(start = 16.dp, end = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Symbols.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.width(16.dp))
         Box(Modifier.weight(1f)) {
             val hint = t("Search...")
@@ -724,7 +716,7 @@ private fun SearchField(
                 modifier = Modifier.fillMaxWidth().semantics { contentDescription = hint },
             )
         }
-        if (value.isNotEmpty()) IconButton(onClick = { onChange("") }) { Icon(Icons.Outlined.Close, t("Clear")) } else menu()
+        if (value.isNotEmpty()) IconButton(onClick = { onChange("") }) { Icon(Symbols.Close, t("Clear")) } else menu()
     }
 }
 
