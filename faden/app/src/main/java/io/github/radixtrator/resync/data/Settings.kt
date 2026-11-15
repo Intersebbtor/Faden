@@ -289,6 +289,8 @@ data class Settings(
     val drawerNavigation: Boolean = false,
     val baseFontSize: BaseFontSize = BaseFontSize.SMALLER,
     val typeface: Typeface = Typeface.ROBOTO,
+    /** General › "Language": the app's text, applied at launch and when changed (see [io.github.radixtrator.resync.i18n.I18n]). */
+    val language: io.github.radixtrator.resync.i18n.AppLanguage = io.github.radixtrator.resync.i18n.AppLanguage.SYSTEM,
     /** Sync's "Action visibility": labels of More actions buttons switched off. */
     val hiddenActions: Set<String> = emptySet(),
     val inAppBrowser: Boolean = true,

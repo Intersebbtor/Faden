@@ -100,6 +100,9 @@ import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.SetupRoute
 import io.github.radixtrator.resync.ui.navigation.SettingsRoute
 import io.github.radixtrator.resync.data.Settings
+import io.github.radixtrator.resync.i18n.AppLanguage
+import io.github.radixtrator.resync.i18n.I18n
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.navigation.ThemeManagementRoute
 import io.github.radixtrator.resync.watch.WatchWorker
@@ -254,7 +257,14 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
     val context = LocalContext.current
     when (category) {
         SettingsCategory.GENERAL -> {
-            Section("Navigation", divider = false)
+            Section("Language", divider = false)
+            Choice("Language", AppLanguage.entries, settings.language, { if (it == AppLanguage.SYSTEM) t("System default") else it.nativeName }) { v ->
+                update { it.copy(language = v) }
+                I18n.use(v)
+                // Screens read their text as they're built, so a restart shows the new language everywhere.
+                (context as? android.app.Activity)?.recreate()
+            }
+            Section("Navigation")
             Toggle("Drawer navigation", "A side drawer, opened from your avatar, replaces the bottom bar", settings.drawerNavigation) { v -> update { it.copy(drawerNavigation = v) } }
             Toggle("Confirm exit", "Ask before back closes the app", settings.confirmExit) { v -> update { it.copy(confirmExit = v) } }
             Section("Gestures")

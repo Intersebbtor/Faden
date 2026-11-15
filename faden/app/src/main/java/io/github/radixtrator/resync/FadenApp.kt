@@ -22,6 +22,7 @@ class FadenApp : Application(), SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        io.github.radixtrator.resync.i18n.I18n.use(container.settings.settings.value.language)
         // WorkManager opens its database the first time it's used, so the schedules are checked off the main
         // thread, where they'd only hold up the first frame.
         Thread {

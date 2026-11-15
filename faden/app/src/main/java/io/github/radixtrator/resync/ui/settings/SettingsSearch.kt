@@ -38,6 +38,7 @@ object SettingsIndex {
     val entries: List<SettingsEntry> by lazy {
         // The categories themselves, so "theme" or "backup" finds the page too.
         SettingsCategory.entries.map { SettingsEntry(it.title, it.summary, "Settings", { _ -> SettingsRoute(it) }) } + listOf(
+            row(SettingsCategory.GENERAL, "Language", keywords = "language deutsch german english sprache"),
             row(SettingsCategory.GENERAL, "Drawer navigation", "A side drawer, opened from your avatar, replaces the bottom bar", "menu sidebar"),
             row(SettingsCategory.GENERAL, "Confirm exit", "Ask before back closes the app", "quit close"),
             row(SettingsCategory.GENERAL, "Slide to go back", "Drag a page to the right to close it", "gesture swipe back"),
