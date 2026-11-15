@@ -12,6 +12,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import io.github.radixtrator.resync.ui.theme.THEME_SEEDS
+import io.github.radixtrator.resync.ui.theme.ToneScheme
+import io.github.radixtrator.resync.data.ThemePalette
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
@@ -321,15 +323,18 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                 Text(t("Theme color"), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
                 Row(Modifier.selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
-                        val selected = settings.seedColor == seed
+                        // "Default" (no seed) is Faden's own red palette; Classic lives in Theme management.
+                        val selected = settings.seedColor == seed && (seed != null || settings.palette == ThemePalette.FADEN)
                         Box(
                             Modifier
                                 .size(32.dp)
                                 .clip(CircleShape)
-                                .background(seed?.let { Color(it) } ?: MaterialTheme.colorScheme.surfaceVariant)
+                                .background(Color(seed ?: ToneScheme.FADEN_SEED))
                                 .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant, CircleShape)
                                 .semantics { contentDescription = seed?.let { c -> t("Theme color {0}", "#%06X".format(c and 0xFFFFFF)) } ?: t("Default theme color") }
-                                .selectable(selected = selected, role = Role.RadioButton) { update { it.copy(seedColor = seed) } },
+                                .selectable(selected = selected, role = Role.RadioButton) {
+                                    update { it.copy(seedColor = seed, palette = if (seed == null) ThemePalette.FADEN else it.palette) }
+                                },
                         )
                     }
                 }
