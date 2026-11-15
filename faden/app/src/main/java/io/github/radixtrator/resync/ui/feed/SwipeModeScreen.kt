@@ -1,7 +1,9 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.feed
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -15,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -153,7 +154,7 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
                 when {
-                    posts.isEmpty() && state.loading -> CenteredBox { CircularProgressIndicator() }
+                    posts.isEmpty() && state.loading -> CenteredBox { LoadingIndicator() }
                     posts.isEmpty() -> CenteredBox {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(state.error ?: t("This sub has no posts"), textAlign = TextAlign.Center)

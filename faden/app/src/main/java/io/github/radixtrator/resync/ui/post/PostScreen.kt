@@ -1,7 +1,12 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.post
 
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.LoadingIndicator
+import io.github.radixtrator.resync.ui.common.AvatarKind
+import io.github.radixtrator.resync.ui.common.Avatar
 import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.tc
@@ -56,14 +61,19 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.VerticalFloatingToolbar
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
@@ -151,6 +161,8 @@ import io.github.radixtrator.resync.ui.common.Format
 import io.github.radixtrator.resync.ui.common.CommentGifs
 import io.github.radixtrator.resync.ui.common.GifBody
 import io.github.radixtrator.resync.ui.common.LinkCards
+import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
+import io.github.radixtrator.resync.ui.common.LocalMinuteClock
 import io.github.radixtrator.resync.ui.common.cachedGifBody
 import io.github.radixtrator.resync.ui.common.LinkRow
 import io.github.radixtrator.resync.ui.common.MessageEffect
@@ -164,6 +176,7 @@ import io.github.radixtrator.resync.ui.common.QuickActionGrid
 import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.ReportSheet
 import io.github.radixtrator.resync.ui.common.SheetHandle
+import io.github.radixtrator.resync.ui.common.StateToggle
 import io.github.radixtrator.resync.ui.common.SheetTitle
 import io.github.radixtrator.resync.ui.common.SwipeActions
 import io.github.radixtrator.resync.ui.common.SwipeBack
@@ -297,15 +310,15 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
             topBar = {
                 TopAppBar(
                     scrollBehavior = scrollBehavior,
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = surface, scrolledContainerColor = surface),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = surface, scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer),
                     navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {
                         state.post?.let { post ->
                             Row(
-                                Modifier.clip(RoundedCornerShape(8.dp)).clickable { nav.push(FeedRoute(post.subreddit)) },
+                                Modifier.clip(MaterialTheme.shapes.small).clickable { nav.push(FeedRoute(post.subreddit)) },
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                SubredditIcon(post.subreddit, subredditIcon, 32.dp)
+                                Avatar(subredditIcon, post.subreddit, 32.dp)
                                 Spacer(Modifier.width(12.dp))
                                 Column {
                                     Text(post.subreddit, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -355,39 +368,55 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 }
             },
             floatingActionButton = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.End,
-                    // With a bottom bar showing, the Scaffold already lifts the buttons above it.
-                    modifier = if (state.sportsMode || readerState.active) Modifier else Modifier.navigationBarsPadding(),
-                ) {
-                    if (settings.commentNavigation && showComments && topLevelRows.size > 1) {
-                        SmallFloatingActionButton(onClick = {
-                            val target = topLevelRows.lastOrNull { it < listState.firstVisibleItemIndex } ?: 0
-                            scope.launch { listState.animateScrollToItem(target) }
-                        }) { Icon(Icons.Default.KeyboardArrowUp, t("Previous comment")) }
-                        SmallFloatingActionButton(onClick = {
-                            topLevelRows.firstOrNull { it > listState.firstVisibleItemIndex }
-                                ?.let { scope.launch { listState.animateScrollToItem(it) } }
-                        }) { Icon(Icons.Default.KeyboardArrowDown, t("Next comment")) }
+                // With a bottom bar showing, the Scaffold already lifts the buttons above it.
+                val inset = if (state.sportsMode || readerState.active) Modifier else Modifier.navigationBarsPadding()
+                val showNavigation = settings.commentNavigation && showComments && topLevelRows.size > 1
+                val previous = {
+                    val target = topLevelRows.lastOrNull { it < listState.firstVisibleItemIndex } ?: 0
+                    scope.launch { listState.animateScrollToItem(target) }
+                    Unit
+                }
+                val next = {
+                    topLevelRows.firstOrNull { it > listState.firstVisibleItemIndex }
+                        ?.let { scope.launch { listState.animateScrollToItem(it) } }
+                    Unit
+                }
+                val post = state.post
+                if (showNavigation && post != null) {
+                    // Previous and next top-level comment, with the reply button docked under them.
+                    VerticalFloatingToolbar(
+                        expanded = true,
+                        modifier = inset,
+                        floatingActionButton = {
+                            FloatingToolbarDefaults.StandardFloatingActionButton(onClick = { reply(post.fullname, post.title) }) {
+                                Icon(AppIcons.Reply, t("Reply to post"))
+                            }
+                        },
+                    ) {
+                        IconButton(onClick = previous) { Icon(Icons.Default.KeyboardArrowUp, t("Previous comment")) }
+                        IconButton(onClick = next) { Icon(Icons.Default.KeyboardArrowDown, t("Next comment")) }
                     }
-                    state.post?.let { post ->
-                        Surface(
-                            onClick = { reply(post.fullname, post.title) },
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            shadowElevation = 3.dp,
-                            modifier = Modifier.size(56.dp),
-                        ) {
-                            Box(contentAlignment = Alignment.Center) { Icon(AppIcons.Reply, t("Reply to post")) }
-                        }
+                } else if (showNavigation) {
+                    VerticalFloatingToolbar(expanded = true, modifier = inset) {
+                        IconButton(onClick = previous) { Icon(Icons.Default.KeyboardArrowUp, t("Previous comment")) }
+                        IconButton(onClick = next) { Icon(Icons.Default.KeyboardArrowDown, t("Next comment")) }
                     }
+                } else if (post != null) {
+                    FloatingActionButton(onClick = { reply(post.fullname, post.title) }, modifier = inset) { Icon(AppIcons.Reply, t("Reply to post")) }
                 }
             },
         ) { padding ->
+            val pullState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = state.refreshing,
+                state = pullState,
+                indicator = {
+                    PullToRefreshDefaults.LoadingIndicator(
+                        state = pullState,
+                        isRefreshing = state.refreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                    )
+                },
                 onRefresh = { vm.load(refresh = true) },
                 modifier = Modifier.padding(padding).fillMaxSize(),
             ) {
@@ -395,7 +424,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 if (state.post == null) {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         if (state.loading) {
-                            CircularProgressIndicator()
+                            LoadingIndicator()
                         } else if (state.error != null) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(state.error!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
@@ -475,7 +504,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                         item(key = "status") {
                             Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                                 when {
-                                    state.loading -> CircularProgressIndicator()
+                                    state.loading -> LoadingIndicator()
                                     state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(state.error!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
                                         TextButton(onClick = { vm.load(refresh = false) }) { Text(t("Retry")) }
@@ -617,19 +646,16 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             PostStats(post, Modifier.weight(1f))
-            IconButton(onClick = { onVote(if (post.likes == true) 0 else 1) }) {
-                Icon(AppIcons.ArrowUp, t("Upvote"), tint = if (post.likes == true) FadenColors.Upvote else muted)
-            }
-            IconButton(onClick = { onVote(if (post.likes == false) 0 else -1) }) {
-                Icon(AppIcons.ArrowDown, t("Downvote"), tint = if (post.likes == false) FadenColors.Downvote else muted)
-            }
-            IconButton(onClick = onToggleSave) {
-                Icon(
-                    if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-                    if (post.saved) t("Unsave") else t("Save"),
-                    tint = if (post.saved) FadenColors.Saved else muted,
-                )
-            }
+            StateToggle(post.likes == true, { onVote(if (it) 1 else 0) }, AppIcons.ArrowUp, t("Upvote"), FadenColors.Upvote, muted)
+            StateToggle(post.likes == false, { onVote(if (it) -1 else 0) }, AppIcons.ArrowDown, t("Downvote"), FadenColors.Downvote, muted)
+            StateToggle(
+                post.saved,
+                { onToggleSave() },
+                if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
+                if (post.saved) t("Unsave") else t("Save"),
+                FadenColors.Saved,
+                muted,
+            )
             IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, t("Post options"), tint = muted) }
         }
         Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
@@ -682,12 +708,12 @@ private fun CommentRow(
 ) {
     val depth = comment.depth.coerceAtMost(MAX_DEPTH)
     val nav = LocalNavigator.current
-    val settings = LocalSettings.current
+    val display = LocalFeedDisplay.current
     Column {
         if (separated) Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
         SwipeActions(
-            stages = settings.commentSwipeStages,
-            enabled = settings.commentSwipe,
+            stages = display.commentSwipeStages,
+            enabled = display.commentSwipe,
             onAction = { action ->
                 when (action) {
                     SwipeAction.UPVOTE -> onVote(if (comment.likes == true) 0 else 1)
@@ -707,8 +733,8 @@ private fun CommentRow(
                     .background(if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow)
                     // Comment options › "Tap to collapse" swaps the two: by default hold collapses, tap opens the bar.
                     .combinedClickable(
-                        onClick = if (settings.tapToCollapse) onToggle else onSelect,
-                        onLongClick = if (settings.tapToCollapse) onSelect else onToggle,
+                        onClick = if (display.tapToCollapse) onToggle else onSelect,
+                        onLongClick = if (display.tapToCollapse) onSelect else onToggle,
                     )
                     .rails(depth)
                     .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
@@ -717,10 +743,10 @@ private fun CommentRow(
                 // Collapsing a reply chain keeps the comment itself readable (Sync's default); a lone
                 // comment folds to its header.
                 if (!collapsed || hiddenCount > 0) {
-                    val split = remember(comment.bodyHtml, comment.gifs, settings.commentGifs) {
-                        if (settings.commentGifs) cachedGifBody(comment.bodyHtml, comment.gifs) else GifBody(comment.bodyHtml, emptyList())
+                    val split = remember(comment.bodyHtml, comment.gifs, display.commentGifs) {
+                        if (display.commentGifs) cachedGifBody(comment.bodyHtml, comment.gifs) else GifBody(comment.bodyHtml, emptyList())
                     }
-                    val body = rememberRedditText(split.html, footnotes = settings.linkCards)
+                    val body = rememberRedditText(split.html, footnotes = display.linkCards)
                     if (body.text.isNotBlank()) {
                         Spacer(Modifier.height(6.dp))
                         RedditBodyText(body.text, CommentBody)
@@ -767,7 +793,9 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
     val tag = LocalUserTags.current[comment.author.lowercase()]
     val tagStyle = userTagStyle(comment.author)
     val language = I18n.language
-    val text = remember(comment, nameColor, muted, scoreColor, flairBackground, tag, tagStyle, language) { buildAnnotatedString {
+    // The age ("4h") is part of the text, so it is rebuilt when the shared clock moves on a minute.
+    val minute = LocalMinuteClock.current.value
+    val text = remember(comment, nameColor, muted, scoreColor, flairBackground, tag, tagStyle, language, minute) { buildAnnotatedString {
         withStyle(SpanStyle(color = nameColor)) { append(comment.author) }
         tag?.let {
             append(" ")
@@ -836,7 +864,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier
                     .padding(start = 8.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.tertiaryContainer)
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             )
@@ -848,7 +876,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier
                     .padding(start = 8.dp)
-                    .clip(RoundedCornerShape(50))
+                    .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.secondaryContainer)
                     .padding(horizontal = 8.dp, vertical = 2.dp),
             )
@@ -891,14 +919,15 @@ private fun CommentActionBar(
             .rails(depth),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BarButton(AppIcons.ArrowUp, t("Upvote"), if (comment.likes == true) FadenColors.Upvote else normal) { onVote(if (comment.likes == true) 0 else 1) }
-        BarButton(AppIcons.ArrowDown, t("Downvote"), if (comment.likes == false) FadenColors.Downvote else normal) { onVote(if (comment.likes == false) 0 else -1) }
-        BarButton(
+        BarToggle(AppIcons.ArrowUp, t("Upvote"), comment.likes == true, FadenColors.Upvote, normal) { onVote(if (it) 1 else 0) }
+        BarToggle(AppIcons.ArrowDown, t("Downvote"), comment.likes == false, FadenColors.Downvote, normal) { onVote(if (it) -1 else 0) }
+        BarToggle(
             if (comment.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
             if (comment.saved) t("Unsave") else t("Save"),
-            if (comment.saved) FadenColors.Saved else normal,
-            onToggleSave,
-        )
+            comment.saved,
+            FadenColors.Saved,
+            normal,
+        ) { onToggleSave() }
         BarButton(Icons.Outlined.Person, t("Profile"), normal) { if (comment.author != "[deleted]") nav.push(UserRoute(comment.author)) }
         BarButton(AppIcons.Reply, t("Reply"), normal, onReply)
         BarButton(Icons.Default.KeyboardArrowUp, t("Go to parent"), normal, onParent)
@@ -908,9 +937,21 @@ private fun CommentActionBar(
 
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.BarButton(icon: ImageVector, description: String, tint: Color, onClick: () -> Unit) {
-    Box(Modifier.weight(1f).fillMaxSize().clickable(onClick = onClick), contentAlignment = Alignment.Center) {
-        Icon(icon, description, tint = tint)
+    IconButton(onClick = onClick, modifier = Modifier.weight(1f).fillMaxSize(), colors = IconButtonDefaults.iconButtonColors(contentColor = tint)) {
+        Icon(icon, description)
     }
+}
+
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.BarToggle(
+    icon: ImageVector,
+    description: String,
+    checked: Boolean,
+    checkedColor: Color,
+    color: Color,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    StateToggle(checked, onCheckedChange, icon, description, checkedColor, color, Modifier.weight(1f).fillMaxSize())
 }
 
 @Composable
@@ -942,26 +983,15 @@ private fun MoreRow(more: MoreComments, separated: Boolean, loading: Boolean, on
 /** A colored initial: comment listings don't carry avatars, and fetching one per author is too costly. */
 @Composable
 private fun UserAvatar(name: String, url: String?, size: Dp) {
-    // Snoovatars have transparent backgrounds, so a picture replaces the initial rather than covering it.
-    if (url != null) {
-        AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.size(size).clip(CircleShape))
-        return
-    }
     val color = FadenColors.Depth[name.hashCode().absoluteValue % FadenColors.Depth.size]
-    Box(Modifier.size(size).clip(CircleShape).background(color.copy(alpha = 0.35f)), contentAlignment = Alignment.Center) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
-    }
-}
-
-@Composable
-private fun SubredditIcon(name: String, url: String?, size: Dp) {
-    Box(
-        Modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-        if (url != null) AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-    }
+    Avatar(
+        url, name, size,
+        kind = AvatarKind.User,
+        letterStyle = MaterialTheme.typography.labelSmall,
+        containerColor = color.copy(alpha = 0.35f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        replaceLetter = true,
+    )
 }
 
 // --- Sheets ---
@@ -1088,7 +1118,7 @@ private fun CommentSearchSheet(rows: List<VisibleNode>, onDismiss: () -> Unit, o
             Modifier
                 .padding(horizontal = 16.dp)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(50))
+                .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -1210,7 +1240,7 @@ private fun CommunityAbout(container: AppContainer, name: String, onDismiss: () 
 @Composable
 private fun SportsBar(seconds: Int, onRefresh: () -> Unit, onStop: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().height(48.dp).padding(start = 16.dp, end = 4.dp),
+        Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
@@ -1218,12 +1248,15 @@ private fun SportsBar(seconds: Int, onRefresh: () -> Unit, onStop: () -> Unit) {
         Text(
             t("Sports mode · new comments every {0}s", seconds),
             style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, t("Refresh now")) }
-        IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop sports mode")) }
+        Spacer(Modifier.width(8.dp))
+        HorizontalFloatingToolbar(expanded = true) {
+            IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, t("Refresh now")) }
+            IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop sports mode")) }
+        }
     }
 }
 
@@ -1250,59 +1283,69 @@ private fun ReaderBar(
     onSpeechRate: (Float) -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    Row(
-        Modifier.fillMaxWidth().height(56.dp).padding(start = 16.dp, end = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(
-                state.current?.label.orEmpty(),
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                t("Reading {0} of {1}", state.index + 1, state.items.size),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop reading")) }
-        IconButton(onClick = onPrevious, enabled = state.index > 0) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Previous")) }
-        IconButton(onClick = onTogglePlay) {
-            if (state.playing) Icon(AppIcons.Pause, t("Pause")) else Icon(Icons.Default.PlayArrow, t("Play"))
-        }
-        IconButton(onClick = onNext, enabled = state.index < state.items.lastIndex) {
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, t("Next"))
-        }
-        Box {
-            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Reader options")) }
-            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                DropdownMenuItem(
-                    text = { Text(t("Read replies")) },
-                    leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (readReplies) MaterialTheme.colorScheme.primary else Color.Transparent) },
-                    onClick = {
-                        menuOpen = false
-                        onReadReplies(!readReplies)
-                    },
-                )
-                HorizontalDivider()
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth().height(56.dp).padding(start = 16.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
                 Text(
-                    t("Speed"),
+                    state.current?.label.orEmpty(),
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    t("Reading {0} of {1}", state.index + 1, state.items.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                 )
-                ReaderSpeeds.forEach { rate ->
+            }
+            Box {
+                IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Reader options")) }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(
-                        text = { Text(speedLabel(rate)) },
-                        leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (rate == speechRate) MaterialTheme.colorScheme.primary else Color.Transparent) },
+                        text = { Text(t("Read replies")) },
+                        leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (readReplies) MaterialTheme.colorScheme.primary else Color.Transparent) },
                         onClick = {
                             menuOpen = false
-                            onSpeechRate(rate)
+                            onReadReplies(!readReplies)
                         },
                     )
+                    HorizontalDivider()
+                    Text(
+                        t("Speed"),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                    ReaderSpeeds.forEach { rate ->
+                        DropdownMenuItem(
+                            text = { Text(speedLabel(rate)) },
+                            leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (rate == speechRate) MaterialTheme.colorScheme.primary else Color.Transparent) },
+                            onClick = {
+                                menuOpen = false
+                                onSpeechRate(rate)
+                            },
+                        )
+                    }
                 }
+            }
+        }
+        // Stop, Previous and Next in the toolbar with Play/Pause as its button.
+        HorizontalFloatingToolbar(
+            expanded = true,
+            modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
+            floatingActionButton = {
+                FloatingToolbarDefaults.StandardFloatingActionButton(onClick = onTogglePlay) {
+                    if (state.playing) Icon(AppIcons.Pause, t("Pause")) else Icon(Icons.Default.PlayArrow, t("Play"))
+                }
+            },
+        ) {
+            IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop reading")) }
+            IconButton(onClick = onPrevious, enabled = state.index > 0) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Previous")) }
+            IconButton(onClick = onNext, enabled = state.index < state.items.lastIndex) {
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, t("Next"))
             }
         }
     }

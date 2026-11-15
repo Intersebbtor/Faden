@@ -1,7 +1,9 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.mod
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -179,7 +181,7 @@ fun ModMailConversationScreen(id: String, container: AppContainer) {
             Column(Modifier.padding(padding).fillMaxSize().imePadding()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     when {
-                        state.thread == null && state.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        state.thread == null && state.loading -> LoadingIndicator(Modifier.align(Alignment.Center))
                         state.thread == null -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(state.error ?: t("Couldn't load this conversation"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             TextButton(onClick = vm::load) { Text(t("Retry")) }

@@ -47,6 +47,12 @@ data class FeedDisplay(
     val postSwipe: Boolean = true,
     val postSwipeStages: List<SwipeAction> = emptyList(),
     val viewOptions: Map<PostLayout, ViewOptions> = emptyMap(),
+    // What comment rows read.
+    val commentSwipe: Boolean = true,
+    val commentSwipeStages: List<SwipeAction> = emptyList(),
+    val tapToCollapse: Boolean = false,
+    val commentGifs: Boolean = true,
+    val linkCards: Boolean = true,
     /** Whether the connection is metered right now, which "Data saving mode: on mobile data" goes by. */
     val metered: Boolean = false,
     /** Lowercase names of the communities the account moderates, for the Mod tools button. */
@@ -75,6 +81,11 @@ data class FeedDisplay(
             postSwipe = settings.postSwipe,
             postSwipeStages = settings.postSwipeStages,
             viewOptions = settings.viewOptions,
+            commentSwipe = settings.commentSwipe,
+            commentSwipeStages = settings.commentSwipeStages,
+            tapToCollapse = settings.tapToCollapse,
+            commentGifs = settings.commentGifs,
+            linkCards = settings.linkCards,
             metered = metered,
             moderated = moderated,
         )

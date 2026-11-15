@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -30,6 +31,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -135,9 +138,9 @@ val PostLayout.spacing: Dp
 /** The item's outline, so the swipe panel behind a card has the card's corners. */
 val PostLayout.swipeShape: Shape
     @Composable get() = when (this) {
-        PostLayout.CARD -> if (fullWidthCards()) RectangleShape else RoundedCornerShape(8.dp)
-        PostLayout.SMALL_CARDS -> RoundedCornerShape(8.dp)
-        PostLayout.SMALLER_CARDS -> RoundedCornerShape(10.dp)
+        PostLayout.CARD -> if (fullWidthCards()) RectangleShape else MaterialTheme.shapes.medium
+        PostLayout.SMALL_CARDS -> MaterialTheme.shapes.medium
+        PostLayout.SMALLER_CARDS -> MaterialTheme.shapes.small
         PostLayout.LIST, PostLayout.COMPACT, PostLayout.SLIDES -> RectangleShape
     }
 
@@ -183,7 +186,7 @@ fun PostLayoutItem(layout: PostLayout, post: Post, showSubreddit: Boolean, actio
     when (layout) {
         PostLayout.LIST -> RowPost(post, showSubreddit, actions, options, flushThumbnail = true, inCard = false)
         PostLayout.COMPACT -> RowPost(post, showSubreddit, actions, options, flushThumbnail = false, inCard = false)
-        PostLayout.SMALLER_CARDS -> SyncCard(RoundedCornerShape(10.dp)) {
+        PostLayout.SMALLER_CARDS -> PostCard(MaterialTheme.shapes.small) {
             RowPost(post, showSubreddit, actions, options, flushThumbnail = false, inCard = true)
         }
         PostLayout.SMALL_CARDS -> SmallCardPost(post, showSubreddit, actions, options)
@@ -193,7 +196,7 @@ fun PostLayoutItem(layout: PostLayout, post: Post, showSubreddit: Boolean, actio
 }
 
 @Composable
-private fun SyncCard(shape: Shape, content: @Composable ColumnScope.() -> Unit) {
+private fun PostCard(shape: Shape, content: @Composable ColumnScope.() -> Unit) {
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = shape, modifier = Modifier.fillMaxWidth()) {
         Column(content = content)
     }
@@ -210,7 +213,7 @@ private fun SyncCard(shape: Shape, content: @Composable ColumnScope.() -> Unit) 
 private fun CardPost(post: Post, showSubreddit: Boolean, actions: PostActions, options: ViewOptions) {
     val previewMaxHeight = if (options.cardFullHeight) null else CroppedPreviewHeight
     // Rounded, or square with "Full width cards" on.
-    SyncCard(PostLayout.CARD.swipeShape) {
+    PostCard(PostLayout.CARD.swipeShape) {
         Column(Modifier.combinedClickable(onClick = actions.onOpen, onLongClick = actions.onMore)) {
             if (options.imageAboveTitle) CardPreview(post, onClick = actions.onMedia, maxHeight = previewMaxHeight)
             Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
@@ -247,12 +250,12 @@ private fun CardPost(post: Post, showSubreddit: Boolean, actions: PostActions, o
  */
 @Composable
 private fun SmallCardPost(post: Post, showSubreddit: Boolean, actions: PostActions, options: ViewOptions) {
-    SyncCard(RoundedCornerShape(8.dp)) {
+    PostCard(MaterialTheme.shapes.medium) {
         Column(Modifier.combinedClickable(onClick = actions.onOpen, onLongClick = actions.onMore)) {
             Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
                 val hasThumbnail = post.thumbnail() != null
                 if (hasThumbnail && options.thumbnailLeft) {
-                    Thumbnail(post, 64.dp, RoundedCornerShape(8.dp), onClick = actions.onMedia)
+                    Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia)
                     Spacer(Modifier.width(12.dp))
                 }
                 Column(Modifier.weight(1f)) {
@@ -266,7 +269,7 @@ private fun SmallCardPost(post: Post, showSubreddit: Boolean, actions: PostActio
                 }
                 if (hasThumbnail && !options.thumbnailLeft) {
                     Spacer(Modifier.width(12.dp))
-                    Thumbnail(post, 64.dp, RoundedCornerShape(8.dp), onClick = actions.onMedia)
+                    Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia)
                 }
             }
             StatsFooter(post, actions, PostButtons(options.cardSaveButton, options.hideButton, options.shareButton, options.modButton))
@@ -299,13 +302,14 @@ private class PostButtons(val save: Boolean, val hide: Boolean, val share: Boole
 private fun PostButtonIcons(post: Post, actions: PostActions, buttons: PostButtons, tint: Color) {
     val nav = LocalNavigator.current
     if (buttons.save) {
-        IconButton(onClick = actions.onToggleSave) {
-            Icon(
-                if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-                if (post.saved) t("Unsave") else t("Save"),
-                tint = if (post.saved) FadenColors.Saved else tint,
-            )
-        }
+        StateToggle(
+            post.saved,
+            { actions.onToggleSave() },
+            if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
+            if (post.saved) t("Unsave") else t("Save"),
+            FadenColors.Saved,
+            tint,
+        )
     }
     if (buttons.hide) {
         actions.onHide?.let { hide -> IconButton(onClick = hide) { Icon(Icons.Default.Close, t("Hide"), tint = tint) } }
@@ -347,7 +351,7 @@ private fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, op
                 Thumbnail(post, 72.dp, RectangleShape, onClick = actions.onMedia)
             } else {
                 val inset = if (right) Modifier.padding(end = 8.dp, top = 8.dp) else Modifier.padding(start = 8.dp, top = 8.dp)
-                Thumbnail(post, 64.dp, RoundedCornerShape(8.dp), onClick = actions.onMedia, modifier = inset)
+                Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia, modifier = inset)
             }
         }
         val text = @Composable {
@@ -396,7 +400,7 @@ private fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, op
         )
         if (expanded) {
             if (post.thumbnail() != null && !post.isSelf) {
-                CardPreview(post, onClick = actions.onMedia, modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp).clip(RoundedCornerShape(8.dp)))
+                CardPreview(post, onClick = actions.onMedia, modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp).clip(MaterialTheme.shapes.small))
             } else if (post.selfText.isNotBlank()) {
                 RedditBodyText(
                     post.selfTextHtml?.let { rememberRedditHtml(it) } ?: AnnotatedString(post.selfText),
@@ -468,7 +472,7 @@ private fun SlidePost(post: Post, actions: PostActions, options: ViewOptions) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (options.subredditIcons) {
-                LetterAvatar(post.subreddit, 32.dp)
+                Avatar(null, post.subreddit, 32.dp)
                 Spacer(Modifier.width(12.dp))
             }
             Column {
@@ -504,7 +508,7 @@ private fun SlidePost(post: Post, actions: PostActions, options: ViewOptions) {
                     .then(
                         if (options.selftextBorder) {
                             Modifier
-                                .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(8.dp))
+                                .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), MaterialTheme.shapes.small)
                                 .padding(12.dp)
                         } else Modifier,
                     ),
@@ -554,7 +558,7 @@ private fun SlidePreview(post: Post, actions: PostActions, options: ViewOptions,
         modifier = if (options.slideFullWidth) {
             Modifier.padding(top = top)
         } else {
-            Modifier.padding(start = 16.dp, end = 16.dp, top = top).clip(RoundedCornerShape(12.dp))
+            Modifier.padding(start = 16.dp, end = 16.dp, top = top).clip(MaterialTheme.shapes.medium)
         },
         height = if (options.slideFullHeight) null else CroppedPreviewHeight,
     )
@@ -563,13 +567,12 @@ private fun SlidePreview(post: Post, actions: PostActions, options: ViewOptions,
 /** The comment count pill beside Slides' vote pill; opens the comments. */
 @Composable
 private fun CommentsPill(count: Int, onOpen: () -> Unit) {
-    Row(
-        Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .clickable(onClick = onOpen)
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    FilledTonalButton(
+        onClick = onOpen,
+        modifier = Modifier.height(40.dp),
+        shape = MaterialTheme.shapes.small,
+        colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest, contentColor = MaterialTheme.colorScheme.onSurface),
+        contentPadding = PaddingValues(horizontal = 12.dp),
     ) {
         Icon(AppIcons.Comment, t("Comments"), modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
@@ -587,17 +590,13 @@ private fun VotePill(likes: Boolean?, score: Int, onVote: (Int) -> Unit) {
     }
     Row(
         Modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(if (likes == null) MaterialTheme.colorScheme.surfaceContainerHighest else tint.copy(alpha = 0.25f)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        IconButton(onClick = { onVote(if (likes == true) 0 else 1) }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.KeyboardArrowUp, t("Upvote"), tint = tint)
-        }
+        StateToggle(likes == true, { onVote(if (it) 1 else 0) }, Icons.Default.KeyboardArrowUp, t("Upvote"), tint, tint, Modifier.size(40.dp))
         Text(Format.count(score, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge, color = tint)
-        IconButton(onClick = { onVote(if (likes == false) 0 else -1) }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.KeyboardArrowDown, t("Downvote"), tint = tint)
-        }
+        StateToggle(likes == false, { onVote(if (it) -1 else 0) }, Icons.Default.KeyboardArrowDown, t("Downvote"), tint, tint, Modifier.size(40.dp))
     }
 }
 
@@ -792,7 +791,7 @@ fun FlairChip(text: String, color: Int?, modifier: Modifier = Modifier) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(MaterialTheme.shapes.extraSmall)
             .background(bg)
             .padding(horizontal = 8.dp, vertical = 3.dp),
     )
@@ -917,7 +916,7 @@ fun CardPreview(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, 
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(if (post.over18) FadenColors.Nsfw else Color.Black.copy(alpha = 0.6f))
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             )
@@ -997,17 +996,6 @@ private fun typeIcon(post: Post): ImageVector = when (post.media) {
     is PostMedia.Video -> AppIcons.PlayCircle
     is PostMedia.Link -> AppIcons.Link
     PostMedia.None -> AppIcons.Text
-}
-
-/** A round initial standing in for a subreddit icon (listings don't carry one). */
-@Composable
-private fun LetterAvatar(name: String, size: Dp) {
-    Box(
-        Modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-    }
 }
 
 /** Sync's feed preview of a text post: its first paragraph as plain text, then "…" on a line of its own if there's more. */

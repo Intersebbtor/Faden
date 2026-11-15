@@ -1,7 +1,13 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.profile
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.LoadingIndicator
+import io.github.radixtrator.resync.ui.common.AvatarKind
+import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +33,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -167,6 +173,8 @@ class ProfileViewModel(container: AppContainer, val name: String, initialTab: Us
 fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) {
     val nav = LocalNavigator.current
     val vm = viewModel { ProfileViewModel(container, name, initialTab) }
+    val linkColor = MaterialTheme.colorScheme.primary
+    SideEffect { vm.setLinkColor(linkColor) }
     val state by vm.state.collectAsStateWithLifecycle()
     val tab by vm.tab.collectAsStateWithLifecycle()
     val sort by vm.sort.collectAsStateWithLifecycle()
@@ -206,8 +214,17 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
             // Sync has the sort in the toolbar as well as on its chip.
             actions = { SortMenu(vm::setSort) },
         ) { padding ->
+            val pullState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = state.refreshing,
+                state = pullState,
+                indicator = {
+                    PullToRefreshDefaults.LoadingIndicator(
+                        state = pullState,
+                        isRefreshing = state.refreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                    )
+                },
                 onRefresh = vm::refresh,
                 modifier = Modifier.padding(top = padding.calculateTopPadding()).fillMaxSize(),
             ) {
@@ -226,7 +243,7 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                     header = {
                         LargeHeader(
                             title = name,
-                            leading = { Avatar(name, user?.iconUrl, 56.dp) },
+                            leading = { Avatar(user?.iconUrl, name, 56.dp, kind = AvatarKind.User, letterStyle = MaterialTheme.typography.titleLarge) },
                             overline = user?.let { u ->
                                 {
                                     Text(
@@ -309,14 +326,6 @@ private fun SortMenu(onPick: (UserSort) -> Unit) {
     }
 }
 
-@Composable
-private fun Avatar(name: String, url: String?, size: Dp) {
-    Box(Modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-        url?.let { AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
-    }
-}
-
 /** Sync's user About: the banner and avatar, link karma, comment karma and cake day, Message / Trophies / Tag user, then the description. */
 @Composable
 private fun ProfileAboutSheet(
@@ -330,7 +339,7 @@ private fun ProfileAboutSheet(
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = null) {
         if (user == null) {
             SheetHandle()
-            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
             return@ModalBottomSheet
         }
         AboutHeader(user.bannerUrl, user.iconUrl, user.name.ifEmpty { name }) {
@@ -346,7 +355,7 @@ private fun ProfileAboutSheet(
                 HeaderChip(t("Trophies"), AppIcons.Trophy, onTrophies, container = chip)
                 onTag?.let { HeaderChip(t("Tag user"), AppIcons.TagUser, it, container = chip) }
             }
-            Surface(color = chip, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+            Surface(color = chip, shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Text(
                     user.description ?: t("This user has no public description"),
                     style = MaterialTheme.typography.bodyMedium,
@@ -367,7 +376,7 @@ private fun TrophiesSheet(container: AppContainer, name: String, onDismiss: () -
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
             SheetTitle(t("Trophies"), topPadding = 0.dp)
             when (val result = trophies) {
-                null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+                null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
                 else -> {
                     val list = result.getOrDefault(emptyList())
                     val note = result.exceptionOrNull()?.let { t("Couldn't load trophies: {0}", it.message) } ?: t("No trophies yet").takeIf { list.isEmpty() }

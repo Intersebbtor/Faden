@@ -78,7 +78,7 @@ fun LinkRow(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(MaterialTheme.shapes.small)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
             .clickable(onClick = onClick)
             .padding(8.dp),
@@ -89,7 +89,7 @@ fun LinkRow(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier) {
                 model = link.thumbnail.url,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier.size(56.dp).clip(MaterialTheme.shapes.small),
             )
             Spacer(Modifier.width(10.dp))
         }

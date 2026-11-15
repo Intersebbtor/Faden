@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.home
 
+import io.github.radixtrator.resync.ui.common.Avatar
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -655,13 +656,7 @@ internal fun FeedIcon(name: String, iconUrl: String?) {
         Box(Modifier.size(32.dp), contentAlignment = Alignment.Center) { Icon(glyph, null) }
         return
     }
-    Box(
-        Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-        if (iconUrl != null) AsyncImage(iconUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-    }
+    Avatar(iconUrl, name, 32.dp)
 }
 
 /** The ⋮ beside Explore's search field: which sections show, plus housekeeping. */

@@ -1,7 +1,10 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.feed
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.LoadingIndicator
+import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,7 +32,6 @@ import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -104,7 +106,7 @@ fun SubredditInfoSheet(
     ) {
         if (about == null) {
             SheetHandle()
-            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) { LoadingIndicator() }
             return@ModalBottomSheet
         }
         // No online count: Reddit reports 0 for every community now.
@@ -122,7 +124,7 @@ fun SubredditInfoSheet(
             about.descriptionHtml?.takeIf { it.isNotBlank() }?.let { html ->
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                 ) {
                     RedditBodyText(
@@ -157,18 +159,13 @@ fun AboutHeader(
         }
         Box(Modifier.align(Alignment.TopCenter)) { SheetHandle() }
         // Sync centers the icon a little above the banner's lower edge.
-        Box(
-            Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = BANNER - 32.dp)
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-            iconUrl?.let { AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
-        }
+        Avatar(
+            iconUrl,
+            name,
+            56.dp,
+            Modifier.align(Alignment.TopCenter).padding(top = BANNER - 32.dp),
+            letterStyle = MaterialTheme.typography.titleLarge,
+        )
         // Sync's ⋮ sits at the right, just under the banner.
         menu?.invoke(Modifier.align(Alignment.BottomEnd).offset(y = 20.dp))
     }

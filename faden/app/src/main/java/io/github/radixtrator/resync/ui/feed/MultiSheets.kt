@@ -155,12 +155,11 @@ fun ManageMultiSheet(container: AppContainer, multi: Multi, onChanged: () -> Uni
                 LazyColumn(Modifier.heightIn(max = 480.dp)) {
                     items(subreddits, key = { it.lowercase() }) { name ->
                         ListItem(
-                            headlineContent = { Text("r/$name") },
                             trailingContent = {
                                 IconButton(onClick = { change(name, add = false) }, enabled = !busy) { Icon(Icons.Default.Close, t("Remove r/{0}", name)) }
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        )
+                        ) { Text("r/$name") }
                     }
                 }
             }

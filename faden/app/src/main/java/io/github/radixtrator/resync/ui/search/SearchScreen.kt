@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.search
 
+import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
@@ -232,7 +233,7 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
                 navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                 title = {
@@ -338,9 +339,7 @@ private fun CommunityRow(sub: Subreddit, onClick: () -> Unit) {
         Modifier.fillMaxWidth().combinedClickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(Modifier.size(44.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer)) {
-            sub.iconUrl?.let { AsyncImage(model = it, contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
-        }
+        Avatar(sub.iconUrl, "", 44.dp, containerColor = MaterialTheme.colorScheme.primaryContainer)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text("r/${sub.name}", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)

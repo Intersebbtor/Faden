@@ -1,7 +1,11 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.feed
 
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -215,8 +219,17 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
             showSearch = true,
             searchSubreddit = subreddit.takeIf { vm.isCommunity },
         ) { padding ->
+            val pullState = rememberPullToRefreshState()
             PullToRefreshBox(
                 isRefreshing = state.refreshing,
+                state = pullState,
+                indicator = {
+                    PullToRefreshDefaults.LoadingIndicator(
+                        state = pullState,
+                        isRefreshing = state.refreshing,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                    )
+                },
                 onRefresh = vm::refresh,
                 modifier = Modifier.padding(top = padding.calculateTopPadding()).fillMaxSize(),
             ) {
@@ -345,7 +358,7 @@ private fun FeedHeader(
     LargeHeader(
         title = title,
         leading = if (isCommunity) {
-            { CommunityIcon(about, title) }
+            { Avatar(about?.iconUrl, title, 56.dp, letterStyle = MaterialTheme.typography.titleLarge) }
         } else null,
         overline = about?.let { sub ->
             {
@@ -372,17 +385,6 @@ private fun FeedHeader(
         }
         HeaderChip(t("Change view"), AppIcons.ViewStack, onChangeView)
         onRandom?.let { HeaderChip(t("Random"), AppIcons.Dice, it) }
-    }
-}
-
-@Composable
-private fun CommunityIcon(about: Subreddit?, name: String) {
-    Box(
-        Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-        about?.iconUrl?.let { AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
     }
 }
 
@@ -433,7 +435,7 @@ fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
         }
         append(" • ${Format.timeAgo(comment.createdUtc)} • ${comment.subreddit}")
     } }
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth()) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxWidth()) {
         Column(Modifier.combinedClickable(onClick = onOpen).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(comment.postTitle, style = MaterialTheme.typography.bodyMedium, fontStyle = FontStyle.Italic)
             Text(meta, style = MaterialTheme.typography.bodyMedium, color = muted, inlineContent = distinguishedMarks())
