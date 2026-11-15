@@ -39,12 +39,11 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -738,16 +737,12 @@ private fun SearchField(
     }
 }
 
-/** Sync's tonal dialog button (#293040 on the dark sheet): the FAB tone at half strength. */
+/** Sync's tonal dialog button. */
 @Composable
 private fun SearchButton(label: String, modifier: Modifier, onClick: () -> Unit) {
-    Button(
+    FilledTonalButton(
         onClick = onClick,
         shape = MaterialTheme.shapes.small,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            contentColor = MaterialTheme.colorScheme.onSurface,
-        ),
         contentPadding = PaddingValues(horizontal = 16.dp),
         modifier = modifier.height(40.dp),
     ) { Text(label, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis) }
