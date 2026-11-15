@@ -64,9 +64,10 @@ import io.github.radixtrator.resync.ui.common.HeaderChip
 import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.SheetHandle
 import io.github.radixtrator.resync.ui.common.rememberRedditHtml
+import io.github.radixtrator.resync.i18n.t
 
 /** The About sheet's ⋮ menu: Sync's, less Edit flair and Add to multi (Faden has no flair editor or multis). */
-enum class AboutAction(val label: String, val icon: ImageVector) {
+enum class AboutAction(private val en: String, val icon: ImageVector) {
     WIKI("View wiki", AppIcons.Book),
     FLAIRS("Filter by flair", AppIcons.Tag),
     RULES("View rules", AppIcons.Text),
@@ -76,6 +77,9 @@ enum class AboutAction(val label: String, val icon: ImageVector) {
     MESSAGE_MODS("Message mods", Icons.Outlined.Email),
     MODS("View mods", Icons.Outlined.Person),
     MOD_TOOLS("Mod tools", AppIcons.Shield),
+    ;
+
+    val label: String get() = t(en)
 }
 
 /**
@@ -111,9 +115,9 @@ fun SubredditInfoSheet(
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
                 val chip = MaterialTheme.colorScheme.surfaceVariant
                 val joined = about.isSubscribed
-                HeaderChip(if (joined) "Joined" else "Join", if (joined) Icons.Outlined.Check else AppIcons.PlaylistAdd, onToggleSubscribe, container = chip)
-                HeaderChip(if (watching) "Watching" else "Watch", if (watching) Icons.Filled.Notifications else Icons.Outlined.Notifications, onToggleWatch, container = chip)
-                HeaderChip("Favorite", if (favorite) AppIcons.BookmarkFilled else AppIcons.Bookmark, onToggleFavorite, container = chip)
+                HeaderChip(if (joined) t("Joined") else t("Join"), if (joined) Icons.Outlined.Check else AppIcons.PlaylistAdd, onToggleSubscribe, container = chip)
+                HeaderChip(if (watching) t("Watching") else t("Watch"), if (watching) Icons.Filled.Notifications else Icons.Outlined.Notifications, onToggleWatch, container = chip)
+                HeaderChip(t("Favorite"), if (favorite) AppIcons.BookmarkFilled else AppIcons.Bookmark, onToggleFavorite, container = chip)
             }
             about.descriptionHtml?.takeIf { it.isNotBlank() }?.let { html ->
                 Surface(
@@ -197,7 +201,7 @@ fun AboutStat(icon: ImageVector, text: String) {
 private fun AboutMenu(community: String, onAction: (AboutAction) -> Unit, modifier: Modifier) {
     var open by remember { mutableStateOf(false) }
     Box(modifier) {
-        IconButton(onClick = { open = true }) { Icon(Icons.Default.MoreVert, "More", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+        IconButton(onClick = { open = true }) { Icon(Icons.Default.MoreVert, t("More"), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             // Mod tools only for communities you moderate.
             val moderated = LocalContainer.current.moderated.collectAsStateWithLifecycle().value

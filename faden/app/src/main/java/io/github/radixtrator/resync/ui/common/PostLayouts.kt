@@ -81,6 +81,8 @@ import io.github.radixtrator.resync.data.isCoverScreen
 import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.PostMedia
 import io.github.radixtrator.resync.data.ViewOptions
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 import io.github.radixtrator.resync.ui.navigation.LocalAccount
 import io.github.radixtrator.resync.ui.navigation.LocalContainer
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
@@ -283,7 +285,7 @@ private fun StatsFooter(post: Post, actions: PostActions, buttons: PostButtons =
     Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         PostStats(post, Modifier.weight(1f))
         PostButtonIcons(post, actions, buttons, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, "Post options", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+        IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, t("Post options"), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
 
@@ -305,23 +307,23 @@ private fun PostButtonIcons(post: Post, actions: PostActions, buttons: PostButto
         IconButton(onClick = actions.onToggleSave) {
             Icon(
                 if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-                if (post.saved) "Unsave" else "Save",
+                if (post.saved) t("Unsave") else t("Save"),
                 tint = if (post.saved) FadenColors.Saved else tint,
             )
         }
     }
     if (buttons.hide) {
-        actions.onHide?.let { hide -> IconButton(onClick = hide) { Icon(Icons.Default.Close, "Hide", tint = tint) } }
+        actions.onHide?.let { hide -> IconButton(onClick = hide) { Icon(Icons.Default.Close, t("Hide"), tint = tint) } }
     }
     if (buttons.share) {
         val share: () -> Unit = actions.onShare ?: { nav.share("https://www.reddit.com${post.permalink}", post.title) }
-        IconButton(onClick = share) { Icon(Icons.Outlined.Share, "Share", tint = tint) }
+        IconButton(onClick = share) { Icon(Icons.Outlined.Share, t("Share"), tint = tint) }
     }
     if (buttons.mod) {
         val moderated by LocalContainer.current.moderated.collectAsStateWithLifecycle()
         if (moderated.any { it.equals(post.subreddit, ignoreCase = true) }) {
             val modTools: () -> Unit = actions.onModTools ?: { nav.push(ModRoute(post.subreddit)) }
-            IconButton(onClick = modTools) { Icon(AppIcons.Shield, "Mod tools", tint = tint) }
+            IconButton(onClick = modTools) { Icon(AppIcons.Shield, t("Mod tools"), tint = tint) }
         }
     }
 }
@@ -372,7 +374,7 @@ private fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, op
         }
         val expand = @Composable {
                 IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(40.dp)) {
-                    Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, if (expanded) "Collapse" else "Expand", tint = muted)
+                    Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, if (expanded) t("Collapse") else t("Expand"), tint = muted)
                 }
             }
         val type = @Composable { Icon(typeIcon(post), null, tint = muted, modifier = Modifier.padding(8.dp).size(20.dp)) }
@@ -525,7 +527,7 @@ private fun SlidePost(post: Post, actions: PostActions, options: ViewOptions) {
             ) {
                 if (voteRight) {
                     PostButtonIcons(post, actions, buttons, tint = onSurface)
-                    IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, "Post options") }
+                    IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, t("Post options")) }
                     Spacer(Modifier.weight(1f))
                     CommentsPill(post.numComments, actions.onOpen)
                     Spacer(Modifier.width(8.dp))
@@ -536,7 +538,7 @@ private fun SlidePost(post: Post, actions: PostActions, options: ViewOptions) {
                     CommentsPill(post.numComments, actions.onOpen)
                     Spacer(Modifier.weight(1f))
                     PostButtonIcons(post, actions, buttons, tint = onSurface)
-                    IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, "Post options") }
+                    IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, t("Post options")) }
                 }
             }
         }
@@ -575,7 +577,7 @@ private fun CommentsPill(count: Int, onOpen: () -> Unit) {
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(AppIcons.Comment, "Comments", modifier = Modifier.size(18.dp))
+        Icon(AppIcons.Comment, t("Comments"), modifier = Modifier.size(18.dp))
         Spacer(Modifier.width(8.dp))
         Text(Format.count(count, LocalSettings.current.shortScores), style = MaterialTheme.typography.labelLarge)
     }
@@ -596,11 +598,11 @@ private fun VotePill(likes: Boolean?, score: Int, onVote: (Int) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         IconButton(onClick = { onVote(if (likes == true) 0 else 1) }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.KeyboardArrowUp, "Upvote", tint = tint)
+            Icon(Icons.Default.KeyboardArrowUp, t("Upvote"), tint = tint)
         }
         Text(Format.count(score, LocalSettings.current.shortScores), style = MaterialTheme.typography.labelLarge, color = tint)
         IconButton(onClick = { onVote(if (likes == false) 0 else -1) }, modifier = Modifier.size(40.dp)) {
-            Icon(Icons.Default.KeyboardArrowDown, "Downvote", tint = tint)
+            Icon(Icons.Default.KeyboardArrowDown, t("Downvote"), tint = tint)
         }
     }
 }
@@ -641,19 +643,19 @@ fun PostTitle(
         append(post.title)
         if (post.stickied) {
             append(" ")
-            appendInlineContent("pin", "[pinned]")
+            appendInlineContent("pin", t("[pinned]"))
         }
         if (post.locked) {
             append(" ")
-            appendInlineContent("lock", "[locked]")
+            appendInlineContent("lock", t("[locked]"))
         }
     } }
     val marks = remember(accent) { mapOf(
         "pin" to InlineTextContent(Placeholder(1.em, 1.em, PlaceholderVerticalAlign.TextCenter)) {
-            Icon(AppIcons.Pin, "Pinned", tint = accent)
+            Icon(AppIcons.Pin, t("Pinned"), tint = accent)
         },
         "lock" to InlineTextContent(Placeholder(0.9.em, 0.9.em, PlaceholderVerticalAlign.TextCenter)) {
-            Icon(Icons.Default.Lock, "Locked", tint = accent)
+            Icon(Icons.Default.Lock, t("Locked"), tint = accent)
         },
     ) }
     Text(
@@ -696,7 +698,7 @@ fun PostMeta(
             // Sync marks your own posts with a person after your name.
             if (post.author.equals(me, ignoreCase = true)) {
                 append(" ")
-                appendInlineContent("you", "[you]")
+                appendInlineContent("you", t("[you]"))
             }
             tag?.let {
                 append(" ")
@@ -713,10 +715,10 @@ fun PostMeta(
         }
         if (showSubreddit || showAuthor) append(" • ")
         append(Format.timeAgo(post.createdUtc))
-        post.editedUtc?.let { append("* (last edited ${Format.timeAgo(it)})") }
+        post.editedUtc?.let { append(t("* (last edited {0})", Format.timeAgo(it))) }
         shortDomain(post)?.let { append(" • $it") }
-        if (post.over18) withStyle(SpanStyle(color = FadenColors.Nsfw, fontWeight = FontWeight.Bold)) { append(" • NSFW") }
-        if (post.spoiler) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(" • Spoiler") }
+        if (post.over18) withStyle(SpanStyle(color = FadenColors.Nsfw, fontWeight = FontWeight.Bold)) { append(" • " + t("NSFW")) }
+        if (post.spoiler) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(" • " + t("Spoiler")) }
         suffix?.let { append(" • $it") }
     } }
     Text(
@@ -751,13 +753,13 @@ fun distinguishedMarks(): Map<String, InlineTextContent> {
     val you = MaterialTheme.colorScheme.onSurfaceVariant
     return remember(accent, you) { mapOf(
         "moderator" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) {
-            Icon(AppIcons.Shield, "Moderator", tint = accent)
+            Icon(AppIcons.Shield, t("Moderator"), tint = accent)
         },
         "admin" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) {
-            Icon(AppIcons.Shield, "Admin", tint = FadenColors.Nsfw)
+            Icon(AppIcons.Shield, t("Admin"), tint = FadenColors.Nsfw)
         },
         "you" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) {
-            Icon(Icons.Outlined.Person, "You", tint = you)
+            Icon(Icons.Outlined.Person, t("You"), tint = you)
         },
     ) }
 }
@@ -816,8 +818,8 @@ fun PostStats(post: Post, modifier: Modifier = Modifier, style: TextStyle = Card
 }
 
 /** [short]: Post options › "Display short scores" (10.6k, else 10,600). */
-private fun points(score: Int, short: Boolean) = if (score == 1) "1 point" else "${Format.count(score, short)} points"
-private fun comments(n: Int, short: Boolean) = if (n == 1) "1 comment" else "${Format.count(n, short)} comments"
+private fun points(score: Int, short: Boolean) = tn(score, "{0} point", "{0} points", Format.count(score, short))
+private fun comments(n: Int, short: Boolean) = tn(n, "{0} comment", "{0} comments", Format.count(n, short))
 
 /** Whether [CardPreview] has a big image to show (links without one fall back to a link row). */
 fun Post.hasCardPreview(): Boolean = media.cardImage() != null
@@ -909,8 +911,8 @@ fun CardPreview(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, 
             )
         }
         when (post.media) {
-            is PostMedia.Gallery -> CenterBadge(AppIcons.Gallery, "Gallery", Modifier.align(Alignment.Center))
-            is PostMedia.Video -> CenterBadge(AppIcons.PlayCircle, "Video", Modifier.align(Alignment.Center))
+            is PostMedia.Gallery -> CenterBadge(AppIcons.Gallery, t("Gallery"), Modifier.align(Alignment.Center))
+            is PostMedia.Video -> CenterBadge(AppIcons.PlayCircle, t("Video"), Modifier.align(Alignment.Center))
             else -> if (saving && !blur) {
                 Icon(typeIcon(post), null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.Center).size(32.dp))
             }
@@ -918,7 +920,7 @@ fun CardPreview(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, 
         if (post.media is PostMedia.Link) UrlBand(post.domain, post.url, Modifier.align(Alignment.BottomCenter))
         if (blur) {
             Text(
-                if (post.over18) "NSFW" else "Spoiler",
+                if (post.over18) t("NSFW") else t("Spoiler"),
                 color = Color.White,
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier

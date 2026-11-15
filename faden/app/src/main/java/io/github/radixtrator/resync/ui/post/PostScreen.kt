@@ -2,6 +2,9 @@
 
 package io.github.radixtrator.resync.ui.post
 
+import io.github.radixtrator.resync.i18n.I18n
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 import android.text.Html
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -293,7 +296,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 TopAppBar(
                     scrollBehavior = scrollBehavior,
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = surface, scrolledContainerColor = surface),
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {
                         state.post?.let { post ->
                             Row(
@@ -305,7 +308,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                 Column {
                                     Text(post.subreddit, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Text(
-                                        if (state.sportsMode) "${state.sort.label} · Live" else state.sort.label,
+                                        if (state.sportsMode) t("{0} · Live", state.sort.label) else state.sort.label,
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -314,9 +317,9 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                         }
                     },
                     actions = {
-                        IconButton(onClick = { searchOpen = true }) { Icon(Icons.Outlined.Search, "Search comments") }
-                        IconButton(onClick = { sortOpen = true }) { Icon(AppIcons.Sort, "Sort comments") }
-                        IconButton(onClick = { actionsOpen = true }) { Icon(Icons.Default.MoreVert, "Comment actions") }
+                        IconButton(onClick = { searchOpen = true }) { Icon(Icons.Outlined.Search, t("Search comments")) }
+                        IconButton(onClick = { sortOpen = true }) { Icon(AppIcons.Sort, t("Sort comments")) }
+                        IconButton(onClick = { actionsOpen = true }) { Icon(Icons.Default.MoreVert, t("Comment actions")) }
                     },
                 )
             },
@@ -360,11 +363,11 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                         SmallFloatingActionButton(onClick = {
                             val target = topLevelRows.lastOrNull { it < listState.firstVisibleItemIndex } ?: 0
                             scope.launch { listState.animateScrollToItem(target) }
-                        }) { Icon(Icons.Default.KeyboardArrowUp, "Previous comment") }
+                        }) { Icon(Icons.Default.KeyboardArrowUp, t("Previous comment")) }
                         SmallFloatingActionButton(onClick = {
                             topLevelRows.firstOrNull { it > listState.firstVisibleItemIndex }
                                 ?.let { scope.launch { listState.animateScrollToItem(it) } }
-                        }) { Icon(Icons.Default.KeyboardArrowDown, "Next comment") }
+                        }) { Icon(Icons.Default.KeyboardArrowDown, t("Next comment")) }
                     }
                     state.post?.let { post ->
                         Surface(
@@ -375,7 +378,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                             shadowElevation = 3.dp,
                             modifier = Modifier.size(56.dp),
                         ) {
-                            Box(contentAlignment = Alignment.Center) { Icon(AppIcons.Reply, "Reply to post") }
+                            Box(contentAlignment = Alignment.Center) { Icon(AppIcons.Reply, t("Reply to post")) }
                         }
                     }
                 }
@@ -394,7 +397,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                         } else if (state.error != null) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(state.error!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                                TextButton(onClick = { vm.load(refresh = false) }) { Text("Retry") }
+                                TextButton(onClick = { vm.load(refresh = false) }) { Text(t("Retry")) }
                             }
                         }
                     }
@@ -423,8 +426,8 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                         .padding(start = 16.dp, end = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                 ) {
-                                    Text("Viewing a single thread", style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
-                                    TextButton(onClick = { nav.replaceTop(PostRoute(post.id)) }) { Text("View all comments") }
+                                    Text(t("Viewing a single thread"), style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                                    TextButton(onClick = { nav.replaceTop(PostRoute(post.id)) }) { Text(t("View all comments")) }
                                 }
                             }
                         }
@@ -473,9 +476,9 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                     state.loading -> CircularProgressIndicator()
                                     state.error != null -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(state.error!!, color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                                        TextButton(onClick = { vm.load(refresh = false) }) { Text("Retry") }
+                                        TextButton(onClick = { vm.load(refresh = false) }) { Text(t("Retry")) }
                                     }
-                                    state.comments.isEmpty() -> Text("No comments yet", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    state.comments.isEmpty() -> Text(t("No comments yet"), color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
@@ -487,11 +490,11 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 }
                 Column(Modifier.fillMaxSize()) {
                     PrimaryTabRow(selectedTabIndex = if (commentsTab) 1 else 0, containerColor = surface) {
-                        Tab(selected = !commentsTab, onClick = { commentsTab = false }, text = { Text("Post") })
+                        Tab(selected = !commentsTab, onClick = { commentsTab = false }, text = { Text(tn(1, "Post", "Posts")) })
                         Tab(
                             selected = commentsTab,
                             onClick = { commentsTab = true },
-                            text = { Text("Comments (${Format.count(post.numComments)})", maxLines = 1) },
+                            text = { Text(t("Comments ({0})", Format.count(post.numComments)), maxLines = 1) },
                         )
                     }
                     Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -515,19 +518,19 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
     if (sortOpen) CommentSortSheet(state.sort, onDismiss = { sortOpen = false }, onPick = vm::setSort)
     if (actionsOpen && post != null) {
         TopSheet(onDismiss = { actionsOpen = false }) {
-            SheetTitle("Comment actions")
+            SheetTitle(t("Comment actions"))
             QuickActionGrid(
                 listOf(
-                    QuickAction("Reply", AppIcons.Reply) { reply(post.fullname, post.title) },
-                    QuickAction("Refresh", Icons.Outlined.Refresh) { vm.load(refresh = true) },
-                    QuickAction("About", Icons.Outlined.Info) { aboutOpen = true },
-                    QuickAction("Collapse all", AppIcons.CollapseAll, onClick = vm::collapseAll),
-                    QuickAction("Settings", Icons.Outlined.Settings) { nav.push(SettingsRoute()) },
-                    QuickAction("Sort", AppIcons.Sort) { sortOpen = true },
-                    QuickAction("Search", Icons.Outlined.Search) { searchOpen = true },
-                    QuickAction("Recents", AppIcons.Clock) { recentsOpen = true },
-                    QuickAction("Sports mode", AppIcons.Flame, active = state.sportsMode) { vm.setSportsMode(!state.sportsMode) },
-                    QuickAction("Read aloud", AppIcons.VolumeOn, active = readerState.active) {
+                    QuickAction(t("Reply"), AppIcons.Reply) { reply(post.fullname, post.title) },
+                    QuickAction(t("Refresh"), Icons.Outlined.Refresh) { vm.load(refresh = true) },
+                    QuickAction(t("About"), Icons.Outlined.Info) { aboutOpen = true },
+                    QuickAction(t("Collapse all"), AppIcons.CollapseAll, onClick = vm::collapseAll),
+                    QuickAction(t("Settings"), Icons.Outlined.Settings) { nav.push(SettingsRoute()) },
+                    QuickAction(t("Sort"), AppIcons.Sort) { sortOpen = true },
+                    QuickAction(t("Search"), Icons.Outlined.Search) { searchOpen = true },
+                    QuickAction(t("Recents"), AppIcons.Clock) { recentsOpen = true },
+                    QuickAction(t("Sports mode"), AppIcons.Flame, active = state.sportsMode) { vm.setSportsMode(!state.sportsMode) },
+                    QuickAction(t("Read aloud"), AppIcons.VolumeOn, active = readerState.active) {
                         if (readerState.active) {
                             reader.stop()
                         } else {
@@ -594,7 +597,7 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
             // Sync draws its titles in Product Sans, which can't be bundled; Roboto at 16sp is as wide.
             PostTitle(post, MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = TextUnit.Unspecified), dimWhenRead = false)
             Spacer(Modifier.height(4.dp))
-            PostMeta(post, showSubreddit = false, maxLines = 3, suffix = post.upvoteRatio?.let { "${(it * 100).roundToInt()}% upvoted" })
+            PostMeta(post, showSubreddit = false, maxLines = 3, suffix = post.upvoteRatio?.let { t("{0}% upvoted", (it * 100).roundToInt()) })
             if (post.flair != null) {
                 Spacer(Modifier.height(8.dp))
                 FlairChip(post)
@@ -613,19 +616,19 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             PostStats(post, Modifier.weight(1f))
             IconButton(onClick = { onVote(if (post.likes == true) 0 else 1) }) {
-                Icon(AppIcons.ArrowUp, "Upvote", tint = if (post.likes == true) FadenColors.Upvote else muted)
+                Icon(AppIcons.ArrowUp, t("Upvote"), tint = if (post.likes == true) FadenColors.Upvote else muted)
             }
             IconButton(onClick = { onVote(if (post.likes == false) 0 else -1) }) {
-                Icon(AppIcons.ArrowDown, "Downvote", tint = if (post.likes == false) FadenColors.Downvote else muted)
+                Icon(AppIcons.ArrowDown, t("Downvote"), tint = if (post.likes == false) FadenColors.Downvote else muted)
             }
             IconButton(onClick = onToggleSave) {
                 Icon(
                     if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-                    if (post.saved) "Unsave" else "Save",
+                    if (post.saved) t("Unsave") else t("Save"),
                     tint = if (post.saved) FadenColors.Saved else muted,
                 )
             }
-            IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, "Post options", tint = muted) }
+            IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, t("Post options"), tint = muted) }
         }
         Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
     }
@@ -779,7 +782,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
         }
         if (comment.stickied) {
             append(" ")
-            appendInlineContent("pin", "[pinned]")
+            appendInlineContent("pin", t("[pinned]"))
         }
         comment.flair?.let {
             append(" ")
@@ -787,7 +790,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
         }
         append(" ")
         withStyle(SpanStyle(color = scoreColor)) {
-            append(if (comment.scoreHidden) "[score hidden]" else if (comment.score == 1) "1 point" else "${Format.count(comment.score)} points")
+            append(if (comment.scoreHidden) t("[score hidden]") else tn(comment.score, "{0} point", "{0} points", Format.count(comment.score)))
         }
         withStyle(SpanStyle(color = muted)) {
             append(" • ${Format.timeAgo(comment.createdUtc)}")
@@ -824,7 +827,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
         // Beside the header line rather than in it, where long flair could cut it off.
         if (isNew) {
             Text(
-                "New",
+                t("New"),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                 modifier = Modifier
@@ -855,7 +858,7 @@ private fun commentMarks(): Map<String, InlineTextContent> {
     val accent = MaterialTheme.colorScheme.primary
     return distinguishedMarks() + mapOf(
         "op" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Speaker, "OP", tint = accent) },
-        "pin" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Pin, "Pinned", tint = accent) },
+        "pin" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) { Icon(AppIcons.Pin, t("Pinned"), tint = accent) },
     )
 }
 
@@ -880,18 +883,18 @@ private fun CommentActionBar(
             .rails(depth),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        BarButton(AppIcons.ArrowUp, "Upvote", if (comment.likes == true) FadenColors.Upvote else normal) { onVote(if (comment.likes == true) 0 else 1) }
-        BarButton(AppIcons.ArrowDown, "Downvote", if (comment.likes == false) FadenColors.Downvote else normal) { onVote(if (comment.likes == false) 0 else -1) }
+        BarButton(AppIcons.ArrowUp, t("Upvote"), if (comment.likes == true) FadenColors.Upvote else normal) { onVote(if (comment.likes == true) 0 else 1) }
+        BarButton(AppIcons.ArrowDown, t("Downvote"), if (comment.likes == false) FadenColors.Downvote else normal) { onVote(if (comment.likes == false) 0 else -1) }
         BarButton(
             if (comment.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-            if (comment.saved) "Unsave" else "Save",
+            if (comment.saved) t("Unsave") else t("Save"),
             if (comment.saved) FadenColors.Saved else normal,
             onToggleSave,
         )
-        BarButton(Icons.Outlined.Person, "Profile", normal) { if (comment.author != "[deleted]") nav.push(UserRoute(comment.author)) }
-        BarButton(AppIcons.Reply, "Reply", normal, onReply)
-        BarButton(Icons.Default.KeyboardArrowUp, "Go to parent", normal, onParent)
-        BarButton(Icons.Default.MoreVert, "Comment options", normal, onMore)
+        BarButton(Icons.Outlined.Person, t("Profile"), normal) { if (comment.author != "[deleted]") nav.push(UserRoute(comment.author)) }
+        BarButton(AppIcons.Reply, t("Reply"), normal, onReply)
+        BarButton(Icons.Default.KeyboardArrowUp, t("Go to parent"), normal, onParent)
+        BarButton(Icons.Default.MoreVert, t("Comment options"), normal, onMore)
     }
 }
 
@@ -916,7 +919,7 @@ private fun MoreRow(more: MoreComments, separated: Boolean, loading: Boolean, on
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                if (more.children.isEmpty()) "Continue this thread" else "View more (${more.count})",
+                if (more.children.isEmpty()) t("Continue this thread") else t("View more ({0})", more.count),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -970,7 +973,7 @@ private fun commentSortIcon(sort: CommentSort): ImageVector = when (sort) {
 @Composable
 private fun CommentSortSheet(current: CommentSort, onDismiss: () -> Unit, onPick: (CommentSort) -> Unit) {
     TopSheet(onDismiss = onDismiss) {
-        SheetTitle("Comment sort")
+        SheetTitle(t("Comment sort"))
         SyncCommentSorts.forEach { sort ->
             OptionRow(sort.label, commentSortIcon(sort), selected = sort == current, onClick = {
                 onDismiss()
@@ -1013,19 +1016,19 @@ private fun CommentOptionsSheet(comment: Comment, post: Post, onDismiss: () -> U
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = { SheetHandle() }) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
             if (copying) {
-                SheetTitle("Copy", topPadding = 0.dp)
-                OptionRow("Copy text", AppIcons.Text, onClick = { act { clipboard.setText(AnnotatedString(comment.body)) } })
-                OptionRow("Copy permalink", AppIcons.Link, onClick = { act { clipboard.setText(AnnotatedString(permalink)) } })
-                OptionRow("Copy username", Icons.Outlined.Person, onClick = { act { clipboard.setText(AnnotatedString(comment.author)) } })
+                SheetTitle(t("Copy"), topPadding = 0.dp)
+                OptionRow(t("Copy text"), AppIcons.Text, onClick = { act { clipboard.setText(AnnotatedString(comment.body)) } })
+                OptionRow(t("Copy permalink"), AppIcons.Link, onClick = { act { clipboard.setText(AnnotatedString(permalink)) } })
+                OptionRow(t("Copy username"), Icons.Outlined.Person, onClick = { act { clipboard.setText(AnnotatedString(comment.author)) } })
             } else {
-                SheetTitle("Comment options", topPadding = 0.dp)
-                OptionRow("Share", Icons.Outlined.Share, onClick = { act { nav.share(permalink, post.title) } })
-                OptionRow("Open in browser", AppIcons.OpenExternal, onClick = { act { nav.openExternal(permalink) } })
-                OptionRow("Select text", AppIcons.Text, onClick = { selecting = true })
-                OptionRow("Copy...", AppIcons.Copy, onClick = { copying = true })
-                if (!isOwn) OptionRow("Report", AppIcons.Report, onClick = { reporting = true })
-                OptionRow("Tag user", AppIcons.TagUser, onClick = { tagging = true })
-                OptionRow(if (speaking) "Stop reading" else "Read aloud", AppIcons.VolumeOn, onClick = {
+                SheetTitle(t("Comment options"), topPadding = 0.dp)
+                OptionRow(t("Share"), Icons.Outlined.Share, onClick = { act { nav.share(permalink, post.title) } })
+                OptionRow(t("Open in browser"), AppIcons.OpenExternal, onClick = { act { nav.openExternal(permalink) } })
+                OptionRow(t("Select text"), AppIcons.Text, onClick = { selecting = true })
+                OptionRow(t("Copy..."), AppIcons.Copy, onClick = { copying = true })
+                if (!isOwn) OptionRow(t("Report"), AppIcons.Report, onClick = { reporting = true })
+                OptionRow(t("Tag user"), AppIcons.TagUser, onClick = { tagging = true })
+                OptionRow(if (speaking) t("Stop reading") else t("Read aloud"), AppIcons.VolumeOn, onClick = {
                     act {
                         if (speaking) {
                             readAloud.stop()
@@ -1035,10 +1038,10 @@ private fun CommentOptionsSheet(comment: Comment, post: Post, onDismiss: () -> U
                     }
                 })
                 if (isOwn) {
-                    OptionRow("Edit", Icons.Outlined.Edit, onClick = {
+                    OptionRow(t("Edit"), Icons.Outlined.Edit, onClick = {
                         act { nav.push(ComposeRoute(ComposeMode.EDIT, target = comment.fullname, quote = post.title, initial = comment.body)) }
                     })
-                    OptionRow("Delete", Icons.Outlined.Delete, onClick = { confirmDelete = true })
+                    OptionRow(t("Delete"), Icons.Outlined.Delete, onClick = { confirmDelete = true })
                 }
             }
         }
@@ -1046,13 +1049,13 @@ private fun CommentOptionsSheet(comment: Comment, post: Post, onDismiss: () -> U
     if (selecting) {
         AlertDialog(
             onDismissRequest = { selecting = false },
-            title = { Text("Select text") },
+            title = { Text(t("Select text")) },
             text = { SelectionContainer { Text(comment.body, style = CommentBody) } },
-            confirmButton = { TextButton(onClick = { selecting = false; onDismiss() }) { Text("Done") } },
+            confirmButton = { TextButton(onClick = { selecting = false; onDismiss() }) { Text(t("Done")) } },
         )
     }
     if (confirmDelete) {
-        ConfirmDeleteDialog("comment", onConfirm = { confirmDelete = false; act(onDelete) }, onDismiss = { confirmDelete = false })
+        ConfirmDeleteDialog(t("Delete comment?"), onConfirm = { confirmDelete = false; act(onDelete) }, onDismiss = { confirmDelete = false })
     }
 }
 
@@ -1084,7 +1087,7 @@ private fun CommentSearchSheet(rows: List<VisibleNode>, onDismiss: () -> Unit, o
             Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(16.dp))
             Box(Modifier.weight(1f)) {
-                if (query.isEmpty()) Text("Search comments", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+                if (query.isEmpty()) Text(t("Search comments"), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
                 BasicTextField(
                     value = query,
                     onValueChange = { query = it },
@@ -1097,7 +1100,7 @@ private fun CommentSearchSheet(rows: List<VisibleNode>, onDismiss: () -> Unit, o
         }
         LazyColumn(Modifier.fillMaxWidth().navigationBarsPadding().imePadding().padding(top = 8.dp)) {
             if (q.length >= 2 && matches.isEmpty()) {
-                item { Text("No matching comments", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
+                item { Text(t("No matching comments"), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
             }
             items(matches, key = { it.id }) { comment ->
                 Column(Modifier.fillMaxWidth().clickable { onPick(comment) }.padding(horizontal = 16.dp, vertical = 10.dp)) {
@@ -1118,7 +1121,7 @@ private val HREF = Regex("""href="([^"]+)"""")
  */
 private fun commentActionExtras(post: Post, comments: List<CommentNode>, nav: Navigator): List<QuickAction> = buildList {
     if (!post.isSelf && post.url.startsWith("http")) {
-        add(QuickAction("Other discussions", AppIcons.Link) { nav.push(SearchRoute(query = "url:${post.url}")) })
+        add(QuickAction(t("Other discussions"), AppIcons.Link) { nav.push(SearchRoute(query = "url:${post.url}")) })
     }
     val images = buildList {
         when (val m = post.media) {
@@ -1130,8 +1133,8 @@ private fun commentActionExtras(post: Post, comments: List<CommentNode>, nav: Na
             (node as? Comment)?.let { c -> HREF.findAll(c.bodyHtml).map { it.groupValues[1].replace("&amp;", "&") }.filter(::isImageLink).forEach(::add) }
         }
     }.distinct()
-    if (images.isNotEmpty()) add(QuickAction("View images", AppIcons.Image) { nav.push(ImageRoute(images, postId = post.id)) })
-    add(QuickAction("Translate", AppIcons.Text) {
+    if (images.isNotEmpty()) add(QuickAction(t("View images"), AppIcons.Image) { nav.push(ImageRoute(images, postId = post.id)) })
+    add(QuickAction(t("Translate"), AppIcons.Text) {
         val text = java.net.URLEncoder.encode(post.title, "UTF-8")
         nav.openExternal("https://translate.google.com/?sl=auto&op=translate&text=$text")
     })
@@ -1161,7 +1164,7 @@ private fun CommunityAbout(container: AppContainer, name: String, onDismiss: () 
             .onSuccess { about = it }
             .onFailure {
                 if (it is CancellationException) throw it
-                onMessage("Couldn't load r/$name: ${it.message}")
+                onMessage(t("Couldn't load r/{0}: {1}", name, it.message))
                 onDismiss()
             }
     }
@@ -1207,14 +1210,14 @@ private fun SportsBar(seconds: Int, onRefresh: () -> Unit, onStop: () -> Unit) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(MaterialTheme.colorScheme.error))
         Spacer(Modifier.width(12.dp))
         Text(
-            "Sports mode · new comments every ${seconds}s",
+            t("Sports mode · new comments every {0}s", seconds),
             style = MaterialTheme.typography.labelLarge,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, "Refresh now") }
-        IconButton(onClick = onStop) { Icon(Icons.Default.Close, "Stop sports mode") }
+        IconButton(onClick = onRefresh) { Icon(Icons.Outlined.Refresh, t("Refresh now")) }
+        IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop sports mode")) }
     }
 }
 
@@ -1222,7 +1225,7 @@ private fun SportsBar(seconds: Int, onRefresh: () -> Unit, onStop: () -> Unit) {
 private val ReaderSpeeds = listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
 
 private fun speedLabel(rate: Float): String =
-    (if (rate == rate.toInt().toFloat()) rate.toInt().toString() else rate.toString()) + "×"
+    (if (rate == rate.toInt().toFloat()) rate.toInt().toString() else rate.toString().let { if (I18n.locale.language == "de") it.replace('.', ',') else it }) + "×"
 
 /**
  * Sync's comment text-to-speech player (`view_tts`): what's being read, then Stop, Previous, Play/Pause, Next,
@@ -1253,24 +1256,24 @@ private fun ReaderBar(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                "Reading ${state.index + 1} of ${state.items.size}",
+                t("Reading {0} of {1}", state.index + 1, state.items.size),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        IconButton(onClick = onStop) { Icon(Icons.Default.Close, "Stop reading") }
-        IconButton(onClick = onPrevious, enabled = state.index > 0) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Previous") }
+        IconButton(onClick = onStop) { Icon(Icons.Default.Close, t("Stop reading")) }
+        IconButton(onClick = onPrevious, enabled = state.index > 0) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Previous")) }
         IconButton(onClick = onTogglePlay) {
-            if (state.playing) Icon(AppIcons.Pause, "Pause") else Icon(Icons.Default.PlayArrow, "Play")
+            if (state.playing) Icon(AppIcons.Pause, t("Pause")) else Icon(Icons.Default.PlayArrow, t("Play"))
         }
         IconButton(onClick = onNext, enabled = state.index < state.items.lastIndex) {
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, "Next")
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, t("Next"))
         }
         Box {
-            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, "Reader options") }
+            IconButton(onClick = { menuOpen = true }) { Icon(Icons.Default.MoreVert, t("Reader options")) }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
-                    text = { Text("Read replies") },
+                    text = { Text(t("Read replies")) },
                     leadingIcon = { Icon(Icons.Outlined.Check, null, tint = if (readReplies) MaterialTheme.colorScheme.primary else Color.Transparent) },
                     onClick = {
                         menuOpen = false
@@ -1279,7 +1282,7 @@ private fun ReaderBar(
                 )
                 HorizontalDivider()
                 Text(
-                    "Speed",
+                    t("Speed"),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -1303,10 +1306,10 @@ private fun ReaderBar(
 @Composable
 internal fun RecentsSheet(posts: List<RecentPost>, onDismiss: () -> Unit, onPick: (RecentPost) -> Unit) {
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = { SheetHandle() }) {
-        SheetTitle("Recents", topPadding = 0.dp)
+        SheetTitle(t("Recents"), topPadding = 0.dp)
         LazyColumn(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 8.dp, bottom = 8.dp)) {
             if (posts.isEmpty()) {
-                item { Text("No recently viewed posts", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
+                item { Text(t("No recently viewed posts"), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(16.dp)) }
             }
             items(posts, key = { it.id }) { recent ->
                 Column(Modifier.fillMaxWidth().clickable { onPick(recent) }.padding(horizontal = 16.dp, vertical = 10.dp)) {

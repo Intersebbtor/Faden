@@ -114,7 +114,7 @@ import kotlinx.coroutines.withContext
  * Sync's settings categories, grouped as on its root screen. Each opens its own page; [summary] is the root
  * screen's line under the title.
  */
-enum class SettingsCategory(val group: String, val title: String, val summary: String) {
+enum class SettingsCategory(private val enGroup: String, private val enTitle: String, private val enSummary: String) {
     GENERAL("Appearance", "General", "Navigation, gestures, fonts & quick actions"),
     TABLET("Appearance", "Tablet", "Navigation rail, dual pane & tabbed comments"),
     THEME("Appearance", "Theme management", "Colors, saved themes & sharing"),
@@ -130,7 +130,11 @@ enum class SettingsCategory(val group: String, val title: String, val summary: S
     DATA("General", "Data options", "Data saving & video quality"),
     FILTERS("General", "Filters", "Post filters"),
     BACKUP("General", "Backup", "Backup & restore"),
-    OTHER("Other", "Everything else", "Reddit API setup & app info"),
+    OTHER("Other", "Everything else", "Reddit API setup & app info");
+
+    val group: String get() = t(enGroup)
+    val title: String get() = t(enTitle)
+    val summary: String get() = t(enSummary)
 }
 
 /** The glyph beside each category on the root screen. */
@@ -169,17 +173,17 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
             topBar = {
                 TopAppBar(
                     navigationIcon = {
-                        IconButton(onClick = { if (query != null) query = null else nav.pop() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                        IconButton(onClick = { if (query != null) query = null else nav.pop() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
                     },
                     title = {
                         val q = query
                         if (q == null) {
-                            Text(category?.title ?: "Settings")
+                            Text(category?.title ?: t("Settings"))
                         } else {
                             TextField(
                                 value = q,
                                 onValueChange = { query = it },
-                                placeholder = { Text("Search settings") },
+                                placeholder = { Text(t("Search settings")) },
                                 singleLine = true,
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
@@ -195,8 +199,8 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                     actions = {
                         when {
                             category != null -> Unit
-                            query == null -> IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Search, "Search settings") }
-                            query!!.isNotEmpty() -> IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, "Clear") }
+                            query == null -> IconButton(onClick = { query = "" }) { Icon(Icons.Outlined.Search, t("Search settings")) }
+                            query!!.isNotEmpty() -> IconButton(onClick = { query = "" }) { Icon(Icons.Default.Close, t("Clear")) }
                         }
                     },
                 )
@@ -234,7 +238,7 @@ private fun SearchResults(query: String, layout: PostLayout) {
     val results = remember(query) { SettingsIndex.search(query) }
     if (results.isEmpty()) {
         Text(
-            "No settings match \"${query.trim()}\"",
+            t("No settings match \"{0}\"", query.trim()),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(16.dp),
         )
@@ -257,46 +261,46 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
     val context = LocalContext.current
     when (category) {
         SettingsCategory.GENERAL -> {
-            Section("Language", divider = false)
-            Choice("Language", AppLanguage.entries, settings.language, { if (it == AppLanguage.SYSTEM) t("System default") else it.nativeName }) { v ->
+            Section(t("Language"), divider = false)
+            Choice(t("Language"), AppLanguage.entries, settings.language, { if (it == AppLanguage.SYSTEM) t("System default") else it.nativeName }) { v ->
                 update { it.copy(language = v) }
                 I18n.use(v)
                 // Screens read their text as they're built, so a restart shows the new language everywhere.
                 (context as? android.app.Activity)?.recreate()
             }
-            Section("Navigation")
-            Toggle("Drawer navigation", "A side drawer, opened from your avatar, replaces the bottom bar", settings.drawerNavigation) { v -> update { it.copy(drawerNavigation = v) } }
-            Toggle("Confirm exit", "Ask before back closes the app", settings.confirmExit) { v -> update { it.copy(confirmExit = v) } }
-            Section("Gestures")
-            Toggle("Slide to go back", "Drag a page to the right to close it", settings.swipeBack) { v -> update { it.copy(swipeBack = v) } }
-            Section("Fonts")
-            Choice("Typeface", Typeface.entries, settings.typeface, Typeface::label) { v -> update { it.copy(typeface = v) } }
-            Choice("Base font size", BaseFontSize.entries, settings.baseFontSize, BaseFontSize::label) { v ->
+            Section(t("Navigation"))
+            Toggle(t("Drawer navigation"), t("A side drawer, opened from your avatar, replaces the bottom bar"), settings.drawerNavigation) { v -> update { it.copy(drawerNavigation = v) } }
+            Toggle(t("Confirm exit"), t("Ask before back closes the app"), settings.confirmExit) { v -> update { it.copy(confirmExit = v) } }
+            Section(t("Gestures"))
+            Toggle(t("Slide to go back"), t("Drag a page to the right to close it"), settings.swipeBack) { v -> update { it.copy(swipeBack = v) } }
+            Section(t("Fonts"))
+            Choice(t("Typeface"), Typeface.entries, settings.typeface, Typeface::label) { v -> update { it.copy(typeface = v) } }
+            Choice(t("Base font size"), BaseFontSize.entries, settings.baseFontSize, BaseFontSize::label) { v ->
                 update { it.copy(baseFontSize = v) }
                 // The scale lives in the activity's configuration, which only a restart rebuilds.
                 (context as? android.app.Activity)?.recreate()
             }
         }
         SettingsCategory.TABLET -> {
-            Toggle("Tablet mode", "On wide screens, a navigation rail replaces the bottom bar", settings.tabletMode) { v -> update { it.copy(tabletMode = v) } }
+            Toggle(t("Tablet mode"), t("On wide screens, a navigation rail replaces the bottom bar"), settings.tabletMode) { v -> update { it.copy(tabletMode = v) } }
             Toggle(
-                "Navigation on the right",
-                "On wide screens, like a foldable's inner screen, move the bottom bar to a rail on the right edge for one-handed use",
+                t("Navigation on the right"),
+                t("On wide screens, like a foldable's inner screen, move the bottom bar to a rail on the right edge for one-handed use"),
                 settings.navRailRight,
             ) { v -> update { it.copy(navRailRight = v) } }
             // Sync's Tablet › Options: the dual pane per orientation, on windows wide enough for two panes.
             if (settings.tabletMode) {
-                Toggle("Dual pane (landscape)", "Show comments next to posts in landscape", settings.dualPaneLandscape) { v -> update { it.copy(dualPaneLandscape = v) } }
-                Toggle("Dual pane (portrait)", "The same in portrait, on wide screens", settings.dualPanePortrait) { v -> update { it.copy(dualPanePortrait = v) } }
-                Toggle("Tabbed comments", "Show a post and its comments as tabs", settings.tabbedComments) { v -> update { it.copy(tabbedComments = v) } }
+                Toggle(t("Dual pane (landscape)"), t("Show comments next to posts in landscape"), settings.dualPaneLandscape) { v -> update { it.copy(dualPaneLandscape = v) } }
+                Toggle(t("Dual pane (portrait)"), t("The same in portrait, on wide screens"), settings.dualPanePortrait) { v -> update { it.copy(dualPanePortrait = v) } }
+                Toggle(t("Tabbed comments"), t("Show a post and its comments as tabs"), settings.tabbedComments) { v -> update { it.copy(tabbedComments = v) } }
             }
         }
         SettingsCategory.THEME -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Toggle("Material You colors", "Use your wallpaper's colors", settings.dynamicColor) { v -> update { it.copy(dynamicColor = v) } }
+                Toggle(t("Material You colors"), t("Use your wallpaper's colors"), settings.dynamicColor) { v -> update { it.copy(dynamicColor = v) } }
             }
             if (!(settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
-                Text("Theme color", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
+                Text(t("Theme color"), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
                 Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
                         val selected = settings.seedColor == seed
@@ -311,119 +315,119 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                     }
                 }
                 if (settings.seedColor != null) {
-                    Toggle("Extra colorful", "Tint backgrounds and cards with the accent too", settings.extraColorful) { v -> update { it.copy(extraColorful = v) } }
+                    Toggle(t("Extra colorful"), t("Tint backgrounds and cards with the accent too"), settings.extraColorful) { v -> update { it.copy(extraColorful = v) } }
                 }
             }
             ListItem(
-                headlineContent = { Text("Saved themes") },
-                supportingContent = { Text("Preview, save, share and load themes") },
+                headlineContent = { Text(t("Saved themes")) },
+                supportingContent = { Text(t("Preview, save, share and load themes")) },
                 modifier = Modifier.clickable { nav.push(ThemeManagementRoute) },
             )
         }
         SettingsCategory.DARK_MODE -> {
-            Choice("Theme", ThemeMode.entries, settings.theme, ThemeMode::label) { v -> update { it.copy(theme = v) } }
+            Choice(t("Theme"), ThemeMode.entries, settings.theme, ThemeMode::label) { v -> update { it.copy(theme = v) } }
             DarkOverlayRows(settings, update)
         }
         SettingsCategory.VIEW_TYPE -> {
-            Choice("Default post layout", PostLayout.entries, settings.layout, PostLayout::label) { v -> update { it.copy(layout = v) } }
+            Choice(t("Default post layout"), PostLayout.entries, settings.layout, PostLayout::label) { v -> update { it.copy(layout = v) } }
             ListItem(
-                headlineContent = { Text("Customize view") },
-                supportingContent = { Text("Each layout's previews, sizes and buttons") },
+                headlineContent = { Text(t("Customize view")) },
+                supportingContent = { Text(t("Each layout's previews, sizes and buttons")) },
                 modifier = Modifier.clickable { nav.push(CustomizeViewRoute(settings.layout)) },
             )
-            Choice("Post media preview size", MediaPreviewSize.entries, settings.postMediaPreview, MediaPreviewSize::label) { v -> update { it.copy(postMediaPreview = v) } }
+            Choice(t("Post media preview size"), MediaPreviewSize.entries, settings.postMediaPreview, MediaPreviewSize::label) { v -> update { it.copy(postMediaPreview = v) } }
         }
         SettingsCategory.COMMENTS -> {
-            Toggle("Show user flair", null, settings.commentFlair) { v -> update { it.copy(commentFlair = v) } }
-            Toggle("Show profile pictures", "Authors' avatars in comment headers", settings.profilePictures) { v -> update { it.copy(profilePictures = v) } }
-            Toggle("Mark new comments", "Label comments posted since you last opened the thread", settings.markNewComments) { v -> update { it.copy(markNewComments = v) } }
-            Toggle("Hide AutoMod comments", "And the replies to them", settings.hideAutoMod) { v -> update { it.copy(hideAutoMod = v) } }
-            Choice("Live comments refresh rate", LiveRefresh.entries, settings.liveRefresh, LiveRefresh::label) { v -> update { it.copy(liveRefresh = v) } }
+            Toggle(t("Show user flair"), null, settings.commentFlair) { v -> update { it.copy(commentFlair = v) } }
+            Toggle(t("Show profile pictures"), t("Authors' avatars in comment headers"), settings.profilePictures) { v -> update { it.copy(profilePictures = v) } }
+            Toggle(t("Mark new comments"), t("Label comments posted since you last opened the thread"), settings.markNewComments) { v -> update { it.copy(markNewComments = v) } }
+            Toggle(t("Hide AutoMod comments"), t("And the replies to them"), settings.hideAutoMod) { v -> update { it.copy(hideAutoMod = v) } }
+            Choice(t("Live comments refresh rate"), LiveRefresh.entries, settings.liveRefresh, LiveRefresh::label) { v -> update { it.copy(liveRefresh = v) } }
         }
         SettingsCategory.POSTS -> {
-            Choice("NSFW posts", NsfwMode.entries, settings.nsfw, NsfwMode::label) { v -> update { it.copy(nsfw = v) } }
+            Choice(t("NSFW posts"), NsfwMode.entries, settings.nsfw, NsfwMode::label) { v -> update { it.copy(nsfw = v) } }
             if (settings.nsfw == NsfwMode.BLUR) {
-                Toggle("Blur NSFW only on Frontpage, Popular & All", "Show NSFW previews unblurred everywhere else", settings.blurNsfwOnlyFrontpageAndAll) { v ->
+                Toggle(t("Blur NSFW only on Frontpage, Popular & All"), t("Show NSFW previews unblurred everywhere else"), settings.blurNsfwOnlyFrontpageAndAll) { v ->
                     update { it.copy(blurNsfwOnlyFrontpageAndAll = v) }
                 }
             }
-            Toggle("Blur spoiler previews", null, settings.blurSpoilers) { v -> update { it.copy(blurSpoilers = v) } }
-            Toggle("Show post flair", "Flair chips on posts in feeds", settings.showPostFlair) { v -> update { it.copy(showPostFlair = v) } }
-            Toggle("Show post author", "In feeds", settings.showPostAuthor) { v -> update { it.copy(showPostAuthor = v) } }
-            Toggle("Display short scores", "10.6k instead of 10,600", settings.shortScores) { v -> update { it.copy(shortScores = v) } }
-            Toggle("Ask to keep a new sort", "When you change a feed's sort, ask whether to always open it that way", settings.askToKeepSort) { v ->
+            Toggle(t("Blur spoiler previews"), null, settings.blurSpoilers) { v -> update { it.copy(blurSpoilers = v) } }
+            Toggle(t("Show post flair"), t("Flair chips on posts in feeds"), settings.showPostFlair) { v -> update { it.copy(showPostFlair = v) } }
+            Toggle(t("Show post author"), t("In feeds"), settings.showPostAuthor) { v -> update { it.copy(showPostAuthor = v) } }
+            Toggle(t("Display short scores"), t("10.6k instead of 10,600"), settings.shortScores) { v -> update { it.copy(shortScores = v) } }
+            Toggle(t("Ask to keep a new sort"), t("When you change a feed's sort, ask whether to always open it that way"), settings.askToKeepSort) { v ->
                 update { it.copy(askToKeepSort = v) }
             }
-            Section("Swipe actions")
-            Toggle("Swipe posts", "Drag a post left; drag further for the next action", settings.postSwipe) { v -> update { it.copy(postSwipe = v) } }
+            Section(t("Swipe actions"))
+            Toggle(t("Swipe posts"), t("Drag a post left; drag further for the next action"), settings.postSwipe) { v -> update { it.copy(postSwipe = v) } }
             if (settings.postSwipe) {
                 SwipeStageChoices(settings.postSwipeStages, SwipeAction.entries.filter { it.posts }) { stages -> update { it.copy(postSwipeActions = stages) } }
             }
         }
         SettingsCategory.COMMENT_OPTIONS -> {
-            Choice("Default comment sort", CommentSort.entries, settings.commentSort, CommentSort::label) { v -> update { it.copy(commentSort = v) } }
-            Toggle("Collapse all threads by default", "The first time you open a post", settings.collapseAllByDefault) { v -> update { it.copy(collapseAllByDefault = v) } }
-            Choice("Initial comment count", CommentCount.entries, settings.commentCount, CommentCount::label) { v -> update { it.copy(commentCount = v) } }
+            Choice(t("Default comment sort"), CommentSort.entries, settings.commentSort, CommentSort::label) { v -> update { it.copy(commentSort = v) } }
+            Toggle(t("Collapse all threads by default"), t("The first time you open a post"), settings.collapseAllByDefault) { v -> update { it.copy(collapseAllByDefault = v) } }
+            Choice(t("Initial comment count"), CommentCount.entries, settings.commentCount, CommentCount::label) { v -> update { it.copy(commentCount = v) } }
             Toggle(
-                "Tap to collapse",
-                if (settings.tapToCollapse) "Tap a comment to collapse it; hold it for options" else "Hold a comment to collapse it; tap it for options",
+                t("Tap to collapse"),
+                if (settings.tapToCollapse) t("Tap a comment to collapse it; hold it for options") else t("Hold a comment to collapse it; tap it for options"),
                 settings.tapToCollapse,
             ) { v -> update { it.copy(tapToCollapse = v) } }
-            Toggle("Comment navigation buttons", "Jump between top-level comments", settings.commentNavigation) { v -> update { it.copy(commentNavigation = v) } }
-            Toggle("Remember comment position", "Reopen posts where you left off, threads folded as you left them", settings.rememberCommentPosition) { v -> update { it.copy(rememberCommentPosition = v) } }
-            Section("Swipe actions")
-            Toggle("Swipe comments", "Drag a comment left; drag further for the next action", settings.commentSwipe) { v -> update { it.copy(commentSwipe = v) } }
+            Toggle(t("Comment navigation buttons"), t("Jump between top-level comments"), settings.commentNavigation) { v -> update { it.copy(commentNavigation = v) } }
+            Toggle(t("Remember comment position"), t("Reopen posts where you left off, threads folded as you left them"), settings.rememberCommentPosition) { v -> update { it.copy(rememberCommentPosition = v) } }
+            Section(t("Swipe actions"))
+            Toggle(t("Swipe comments"), t("Drag a comment left; drag further for the next action"), settings.commentSwipe) { v -> update { it.copy(commentSwipe = v) } }
             if (settings.commentSwipe) {
                 SwipeStageChoices(settings.commentSwipeStages, SwipeAction.entries.filter { it.comments }) { stages -> update { it.copy(commentSwipeActions = stages) } }
             }
         }
         SettingsCategory.MESSAGING -> MessagingRows(container, settings)
         SettingsCategory.MEDIA -> {
-            Choice("Close images by", listOf(true, false), settings.tapToClose, { if (it) "Single tap" else "Swiping up or down" }) { v -> update { it.copy(tapToClose = v) } }
+            Choice(t("Close images by"), listOf(true, false), settings.tapToClose, { if (it) t("Single tap") else t("Swiping up or down") }) { v -> update { it.copy(tapToClose = v) } }
             Toggle(
-                "Swipe to close",
-                if (settings.tapToClose) "Fling videos up or down, and images down, to close them" else "Fling videos up or down to close them",
+                t("Swipe to close"),
+                if (settings.tapToClose) t("Fling videos up or down, and images down, to close them") else t("Fling videos up or down to close them"),
                 settings.swipeToClose,
             ) { v -> update { it.copy(swipeToClose = v) } }
-            Toggle("Hold to preview", "Hold a picture in a feed to see it full screen until you let go", settings.holdToPreview) { v -> update { it.copy(holdToPreview = v) } }
+            Toggle(t("Hold to preview"), t("Hold a picture in a feed to see it full screen until you let go"), settings.holdToPreview) { v -> update { it.copy(holdToPreview = v) } }
             if (settings.holdToPreview) {
-                Toggle("Unblur NSFW previews", "Holding a blurred NSFW picture shows it unblurred", settings.peekUnblursNsfw) { v -> update { it.copy(peekUnblursNsfw = v) } }
+                Toggle(t("Unblur NSFW previews"), t("Holding a blurred NSFW picture shows it unblurred"), settings.peekUnblursNsfw) { v -> update { it.copy(peekUnblursNsfw = v) } }
             }
-            Toggle("Start videos muted", null, settings.muteVideos) { v -> update { it.copy(muteVideos = v) } }
-            Toggle("Display seek bar", null, settings.videoSeekBar) { v -> update { it.copy(videoSeekBar = v) } }
-            Toggle("Display speed controls", null, settings.videoSpeedControls) { v -> update { it.copy(videoSpeedControls = v) } }
+            Toggle(t("Start videos muted"), null, settings.muteVideos) { v -> update { it.copy(muteVideos = v) } }
+            Toggle(t("Display seek bar"), null, settings.videoSeekBar) { v -> update { it.copy(videoSeekBar = v) } }
+            Toggle(t("Display speed controls"), null, settings.videoSpeedControls) { v -> update { it.copy(videoSpeedControls = v) } }
         }
         SettingsCategory.LINKS -> {
-            Toggle("Open links in the app", "Custom Tabs instead of your browser app", settings.inAppBrowser) { v -> update { it.copy(inAppBrowser = v) } }
-            Toggle("Link cards", "Number links and list them under posts and comments", settings.linkCards) { v -> update { it.copy(linkCards = v) } }
-            Toggle("Pictures in comments", "Show GIFs and images under the comments that post or link them, instead of their links", settings.commentGifs) { v -> update { it.copy(commentGifs = v) } }
+            Toggle(t("Open links in the app"), t("Custom Tabs instead of your browser app"), settings.inAppBrowser) { v -> update { it.copy(inAppBrowser = v) } }
+            Toggle(t("Link cards"), t("Number links and list them under posts and comments"), settings.linkCards) { v -> update { it.copy(linkCards = v) } }
+            Toggle(t("Pictures in comments"), t("Show GIFs and images under the comments that post or link them, instead of their links"), settings.commentGifs) { v -> update { it.copy(commentGifs = v) } }
             // Faden can't verify reddit.com as its own, so Android 12+ leaves its links off until they're allowed here.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 ListItem(
-                    headlineContent = { Text("Open Reddit links in Faden") },
-                    supportingContent = { Text("Under \"Open by default\", add reddit.com and redd.it, so links from other apps open here") },
+                    headlineContent = { Text(t("Open Reddit links in Faden")) },
+                    supportingContent = { Text(t("Under \"Open by default\", add reddit.com and redd.it, so links from other apps open here")) },
                     modifier = Modifier.clickable {
                         val intent = Intent(android.provider.Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS, "package:${context.packageName}".toUri())
                         runCatching { context.startActivity(intent) }.onFailure {
-                            Toast.makeText(context, "Couldn't open the app's link settings", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, t("Couldn't open the app's link settings"), Toast.LENGTH_SHORT).show()
                         }
                     },
                 )
             }
         }
         SettingsCategory.HISTORY -> {
-            Toggle("Mark posts as read on scroll", "Posts you scroll past in a feed count as read", settings.markReadOnScroll) { v -> update { it.copy(markReadOnScroll = v) } }
-            Toggle("Hide read posts", "Leave out posts you have already opened when a feed loads", settings.hideRead) { v -> update { it.copy(hideRead = v) } }
+            Toggle(t("Mark posts as read on scroll"), t("Posts you scroll past in a feed count as read"), settings.markReadOnScroll) { v -> update { it.copy(markReadOnScroll = v) } }
+            Toggle(t("Hide read posts"), t("Leave out posts you have already opened when a feed loads"), settings.hideRead) { v -> update { it.copy(hideRead = v) } }
         }
         SettingsCategory.DATA -> {
-            Choice("Data saving mode", DataSaving.entries, settings.dataSaving, DataSaving::label) { v -> update { it.copy(dataSaving = v) } }
+            Choice(t("Data saving mode"), DataSaving.entries, settings.dataSaving, DataSaving::label) { v -> update { it.copy(dataSaving = v) } }
             Text(
-                "Data saving leaves feed thumbnails and previews unloaded and opens Reddit videos in SD",
+                t("Data saving leaves feed thumbnails and previews unloaded and opens Reddit videos in SD"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
-            Choice("HD Reddit video quality", VideoQuality.entries, settings.hdVideo, VideoQuality::label) { v -> update { it.copy(hdVideo = v) } }
+            Choice(t("HD Reddit video quality"), VideoQuality.entries, settings.hdVideo, VideoQuality::label) { v -> update { it.copy(hdVideo = v) } }
         }
         SettingsCategory.FILTERS -> {
             // Sync's Post filters: a row per list, each opening its editor. Post ⋮ → Filter… adds to them too.
@@ -440,22 +444,22 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
         SettingsCategory.BACKUP -> BackupSection(container)
         SettingsCategory.OTHER -> {
             ListItem(
-                headlineContent = { Text("Reddit API") },
-                supportingContent = { Text("Client ID, redirect URI, user agent") },
+                headlineContent = { Text(t("Reddit API")) },
+                supportingContent = { Text(t("Client ID, redirect URI, user agent")) },
                 modifier = Modifier.clickable { nav.push(SetupRoute) },
             )
             var notesOpen by remember { mutableStateOf(false) }
             ListItem(
-                headlineContent = { Text("Version") },
+                headlineContent = { Text(t("Version")) },
                 supportingContent = { Text(BuildConfig.VERSION_NAME) },
             )
             ListItem(
-                headlineContent = { Text("What's new") },
-                supportingContent = { Text("What changed in each version") },
+                headlineContent = { Text(t("What's new")) },
+                supportingContent = { Text(t("What changed in each version")) },
                 modifier = Modifier.clickable { notesOpen = true },
             )
-            Toggle("Check for updates", "Say when a new version is out on GitHub", settings.checkForUpdates) { v -> update { it.copy(checkForUpdates = v) } }
-            if (notesOpen) WhatsNewDialog("What's new", container.whatsNew, onDismiss = { notesOpen = false })
+            Toggle(t("Check for updates"), t("Say when a new version is out on GitHub"), settings.checkForUpdates) { v -> update { it.copy(checkForUpdates = v) } }
+            if (notesOpen) WhatsNewDialog(t("What's new"), container.whatsNew, onDismiss = { notesOpen = false })
         }
     }
 }
@@ -468,54 +472,54 @@ private fun MessagingRows(container: AppContainer, settings: Settings) {
     val watchedPosts by container.watch.posts.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (!granted) Toast.makeText(context, "Allow notifications to hear about new messages", Toast.LENGTH_SHORT).show()
+        if (!granted) Toast.makeText(context, t("Allow notifications to hear about new messages"), Toast.LENGTH_SHORT).show()
     }
-    Choice("Periodically check for new messages", MessageCheck.entries, settings.messageCheck, MessageCheck::label) { v ->
+    Choice(t("Periodically check for new messages"), MessageCheck.entries, settings.messageCheck, MessageCheck::label) { v ->
         update { it.copy(messageCheck = v) }
         InboxWorker.schedule(context, v)
         if (v != MessageCheck.OFF && !Notifications.canNotify(context)) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
     if (settings.messageCheck != MessageCheck.OFF) {
         ListItem(
-            headlineContent = { Text("Check now") },
-            supportingContent = { Text("Look for new messages without waiting for the next check") },
+            headlineContent = { Text(t("Check now")) },
+            supportingContent = { Text(t("Look for new messages without waiting for the next check")) },
             modifier = Modifier.clickable { InboxWorker.checkNow(context) },
         )
     }
 
-    Section("Watched communities")
+    Section(t("Watched communities"))
     if (watched.isEmpty()) {
         ListItem(
-            headlineContent = { Text("None yet") },
-            supportingContent = { Text("Tap Watch on a community to get a notification for each new post") },
+            headlineContent = { Text(t("None yet")) },
+            supportingContent = { Text(t("Tap Watch on a community to get a notification for each new post")) },
         )
     }
     if (watched.isNotEmpty() || watchedPosts.isNotEmpty()) {
         ListItem(
-            headlineContent = { Text("Check now") },
-            supportingContent = { Text("Look for new posts and comments without waiting for the hourly check") },
+            headlineContent = { Text(t("Check now")) },
+            supportingContent = { Text(t("Look for new posts and comments without waiting for the hourly check")) },
             modifier = Modifier.clickable { WatchWorker.checkNow(context) },
         )
     }
     watched.values.sortedBy { it.name.lowercase() }.forEach { community ->
         ListItem(
             headlineContent = { Text("r/${community.name}") },
-            supportingContent = { Text("Checked every hour") },
+            supportingContent = { Text(t("Checked every hour")) },
             trailingContent = {
                 IconButton(onClick = { container.setWatching(community.name, false) }) {
-                    Icon(Icons.Default.Close, "Stop watching r/${community.name}")
+                    Icon(Icons.Default.Close, t("Stop watching r/{0}", community.name))
                 }
             },
         )
     }
     if (watchedPosts.isNotEmpty()) {
-        Section("Watched posts")
+        Section(t("Watched posts"))
         watchedPosts.values.sortedBy { it.title.lowercase() }.forEach { post ->
             ListItem(
                 headlineContent = { Text(post.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-                supportingContent = { Text("r/${post.subreddit} · new comments are checked every hour") },
+                supportingContent = { Text(t("r/{0} · new comments are checked every hour", post.subreddit)) },
                 trailingContent = {
-                    IconButton(onClick = { container.unwatchPost(post.id) }) { Icon(Icons.Default.Close, "Stop watching") }
+                    IconButton(onClick = { container.unwatchPost(post.id) }) { Icon(Icons.Default.Close, t("Stop watching")) }
                 },
             )
         }
@@ -532,8 +536,8 @@ internal fun restartApp(context: Context) {
 /** Sync's "First / Second / Third swipe action" rows. */
 @Composable
 private fun SwipeStageChoices(stages: List<SwipeAction>, options: List<SwipeAction>, onChange: (List<SwipeAction>) -> Unit) {
-    listOf("First", "Second", "Third").forEachIndexed { i, name ->
-        Choice("$name swipe action", options, stages[i], SwipeAction::label) { v ->
+    listOf(t("First swipe action"), t("Second swipe action"), t("Third swipe action")).forEachIndexed { i, name ->
+        Choice(name, options, stages[i], SwipeAction::label) { v ->
             onChange(stages.toMutableList().also { it[i] = v })
         }
     }
@@ -594,7 +598,7 @@ internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T)
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { open = false }) { Text("Close") } },
+            confirmButton = { TextButton(onClick = { open = false }) { Text(t("Close")) } },
         )
     }
 }

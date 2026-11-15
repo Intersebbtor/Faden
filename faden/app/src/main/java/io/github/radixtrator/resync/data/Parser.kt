@@ -1,5 +1,6 @@
 package io.github.radixtrator.resync.data
 
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -69,7 +70,7 @@ object Parser {
     }
 
     fun user(root: JsonElement): UserProfile {
-        val d = root.jsonObject.obj("data") ?: error("No user data")
+        val d = root.jsonObject.obj("data") ?: error(t("No user data"))
         return UserProfile(
             name = d.string("name").orEmpty(),
             linkKarma = d.int("link_karma") ?: 0,
@@ -188,7 +189,7 @@ object Parser {
     /** Post ID from /api/submit. */
     fun submittedId(root: JsonElement): String =
         checkErrors(root).jsonObject.obj("json")?.obj("data")?.string("id")
-            ?: throw RedditException("Reddit didn't return the new post")
+            ?: throw RedditException(t("Reddit didn't return the new post"))
 
     fun post(d: JsonObject): Post {
         val id = d.string("id").orEmpty()
@@ -293,8 +294,8 @@ object Parser {
      * conversation's `objIds` (oldest first), else by date.
      */
     fun modMailThread(root: JsonElement): ModMailThread {
-        val o = root as? JsonObject ?: throw RedditException("Reddit didn't return the conversation")
-        val c = o.obj("conversation") ?: throw RedditException("Reddit didn't return the conversation")
+        val o = root as? JsonObject ?: throw RedditException(t("Reddit didn't return the conversation"))
+        val c = o.obj("conversation") ?: throw RedditException(t("Reddit didn't return the conversation"))
         val conversation = modMailConversation(c, c.string("id").orEmpty())
         val byId = o.obj("messages")
         val messages = byId.orEmpty().mapNotNull { (id, value) -> (value as? JsonObject)?.let { modMailMessage(it, id) } }
@@ -347,7 +348,7 @@ object Parser {
 
     fun comments(root: JsonElement): PostWithComments {
         val parts = root.jsonArray
-        val post = postListing(parts[0]).items.firstOrNull() ?: error("Comment page has no post")
+        val post = postListing(parts[0]).items.firstOrNull() ?: error(t("Comment page has no post"))
         val out = mutableListOf<CommentNode>()
         flatten(parts.getOrNull(1)?.jsonObject?.obj("data")?.arr("children"), 0, out)
         return PostWithComments(post, out)

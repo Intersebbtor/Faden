@@ -4,6 +4,7 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.widget.Toast
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +27,7 @@ class ReadAloud(context: Context) {
                 ready = true
                 queued?.let(::say)
             } else {
-                Toast.makeText(context, "Text-to-speech isn't available", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, t("Text-to-speech isn't available"), Toast.LENGTH_SHORT).show()
             }
             queued = null
         }.also { created ->

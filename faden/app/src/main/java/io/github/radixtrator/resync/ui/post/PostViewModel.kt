@@ -1,5 +1,6 @@
 package io.github.radixtrator.resync.ui.post
 
+import io.github.radixtrator.resync.i18n.t
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.radixtrator.resync.AppContainer
@@ -162,7 +163,7 @@ class PostViewModel(
                 if (quiet) {
                     _state.update { it.copy(loading = false, refreshing = false) }
                 } else {
-                    _state.update { it.copy(loading = false, refreshing = false, error = e.message ?: "Something went wrong") }
+                    _state.update { it.copy(loading = false, refreshing = false, error = e.message ?: t("Something went wrong")) }
                 }
             }
         }
@@ -328,7 +329,7 @@ class PostViewModel(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(loadingMore = it.loadingMore - more.id, message = "Couldn't load replies: ${e.message}") }
+                _state.update { it.copy(loadingMore = it.loadingMore - more.id, message = t("Couldn't load replies: {0}", e.message)) }
             }
         }
     }
@@ -341,7 +342,7 @@ class PostViewModel(
         viewModelScope.launch {
             runCatching { container.api.vote(post.fullname, direction) }.onFailure { e ->
                 postEdits++
-                _state.update { it.copy(post = post, message = "Vote failed: ${e.message}") }
+                _state.update { it.copy(post = post, message = t("Vote failed: {0}", e.message)) }
             }
         }
     }
@@ -354,7 +355,7 @@ class PostViewModel(
         viewModelScope.launch {
             runCatching { container.api.setSaved(post.fullname, !post.saved) }.onFailure { e ->
                 postEdits++
-                _state.update { it.copy(post = post, message = "Save failed: ${e.message}") }
+                _state.update { it.copy(post = post, message = t("Save failed: {0}", e.message)) }
             }
         }
     }
@@ -365,7 +366,7 @@ class PostViewModel(
         viewModelScope.launch {
             runCatching { container.api.vote(comment.fullname, direction) }.onFailure { e ->
                 updateComment(comment.fullname) { it.copy(likes = comment.likes, score = comment.score) }
-                _state.update { it.copy(message = "Vote failed: ${e.message}") }
+                _state.update { it.copy(message = t("Vote failed: {0}", e.message)) }
             }
         }
     }
@@ -376,7 +377,7 @@ class PostViewModel(
         viewModelScope.launch {
             runCatching { container.api.setSaved(comment.fullname, !comment.saved) }.onFailure { e ->
                 updateComment(comment.fullname) { it.copy(saved = comment.saved) }
-                _state.update { it.copy(message = "Save failed: ${e.message}") }
+                _state.update { it.copy(message = t("Save failed: {0}", e.message)) }
             }
         }
     }
@@ -385,7 +386,7 @@ class PostViewModel(
         viewModelScope.launch {
             runCatching { container.api.delete(fullname) }
                 .onSuccess { container.emit(ContentEvent.Deleted(fullname)) }
-                .onFailure { e -> _state.update { it.copy(message = "Delete failed: ${e.message}") } }
+                .onFailure { e -> _state.update { it.copy(message = t("Delete failed: {0}", e.message)) } }
         }
     }
 
@@ -395,7 +396,7 @@ class PostViewModel(
 
     fun requireLogin(): Boolean {
         if (container.username.value != null) return true
-        _state.update { it.copy(message = "Log in first") }
+        _state.update { it.copy(message = t("Log in first")) }
         return false
     }
 

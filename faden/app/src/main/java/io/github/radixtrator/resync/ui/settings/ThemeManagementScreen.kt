@@ -62,6 +62,7 @@ import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.data.ThemeCode
 import io.github.radixtrator.resync.data.ThemeMode
 import io.github.radixtrator.resync.data.withSavedTheme
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.SwipeBack
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.theme.LocalDarkTheme
@@ -93,8 +94,8 @@ fun ThemeManagementScreen(container: AppContainer) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
-                    title = { Text("Theme management") },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                    title = { Text(t("Theme management")) },
                 )
             },
         ) { padding ->
@@ -104,8 +105,8 @@ fun ThemeManagementScreen(container: AppContainer) {
                     Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    MiniPhone(previewScheme(settings, dark = false), "Light", Modifier.weight(1f))
-                    MiniPhone(previewScheme(settings, dark = true), if (settings.theme == ThemeMode.BLACK) "Black" else "Dark", Modifier.weight(1f))
+                    MiniPhone(previewScheme(settings, dark = false), t("Light"), Modifier.weight(1f))
+                    MiniPhone(previewScheme(settings, dark = true), if (settings.theme == ThemeMode.BLACK) t("Black") else t("Dark"), Modifier.weight(1f))
                 }
                 // Sync's Automatic / Manual selection buttons. Automatic is Material You where Android has it, else
                 // Faden's default palette; Manual is a hand-picked accent (the swatches below), with Color intensity.
@@ -119,29 +120,29 @@ fun ThemeManagementScreen(container: AppContainer) {
                     FilterChip(
                         selected = automatic,
                         onClick = { update { it.copy(dynamicColor = canDynamic, seedColor = null) } },
-                        label = { Text("Automatic") },
+                        label = { Text(t("Automatic")) },
                         modifier = Modifier.weight(1f),
                     )
                     FilterChip(
                         selected = manual,
                         onClick = { update { it.copy(dynamicColor = false, seedColor = it.seedColor ?: THEME_SEEDS.first()) } },
-                        label = { Text("Manual selection") },
+                        label = { Text(t("Manual selection")) },
                         modifier = Modifier.weight(1f),
                     )
                 }
                 Text(
                     when {
-                        dynamic -> "Following your wallpaper's colors (Material You). Pick a color below to use it instead."
-                        manual -> "Using the color you picked below."
-                        canDynamic -> "Using Faden's default palette. Automatic follows your wallpaper's colors instead."
-                        else -> "Using Faden's default palette: this Android version has no wallpaper colors."
+                        dynamic -> t("Following your wallpaper's colors (Material You). Pick a color below to use it instead.")
+                        manual -> t("Using the color you picked below.")
+                        canDynamic -> t("Using Faden's default palette. Automatic follows your wallpaper's colors instead.")
+                        else -> t("Using Faden's default palette: this Android version has no wallpaper colors.")
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                 )
 
-                Section("Mode")
+                Section(t("Mode"))
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -155,7 +156,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                     }
                 }
 
-                Section("Theme color")
+                Section(t("Theme color"))
                 val swatchDark = LocalDarkTheme.current
                 Row(
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
@@ -165,7 +166,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                         ThemeSwatch(
                             scheme = fadenColorScheme(swatchDark, black = settings.theme == ThemeMode.BLACK, seed = seed, extra = settings.extraColorful, intensity = settings.colorIntensity),
                             selected = !dynamic && settings.seedColor == seed,
-                            description = seed?.let { "Theme color ${hex(it)}" } ?: "Default theme color",
+                            description = seed?.let { t("Theme color {0}", hex(it)) } ?: t("Default theme color"),
                             onClick = { update { it.copy(seedColor = seed, dynamicColor = false) } },
                         )
                     }
@@ -173,23 +174,23 @@ fun ThemeManagementScreen(container: AppContainer) {
                 if (manual) {
                     // Sync's Manual setup › Color intensity: 0–2 in steps of 0.2.
                     ThemeValueSlider(
-                        title = "Color intensity",
+                        title = t("Color intensity"),
                         valueLabel = "%.1f×".format(settings.colorIntensity),
                         value = settings.colorIntensity,
                         range = 0f..Settings.COLOR_INTENSITY_MAX,
                         steps = 9,
                     ) { v -> update { it.copy(colorIntensity = v) } }
-                    Toggle("Extra colorful", "Tint backgrounds and cards with the accent too", settings.extraColorful) { v -> update { it.copy(extraColorful = v) } }
+                    Toggle(t("Extra colorful"), t("Tint backgrounds and cards with the accent too"), settings.extraColorful) { v -> update { it.copy(extraColorful = v) } }
                 }
 
-                Section("Dark tweaks")
+                Section(t("Dark tweaks"))
                 DarkOverlayRows(settings, update)
 
-                Section("Saved themes")
+                Section(t("Saved themes"))
                 if (settings.savedThemes.isEmpty()) {
                     ListItem(
-                        headlineContent = { Text("None yet") },
-                        supportingContent = { Text("Save the theme you're using to switch back to it later") },
+                        headlineContent = { Text(t("None yet")) },
+                        supportingContent = { Text(t("Save the theme you're using to switch back to it later")) },
                     )
                 }
                 settings.savedThemes.forEach { theme ->
@@ -209,41 +210,41 @@ fun ThemeManagementScreen(container: AppContainer) {
                             )
                         },
                         headlineContent = { Text(theme.name) },
-                        supportingContent = { Text(describe(theme) + if (inUse) " · In use" else "") },
+                        supportingContent = { Text(if (inUse) t("{0} · In use", describe(theme)) else describe(theme)) },
                         trailingContent = {
                             Row {
                                 IconButton(onClick = { nav.share(ThemeCode.encode(theme), theme.name) }) {
-                                    Icon(Icons.Outlined.Share, "Share ${theme.name}")
+                                    Icon(Icons.Outlined.Share, t("Share {0}", theme.name))
                                 }
-                                IconButton(onClick = { deleting = theme }) { Icon(Icons.Outlined.Delete, "Delete ${theme.name}") }
+                                IconButton(onClick = { deleting = theme }) { Icon(Icons.Outlined.Delete, t("Delete {0}", theme.name)) }
                             }
                         },
                         modifier = Modifier.clickable { update { theme.applyTo(it) } },
                     )
                 }
                 ListItem(
-                    headlineContent = { Text("Save current theme") },
+                    headlineContent = { Text(t("Save current theme")) },
                     supportingContent = { Text(describe(SavedTheme.from(settings, ""))) },
                     modifier = Modifier.clickable { saving = true },
                 )
 
-                Section("Extra")
+                Section(t("Extra"))
                 ListItem(
-                    headlineContent = { Text("View palette") },
-                    supportingContent = { Text("The colors the theme in use is built from") },
+                    headlineContent = { Text(t("View palette")) },
+                    supportingContent = { Text(t("The colors the theme in use is built from")) },
                     modifier = Modifier.clickable { viewingPalette = true },
                 )
                 ListItem(
-                    headlineContent = { Text("Share theme") },
-                    supportingContent = { Text("Send the theme you're using as a code to paste") },
+                    headlineContent = { Text(t("Share theme")) },
+                    supportingContent = { Text(t("Send the theme you're using as a code to paste")) },
                     modifier = Modifier.clickable {
-                        val name = settings.savedThemes.firstOrNull { it.matches(settings) }?.name ?: "Faden theme"
+                        val name = settings.savedThemes.firstOrNull { it.matches(settings) }?.name ?: t("Faden theme")
                         nav.share(ThemeCode.encode(SavedTheme.from(settings, name)), name)
                     },
                 )
                 ListItem(
-                    headlineContent = { Text("Load theme") },
-                    supportingContent = { Text("Paste a shared theme code") },
+                    headlineContent = { Text(t("Load theme")) },
+                    supportingContent = { Text(t("Paste a shared theme code")) },
                     modifier = Modifier.clickable { loading = true },
                 )
                 Spacer(Modifier.height(16.dp))
@@ -252,18 +253,18 @@ fun ThemeManagementScreen(container: AppContainer) {
     }
 
     if (saving) {
-        var name by rememberSaveable { mutableStateOf("Theme ${settings.savedThemes.size + 1}") }
+        var name by rememberSaveable { mutableStateOf(t("Theme {0}", settings.savedThemes.size + 1)) }
         val replaces = settings.savedThemes.any { it.name.equals(name.trim(), ignoreCase = true) }
         AlertDialog(
             onDismissRequest = { saving = false },
-            title = { Text("Save theme") },
+            title = { Text(t("Save theme")) },
             text = {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it.take(ThemeCode.MAX_NAME) },
                     singleLine = true,
-                    label = { Text("Name") },
-                    supportingText = if (replaces) ({ Text("Replaces the saved theme with this name") }) else null,
+                    label = { Text(t("Name")) },
+                    supportingText = if (replaces) ({ Text(t("Replaces the saved theme with this name")) }) else null,
                 )
             },
             confirmButton = {
@@ -273,9 +274,9 @@ fun ThemeManagementScreen(container: AppContainer) {
                         saving = false
                     },
                     enabled = name.isNotBlank(),
-                ) { Text("Save") }
+                ) { Text(t("Save")) }
             },
-            dismissButton = { TextButton(onClick = { saving = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { saving = false }) { Text(t("Cancel")) } },
         )
     }
 
@@ -284,16 +285,16 @@ fun ThemeManagementScreen(container: AppContainer) {
         val theme = remember(code) { ThemeCode.decode(code) }
         AlertDialog(
             onDismissRequest = { loading = false },
-            title = { Text("Load theme") },
+            title = { Text(t("Load theme")) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
                         value = code,
                         onValueChange = { code = it },
-                        label = { Text("Theme code") },
+                        label = { Text(t("Theme code")) },
                         placeholder = { Text("${ThemeCode.PREFIX}…") },
                         isError = code.isNotBlank() && theme == null,
-                        supportingText = if (code.isNotBlank() && theme == null) ({ Text("That isn't a theme code") }) else null,
+                        supportingText = if (code.isNotBlank() && theme == null) ({ Text(t("That isn't a theme code")) }) else null,
                         maxLines = 4,
                     )
                     if (theme != null) {
@@ -305,7 +306,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                             }
                             ThemeSwatch(fadenColorScheme(dark, theme.mode == ThemeMode.BLACK, theme.seedColor, theme.extraColorful), false, null, null)
                             Column {
-                                Text(theme.name.ifBlank { "Unnamed theme" }, style = MaterialTheme.typography.titleSmall)
+                                Text(theme.name.ifBlank { t("Unnamed theme") }, style = MaterialTheme.typography.titleSmall)
                                 Text(describe(theme), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
@@ -316,29 +317,29 @@ fun ThemeManagementScreen(container: AppContainer) {
                 TextButton(
                     onClick = {
                         val loaded = theme ?: return@TextButton
-                        val named = if (loaded.name.isBlank()) loaded.copy(name = "Loaded theme") else loaded
+                        val named = if (loaded.name.isBlank()) loaded.copy(name = t("Loaded theme")) else loaded
                         update { named.applyTo(it).copy(savedThemes = withSavedTheme(it.savedThemes, named)) }
                         loading = false
                     },
                     enabled = theme != null,
-                ) { Text("Apply and save") }
+                ) { Text(t("Apply and save")) }
             },
-            dismissButton = { TextButton(onClick = { loading = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { loading = false }) { Text(t("Cancel")) } },
         )
     }
 
     deleting?.let { theme ->
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Delete ${theme.name}?") },
-            text = { Text("The theme you're using stays as it is.") },
+            title = { Text(t("Delete {0}?", theme.name)) },
+            text = { Text(t("The theme you're using stays as it is.")) },
             confirmButton = {
                 TextButton(onClick = {
                     update { s -> s.copy(savedThemes = s.savedThemes.filterNot { it.name == theme.name }) }
                     deleting = null
-                }) { Text("Delete") }
+                }) { Text(t("Delete")) }
             },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text(t("Cancel")) } },
         )
     }
 
@@ -347,38 +348,38 @@ fun ThemeManagementScreen(container: AppContainer) {
         val scheme = MaterialTheme.colorScheme
         AlertDialog(
             onDismissRequest = { viewingPalette = false },
-            title = { Text("Palette") },
+            title = { Text(t("Palette")) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     paletteRoles(scheme).forEach { (name, color) -> PaletteRow(name, color) }
                 }
             },
-            confirmButton = { TextButton(onClick = { viewingPalette = false }) { Text("Close") } },
+            confirmButton = { TextButton(onClick = { viewingPalette = false }) { Text(t("Close")) } },
         )
     }
 }
 
 /** The color roles the palette view lists, in the order Material describes them. */
 private fun paletteRoles(scheme: ColorScheme): List<Pair<String, Color>> = listOf(
-    "Primary" to scheme.primary,
-    "On primary" to scheme.onPrimary,
-    "Primary container" to scheme.primaryContainer,
-    "On primary container" to scheme.onPrimaryContainer,
-    "Secondary" to scheme.secondary,
-    "Secondary container" to scheme.secondaryContainer,
-    "Tertiary" to scheme.tertiary,
-    "Tertiary container" to scheme.tertiaryContainer,
-    "Background" to scheme.background,
-    "Surface" to scheme.surface,
-    "Surface container low" to scheme.surfaceContainerLow,
-    "Surface container" to scheme.surfaceContainer,
-    "Surface container high" to scheme.surfaceContainerHigh,
-    "Surface container highest" to scheme.surfaceContainerHighest,
-    "Surface variant" to scheme.surfaceVariant,
-    "On surface" to scheme.onSurface,
-    "On surface variant" to scheme.onSurfaceVariant,
-    "Outline" to scheme.outline,
-    "Outline variant" to scheme.outlineVariant,
+    t("Primary") to scheme.primary,
+    t("On primary") to scheme.onPrimary,
+    t("Primary container") to scheme.primaryContainer,
+    t("On primary container") to scheme.onPrimaryContainer,
+    t("Secondary") to scheme.secondary,
+    t("Secondary container") to scheme.secondaryContainer,
+    t("Tertiary") to scheme.tertiary,
+    t("Tertiary container") to scheme.tertiaryContainer,
+    t("Background") to scheme.background,
+    t("Surface") to scheme.surface,
+    t("Surface container low") to scheme.surfaceContainerLow,
+    t("Surface container") to scheme.surfaceContainer,
+    t("Surface container high") to scheme.surfaceContainerHigh,
+    t("Surface container highest") to scheme.surfaceContainerHighest,
+    t("Surface variant") to scheme.surfaceVariant,
+    t("On surface") to scheme.onSurface,
+    t("On surface variant") to scheme.onSurfaceVariant,
+    t("Outline") to scheme.outline,
+    t("Outline variant") to scheme.outlineVariant,
 )
 
 /** One palette swatch: the color in a rounded square, its role and its hex value. */
@@ -405,10 +406,10 @@ private fun PaletteRow(name: String, color: Color) {
  */
 @Composable
 internal fun DarkOverlayRows(settings: Settings, update: ((Settings) -> Settings) -> Unit) {
-    Toggle("Dark overlay", "Dim the whole app, for reading at night", settings.darkOverlay) { v -> update { it.copy(darkOverlay = v) } }
+    Toggle(t("Dark overlay"), t("Dim the whole app, for reading at night"), settings.darkOverlay) { v -> update { it.copy(darkOverlay = v) } }
     if (settings.darkOverlay) {
         ThemeValueSlider(
-            title = "Overlay darkness",
+            title = t("Overlay darkness"),
             valueLabel = "${(settings.darkOverlayLevel * 100).roundToInt()}%",
             value = settings.darkOverlayLevel,
             range = Settings.DARK_OVERLAY_MIN..Settings.DARK_OVERLAY_MAX,
@@ -450,8 +451,8 @@ private fun hex(argb: Int) = "#%06X".format(argb and 0xFFFFFF)
 /** "Dark · #4484F6 · Extra colorful". */
 private fun describe(theme: SavedTheme): String = buildList {
     add(theme.mode.label)
-    add(theme.seedColor?.let(::hex) ?: "Default color")
-    if (theme.seedColor != null && theme.extraColorful) add("Extra colorful")
+    add(theme.seedColor?.let(::hex) ?: t("Default color"))
+    if (theme.seedColor != null && theme.extraColorful) add(t("Extra colorful"))
 }.joinToString(" · ")
 
 /** A round swatch: the theme's window color with its accent in the middle, ringed when [selected]. */

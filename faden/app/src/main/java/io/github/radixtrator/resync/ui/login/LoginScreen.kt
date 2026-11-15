@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import io.github.radixtrator.resync.AppContainer
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -61,16 +62,16 @@ fun LoginScreen(container: AppContainer, onFinished: () -> Unit) {
         handled = true
         val code = uri.getQueryParameter("code")
         when {
-            uri.getQueryParameter("state") != state -> error = "Login failed: state mismatch. Try again."
+            uri.getQueryParameter("state") != state -> error = t("Login failed: state mismatch. Try again.")
             uri.getQueryParameter("error") == "access_denied" -> onFinished()
-            uri.getQueryParameter("error") != null -> error = "Reddit said: ${uri.getQueryParameter("error")}"
-            code == null -> error = "Reddit didn't return a login code."
+            uri.getQueryParameter("error") != null -> error = t("Reddit said: {0}", uri.getQueryParameter("error"))
+            code == null -> error = t("Reddit didn't return a login code.")
             else -> {
                 busy = true
                 scope.launch {
                     runCatching { container.login(code) }
                         .onSuccess { onFinished() }
-                        .onFailure { busy = false; error = it.message ?: "Login failed" }
+                        .onFailure { busy = false; error = it.message ?: t("Login failed") }
                 }
             }
         }
@@ -79,8 +80,8 @@ fun LoginScreen(container: AppContainer, onFinished: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Log in to Reddit") },
-                navigationIcon = { IconButton(onClick = onFinished) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                title = { Text(t("Log in to Reddit")) },
+                navigationIcon = { IconButton(onClick = onFinished) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
             )
         },
     ) { padding ->
@@ -93,7 +94,7 @@ fun LoginScreen(container: AppContainer, onFinished: () -> Unit) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(error!!, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.error)
-                    Button(onClick = onFinished) { Text("Back") }
+                    Button(onClick = onFinished) { Text(t("Back")) }
                 }
                 busy -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 url != null -> AndroidView(

@@ -33,6 +33,7 @@ import io.github.radixtrator.resync.data.Subreddit
 import io.github.radixtrator.resync.data.UserTags
 import io.github.radixtrator.resync.data.VisitedStore
 import io.github.radixtrator.resync.data.WatchStore
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.watch.WatchWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -126,7 +127,7 @@ class AppContainer(context: Context) {
     fun report(fullname: String, reason: ReportReason?, other: String? = null) {
         scope.launch {
             val result = runCatching { api.report(fullname, reason, other) }
-            Toast.makeText(appContext, result.fold({ "Reported" }, { "Couldn't report: ${it.message}" }), Toast.LENGTH_SHORT).show()
+            Toast.makeText(appContext, result.fold({ t("Reported") }, { t("Couldn't report: {0}", it.message) }), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -185,7 +186,7 @@ class AppContainer(context: Context) {
         tmp.writeText(text)
         if (!tmp.renameTo(file)) {
             file.delete()
-            check(tmp.renameTo(file)) { "couldn't save a copy of the current data" }
+            check(tmp.renameTo(file)) { t("couldn't save a copy of the current data") }
         }
     }
 

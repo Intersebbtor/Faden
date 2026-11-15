@@ -50,6 +50,7 @@ import io.github.radixtrator.resync.data.NsfwMode
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.SwipeAction
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.notify.Notifications
 import io.github.radixtrator.resync.ui.feed.AddToMultiSheet
 import io.github.radixtrator.resync.ui.navigation.ComposeMode
@@ -177,13 +178,13 @@ fun PostActionsSheet(
 
     fun watch() {
         container.setWatchingPost(post, true)
-        toast("Watching: you'll get a notification when new comments arrive")
+        toast(t("Watching: you'll get a notification when new comments arrive"))
         onDismiss()
     }
 
     // The sheet stays open while Android asks, so the answer still has somewhere to land.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) watch() else toast("Allow notifications to watch posts")
+        if (granted) watch() else toast(t("Allow notifications to watch posts"))
     }
 
     fun act(block: () -> Unit) {
@@ -211,9 +212,9 @@ fun PostActionsSheet(
         Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
             if (sharing) {
                 // Sync's Share ⋮: what to share, optionally with the title in front.
-                SheetTitle("Share", topPadding = 0.dp)
+                SheetTitle(t("Share"), topPadding = 0.dp)
                 fun shareUrl(url: String) = act { nav.share(if (includeTitle) "${post.title}\n$url" else url, post.title) }
-                OptionRow("Include title", null, onClick = { includeTitle = !includeTitle }, trailing = {
+                OptionRow(t("Include title"), null, onClick = { includeTitle = !includeTitle }, trailing = {
                     androidx.compose.material3.Switch(checked = includeTitle, onCheckedChange = { includeTitle = it })
                 })
                 val preview = when (val m = post.media) {
@@ -222,73 +223,73 @@ fun PostActionsSheet(
                     is PostMedia.Video -> m.url
                     else -> null
                 }
-                preview?.let { url -> OptionRow("Post preview", AppIcons.Image, onClick = { shareUrl(url) }) }
-                OptionRow("Post comments", AppIcons.Text, onClick = { shareUrl(permalink) })
-                if (!post.isSelf) OptionRow("Link", AppIcons.Link, onClick = { shareUrl(post.url) })
+                preview?.let { url -> OptionRow(t("Post preview"), AppIcons.Image, onClick = { shareUrl(url) }) }
+                OptionRow(t("Post comments"), AppIcons.Text, onClick = { shareUrl(permalink) })
+                if (!post.isSelf) OptionRow(t("Link"), AppIcons.Link, onClick = { shareUrl(post.url) })
             } else if (copying) {
-                SheetTitle("Copy", topPadding = 0.dp)
-                OptionRow("Copy title", AppIcons.Text, onClick = { copy(post.title) })
-                OptionRow("Copy permalink", AppIcons.Link, onClick = { copy(permalink) })
-                if (!post.isSelf) OptionRow("Copy link", AppIcons.Link, onClick = { copy(post.url) })
-                OptionRow("Copy username", Icons.Outlined.Person, onClick = { copy(post.author) })
+                SheetTitle(t("Copy"), topPadding = 0.dp)
+                OptionRow(t("Copy title"), AppIcons.Text, onClick = { copy(post.title) })
+                OptionRow(t("Copy permalink"), AppIcons.Link, onClick = { copy(permalink) })
+                if (!post.isSelf) OptionRow(t("Copy link"), AppIcons.Link, onClick = { copy(post.url) })
+                OptionRow(t("Copy username"), Icons.Outlined.Person, onClick = { copy(post.author) })
             } else if (filtering) {
-                SheetTitle("Filter", topPadding = 0.dp)
-                OptionRow("Filter /r/${post.subreddit}", AppIcons.Compass, onClick = {
-                    filter("Filtered r/${post.subreddit}") { container.filters.filterSubreddit(post.subreddit) }
+                SheetTitle(t("Filter"), topPadding = 0.dp)
+                OptionRow(t("Filter /r/{0}", post.subreddit), AppIcons.Compass, onClick = {
+                    filter(t("Filtered r/{0}", post.subreddit)) { container.filters.filterSubreddit(post.subreddit) }
                 })
-                OptionRow("Filter /u/${post.author}", Icons.Outlined.AccountCircle, onClick = {
-                    filter("Filtered u/${post.author}") { container.filters.filterUser(post.author) }
+                OptionRow(t("Filter /u/{0}", post.author), Icons.Outlined.AccountCircle, onClick = {
+                    filter(t("Filtered u/{0}", post.author)) { container.filters.filterUser(post.author) }
                 })
                 post.flair?.takeIf { it.isNotBlank() }?.let { flair ->
-                    OptionRow("Filter flair ($flair)", AppIcons.Tag, onClick = {
-                        filter("Filtered flair $flair") { container.filters.filterFlair(flair) }
+                    OptionRow(t("Filter flair ({0})", flair), AppIcons.Tag, onClick = {
+                        filter(t("Filtered flair {0}", flair)) { container.filters.filterFlair(flair) }
                     })
                 }
                 if (domain != null) {
-                    OptionRow("Filter domain ($domain)", AppIcons.Link, onClick = {
-                        filter("Filtered ${post.domain}") { container.filters.filterDomain(post.domain) }
+                    OptionRow(t("Filter domain ({0})", domain), AppIcons.Link, onClick = {
+                        filter(t("Filtered {0}", post.domain)) { container.filters.filterDomain(post.domain) }
                     })
                 }
             } else {
-                SheetTitle("Post options", topPadding = 0.dp)
-                onHide?.let { hide -> OptionRow("Hide", Icons.Default.Close, onClick = { act(hide) }) }
-                onMarkRead?.let { markRead -> OptionRow("Mark as read", Icons.Default.Check, onClick = { act(markRead) }) }
-                OptionRow("Share", Icons.Outlined.Share, onClick = { act { nav.share(permalink, post.title) } }, trailing = {
-                    IconButton(onClick = { sharing = true }) { Icon(Icons.Default.MoreVert, "Share as…") }
+                SheetTitle(t("Post options"), topPadding = 0.dp)
+                onHide?.let { hide -> OptionRow(t("Hide"), Icons.Default.Close, onClick = { act(hide) }) }
+                onMarkRead?.let { markRead -> OptionRow(t("Mark as read"), Icons.Default.Check, onClick = { act(markRead) }) }
+                OptionRow(t("Share"), Icons.Outlined.Share, onClick = { act { nav.share(permalink, post.title) } }, trailing = {
+                    IconButton(onClick = { sharing = true }) { Icon(Icons.Default.MoreVert, t("Share as…")) }
                 })
-                OptionRow(if (watching) "Stop watching" else "Watch", if (watching) Icons.Filled.Notifications else Icons.Outlined.Notifications, onClick = {
+                OptionRow(if (watching) t("Stop watching") else t("Watch"), if (watching) Icons.Filled.Notifications else Icons.Outlined.Notifications, onClick = {
                     when {
                         watching -> {
                             container.setWatchingPost(post, false)
-                            toast("Stopped watching")
+                            toast(t("Stopped watching"))
                             onDismiss()
                         }
                         Notifications.canNotify(context) -> watch()
                         else -> notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 })
-                if (!isOwn) OptionRow("Report", AppIcons.Report, onClick = { reporting = true })
+                if (!isOwn) OptionRow(t("Report"), AppIcons.Report, onClick = { reporting = true })
                 HorizontalDivider()
                 OptionRow("/u/${post.author}", Icons.Outlined.AccountCircle, onClick = { act { nav.push(UserRoute(post.author)) } })
                 OptionRow("/r/${post.subreddit}", AppIcons.Compass, onClick = { act { nav.push(FeedRoute(post.subreddit)) } })
-                if (domain != null) OptionRow("Explore domain ($domain)", AppIcons.Compass, onClick = { act { nav.push(FeedRoute(domain = post.domain)) } })
-                OptionRow("Open in browser", AppIcons.OpenExternal, onClick = { act { nav.openExternal(permalink) } })
+                if (domain != null) OptionRow(t("Explore domain ({0})", domain), AppIcons.Compass, onClick = { act { nav.push(FeedRoute(domain = post.domain)) } })
+                OptionRow(t("Open in browser"), AppIcons.OpenExternal, onClick = { act { nav.openExternal(permalink) } })
                 HorizontalDivider()
-                OptionRow("Copy...", AppIcons.Copy, onClick = { copying = true })
-                OptionRow("Filter...", AppIcons.Filter, onClick = { filtering = true })
-                OptionRow("Add r/${post.subreddit} to multi...", Icons.Default.Add, onClick = { addingToMulti = true })
+                OptionRow(t("Copy..."), AppIcons.Copy, onClick = { copying = true })
+                OptionRow(t("Filter..."), AppIcons.Filter, onClick = { filtering = true })
+                OptionRow(t("Add r/{0} to multi...", post.subreddit), Icons.Default.Add, onClick = { addingToMulti = true })
                 if (isOwn && post.isSelf) {
-                    OptionRow("Edit", Icons.Outlined.Edit, onClick = {
+                    OptionRow(t("Edit"), Icons.Outlined.Edit, onClick = {
                         act { nav.push(ComposeRoute(ComposeMode.EDIT, target = post.fullname, quote = post.title, initial = post.selfText)) }
                     })
                 }
-                if (isOwn) OptionRow("Delete", Icons.Outlined.Delete, onClick = { confirmDelete = true })
+                if (isOwn) OptionRow(t("Delete"), Icons.Outlined.Delete, onClick = { confirmDelete = true })
             }
         }
     }
     if (confirmDelete) {
         ConfirmDeleteDialog(
-            what = "post",
+            title = t("Delete post?"),
             onConfirm = {
                 confirmDelete = false
                 act(onDelete)
@@ -299,12 +300,12 @@ fun PostActionsSheet(
 }
 
 @Composable
-fun ConfirmDeleteDialog(what: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+fun ConfirmDeleteDialog(title: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete $what?") },
-        text = { Text("This can't be undone.") },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Delete", color = MaterialTheme.colorScheme.error) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        title = { Text(title) },
+        text = { Text(t("This can't be undone.")) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(t("Delete"), color = MaterialTheme.colorScheme.error) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Cancel")) } },
     )
 }

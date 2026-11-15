@@ -1,5 +1,7 @@
 package io.github.radixtrator.resync.ui.post
 
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
@@ -29,7 +31,7 @@ fun readerQueue(
     replies: Boolean = false,
 ): List<ReaderItem> = buildList {
     val selfText = plain(post.selfTextHtml, post.selfText).trim()
-    add(ReaderItem("Post", if (selfText.isEmpty()) post.title else "${post.title}.\n$selfText"))
+    add(ReaderItem(tn(1, "Post", "Posts"), if (selfText.isEmpty()) post.title else "${post.title}.\n$selfText"))
     comments.forEach { node ->
         val comment = node as? Comment ?: return@forEach
         if (comment.depth != 0 && !replies) return@forEach
@@ -38,7 +40,7 @@ fun readerQueue(
         if (comment.depth == 0) {
             add(ReaderItem("u/${comment.author}", "${comment.author}.\n$text"))
         } else {
-            add(ReaderItem("u/${comment.author} · reply", "${comment.author} replies.\n$text"))
+            add(ReaderItem(t("u/{0} · reply", comment.author), t("{0} replies.", comment.author) + "\n$text"))
         }
     }
 }
@@ -144,7 +146,7 @@ class CommentReader(context: Context) {
                     engine?.setSpeechRate(speechRate)
                     if (_state.value.playing) speakCurrent()
                 } else {
-                    Toast.makeText(context, "Text-to-speech isn't available", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, t("Text-to-speech isn't available"), Toast.LENGTH_SHORT).show()
                     stop()
                 }
             }

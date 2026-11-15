@@ -38,6 +38,8 @@ import io.github.radixtrator.resync.data.BackupFormatException
 import io.github.radixtrator.resync.data.BackupPart
 import io.github.radixtrator.resync.data.BackupPasswordException
 import io.github.radixtrator.resync.data.RestoreResult
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,19 +80,19 @@ internal fun BackupSection(container: AppContainer) {
                 // Deriving the accounts' key is deliberately slow, so it stays off the main thread.
                 val text = withContext(Dispatchers.Default) { container.exportBackup(password) }
                 withContext(Dispatchers.IO) {
-                    context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(text.toByteArray()) } ?: error("couldn't open the file")
+                    context.contentResolver.openOutputStream(uri, "wt")?.use { it.write(text.toByteArray()) } ?: error(t("couldn't open the file"))
                 }
                 // Read it back, so a backup that can't be restored is caught now rather than when it's needed.
                 withContext(Dispatchers.IO) {
                     val written = context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-                    check(written == text) { "the saved file doesn't match" }
+                    check(written == text) { t("the saved file doesn't match") }
                     Backup.decode(written)
                 }
             }
             password?.fill(' ')
             val message = result.fold(
-                { if (it.accounts != null) "Backup saved, with ${plural(it.accountNames.size, "account")}" else "Backup saved" },
-                { "Couldn't save the backup: ${it.message}" },
+                { if (it.accounts != null) tn(it.accountNames.size, "Backup saved, with {0} account", "Backup saved, with {0} accounts", it.accountNames.size) else t("Backup saved") },
+                { t("Couldn't save the backup: {0}", it.message) },
             )
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
@@ -101,42 +103,44 @@ internal fun BackupSection(container: AppContainer) {
             runCatching {
                 val text = withContext(Dispatchers.IO) {
                     context.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() }
-                } ?: error("couldn't open the file")
+                } ?: error(t("couldn't open the file"))
                 Backup.decode(text)
             }
                 .onSuccess { toRestore = it }
                 .onFailure {
-                    val message = (it as? BackupFormatException)?.message ?: "Couldn't read the backup: ${it.message}"
+                    val message = (it as? BackupFormatException)?.message ?: t("Couldn't read the backup: {0}", it.message)
                     Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                 }
         }
     }
 
-    Section("Backup")
+    Section(t("Backup"))
     Text(
-        "Backups hold this device's settings, filters, tags, favorites, watched items, drafts and Reddit API setup. " +
-            "Signed-in accounts can be included too, protected by a password.",
+        t("Backups hold this device's settings, filters, tags, favorites, watched items, drafts and Reddit API setup. Signed-in accounts can be included too, protected by a password."),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
     )
     ListItem(
-        headlineContent = { Text("Backup now") },
-        supportingContent = { Text("Save a backup file wherever you choose") },
+        headlineContent = { Text(t("Backup now")) },
+        supportingContent = { Text(t("Save a backup file wherever you choose")) },
         modifier = Modifier.clickable {
             if (container.hasBackupAccounts) exportOptions = true else backupLauncher.launch(Backup.fileName())
         },
     )
     ListItem(
-        headlineContent = { Text("Restore from backup") },
-        supportingContent = { Text("Replace this device's data with a backup file") },
+        headlineContent = { Text(t("Restore from backup")) },
+        supportingContent = { Text(t("Replace this device's data with a backup file")) },
         modifier = Modifier.clickable { restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*")) },
     )
     if (snapshotCreated != null) {
         ListItem(
-            headlineContent = { Text("Undo last restore") },
+            headlineContent = { Text(t("Undo last restore")) },
             supportingContent = {
-                Text("Put back everything as it was before restoring" + snapshotCreated.takeIf { it.length >= 10 }?.let { " on ${it.take(10)}" }.orEmpty())
+                Text(
+                    snapshotCreated.takeIf { it.length >= 10 }?.let { t("Put back everything as it was before restoring on {0}", it.take(10)) }
+                        ?: t("Put back everything as it was before restoring"),
+                )
             },
             modifier = Modifier.clickable { confirmUndo = true },
         )
@@ -170,10 +174,10 @@ internal fun BackupSection(container: AppContainer) {
                             restored = it
                         }
                         .onFailure {
-                            if (it is BackupPasswordException) showError(it.message ?: "Wrong password")
+                            if (it is BackupPasswordException) showError(it.message ?: t("Wrong password"))
                             else {
                                 toRestore = null
-                                Toast.makeText(context, "Couldn't restore: ${it.message}", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, t("Couldn't restore: {0}", it.message), Toast.LENGTH_LONG).show()
                             }
                         }
                 }
@@ -184,40 +188,40 @@ internal fun BackupSection(container: AppContainer) {
     if (confirmUndo) {
         AlertDialog(
             onDismissRequest = { confirmUndo = false },
-            title = { Text("Undo last restore?") },
-            text = { Text("Everything, accounts included, goes back to how it was just before the last restore. Faden restarts afterwards.") },
+            title = { Text(t("Undo last restore?")) },
+            text = { Text(t("Everything, accounts included, goes back to how it was just before the last restore. Faden restarts afterwards.")) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmUndo = false
                     scope.launch {
                         runCatching { withContext(Dispatchers.IO) { container.undoRestore() } }
                             .onSuccess { undone = true }
-                            .onFailure { Toast.makeText(context, "Couldn't undo: ${it.message}", Toast.LENGTH_LONG).show() }
+                            .onFailure { Toast.makeText(context, t("Couldn't undo: {0}", it.message), Toast.LENGTH_LONG).show() }
                     }
-                }) { Text("Undo") }
+                }) { Text(t("Undo")) }
             },
-            dismissButton = { TextButton(onClick = { confirmUndo = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmUndo = false }) { Text(t("Cancel")) } },
         )
     }
 
     // No way out but the restart: anything the in-memory stores saved now would overwrite the restored data.
     val restartMessage = when {
-        undone -> "Your data is back as it was before the restore."
+        undone -> t("Your data is back as it was before the restore.")
         else -> restored?.let { r ->
             listOfNotNull(
-                "The backup was restored.",
-                "The restored API setup uses a different client ID, so the accounts that were here were signed out.".takeIf { r.signedOut },
-                "Signed in to ${plural(r.accountsRestored, "account")} from the backup.".takeIf { r.accountsRestored > 0 },
-                "You can undo this from Settings › Backup.",
+                t("The backup was restored."),
+                t("The restored API setup uses a different client ID, so the accounts that were here were signed out.").takeIf { r.signedOut },
+                tn(r.accountsRestored, "Signed in to {0} account from the backup.", "Signed in to {0} accounts from the backup.", r.accountsRestored).takeIf { r.accountsRestored > 0 },
+                t("You can undo this from Settings › Backup."),
             ).joinToString(" ")
         }
     }
     restartMessage?.let { message ->
         AlertDialog(
             onDismissRequest = {},
-            title = { Text(if (undone) "Restore undone" else "Backup restored") },
-            text = { Text("$message Faden restarts to load it.") },
-            confirmButton = { TextButton(onClick = { restartApp(context) }) { Text("Restart") } },
+            title = { Text(if (undone) t("Restore undone") else t("Backup restored")) },
+            text = { Text(t("{0} Faden restarts to load it.", message)) },
+            confirmButton = { TextButton(onClick = { restartApp(context) }) { Text(t("Restart")) } },
         )
     }
 }
@@ -230,24 +234,24 @@ private fun ExportDialog(onDismiss: () -> Unit, onExport: (password: CharArray?)
     var confirm by remember { mutableStateOf("") }
     val problem = when {
         !includeAccounts -> null
-        password.length < MIN_PASSWORD -> "At least $MIN_PASSWORD characters"
-        password != confirm -> "The passwords don't match"
+        password.length < MIN_PASSWORD -> t("At least {0} characters", MIN_PASSWORD)
+        password != confirm -> t("The passwords don't match")
         else -> null
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Backup now") },
+        title = { Text(t("Backup now")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 CheckRow(
                     checked = includeAccounts,
                     onChange = { includeAccounts = it },
-                    title = "Include signed-in accounts",
-                    subtitle = "Restoring signs you straight back in. Their sign-ins are encrypted with a password you'll need to restore them; it can't be recovered if forgotten.",
+                    title = t("Include signed-in accounts"),
+                    subtitle = t("Restoring signs you straight back in. Their sign-ins are encrypted with a password you'll need to restore them; it can't be recovered if forgotten."),
                 )
                 if (includeAccounts) {
-                    PasswordField(password, { password = it }, "Password", Modifier.padding(top = 8.dp))
-                    PasswordField(confirm, { confirm = it }, "Confirm password", Modifier.padding(top = 4.dp), error = problem.takeIf { confirm.isNotEmpty() || password.length >= MIN_PASSWORD })
+                    PasswordField(password, { password = it }, t("Password"), Modifier.padding(top = 8.dp))
+                    PasswordField(confirm, { confirm = it }, t("Confirm password"), Modifier.padding(top = 4.dp), error = problem.takeIf { confirm.isNotEmpty() || password.length >= MIN_PASSWORD })
                 }
             }
         },
@@ -255,9 +259,9 @@ private fun ExportDialog(onDismiss: () -> Unit, onExport: (password: CharArray?)
             TextButton(
                 enabled = problem == null,
                 onClick = { onExport(if (includeAccounts) password.toCharArray() else null) },
-            ) { Text("Choose location") }
+            ) { Text(t("Choose location")) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Cancel")) } },
     )
 }
 
@@ -281,13 +285,13 @@ private fun RestoreDialog(
 
     AlertDialog(
         onDismissRequest = { if (!working) onDismiss() },
-        title = { Text("Restore from backup?") },
+        title = { Text(t("Restore from backup?")) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 doc.created?.let { created ->
-                    Text("Backup from ${created.take(10)}", style = MaterialTheme.typography.bodyMedium)
+                    Text(t("Backup from {0}", created.take(10)), style = MaterialTheme.typography.bodyMedium)
                 }
-                Text("Replace on this device:", Modifier.padding(top = 8.dp))
+                Text(t("Replace on this device:"), Modifier.padding(top = 8.dp))
                 BackupPart.entries.forEach { part ->
                     CheckRow(part in parts, { on -> parts = if (on) parts + part else parts - part }, part.label, dense = true)
                 }
@@ -296,26 +300,26 @@ private fun RestoreDialog(
                         checked = includeApi || includeAccounts,
                         onChange = { includeApi = it },
                         enabled = !includeAccounts,
-                        title = "Reddit API setup",
-                        subtitle = if (includeAccounts) "Needed for the backed-up accounts' sign-ins"
-                        else "Client ID, redirect URI and user agent. A different client ID signs out the accounts on this device.",
+                        title = t("Reddit API setup"),
+                        subtitle = if (includeAccounts) t("Needed for the backed-up accounts' sign-ins")
+                        else t("Client ID, redirect URI and user agent. A different client ID signs out the accounts on this device."),
                     )
                 }
                 if (doc.accounts != null) {
                     CheckRow(
                         checked = includeAccounts,
                         onChange = { includeAccounts = it; error = null },
-                        title = "Signed-in accounts",
-                        subtitle = names.takeIf { it.isNotEmpty() }?.joinToString(prefix = "Signs in as ") { "u/$it" }
-                            ?: "Signs in to the backed-up accounts",
+                        title = t("Signed-in accounts"),
+                        subtitle = names.takeIf { it.isNotEmpty() }?.let { n -> t("Signs in as {0}", n.joinToString { "u/$it" }) }
+                            ?: t("Signs in to the backed-up accounts"),
                     )
                     if (includeAccounts) {
-                        PasswordField(password, { password = it; error = null }, "Backup password", Modifier.padding(top = 4.dp), error = error)
+                        PasswordField(password, { password = it; error = null }, t("Backup password"), Modifier.padding(top = 4.dp), error = error)
                     }
                 }
                 Text(
-                    (if (includeAccounts) "" else "Accounts on this device stay signed in. ") +
-                        "What's here now is saved first, so you can undo the restore. Faden restarts to load the backup.",
+                    (if (includeAccounts) "" else t("Accounts on this device stay signed in.") + " ") +
+                        t("What's here now is saved first, so you can undo the restore. Faden restarts to load the backup."),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
@@ -335,10 +339,10 @@ private fun RestoreDialog(
                             error = it
                         }
                     },
-                ) { Text("Restore") }
+                ) { Text(t("Restore")) }
             }
         },
-        dismissButton = { TextButton(enabled = !working, onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(enabled = !working, onClick = onDismiss) { Text(t("Cancel")) } },
     )
 }
 
@@ -380,4 +384,3 @@ private fun PasswordField(value: String, onChange: (String) -> Unit, label: Stri
     )
 }
 
-private fun plural(count: Int, noun: String) = "$count $noun" + if (count == 1) "" else "s"

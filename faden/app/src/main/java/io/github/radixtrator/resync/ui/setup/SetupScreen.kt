@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.BuildConfig
 import io.github.radixtrator.resync.data.ApiConfig
+import io.github.radixtrator.resync.i18n.t
 
 @Composable
 fun SetupScreen(
@@ -53,9 +54,9 @@ fun SetupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Reddit API") },
+                title = { Text(t("Reddit API")) },
                 navigationIcon = {
-                    if (canGoBack) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    if (canGoBack) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
                 },
             )
         },
@@ -69,33 +70,30 @@ fun SetupScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Connect to Reddit", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+            Text(t("Connect to Reddit"), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
             Text(
-                "Reddit only lets registered apps use its API, and it no longer hands out new registrations. " +
-                    "Faden uses a client ID you supply. It's stored only on this device.",
+                t("Reddit only lets registered apps use its API, and it no longer hands out new registrations. Faden uses a client ID you supply. It's stored only on this device."),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("Where to get one", fontWeight = FontWeight.SemiBold)
-                    Text("• Your own Reddit \"installed app\", if you made one before the shutdown. Use its redirect URI too.")
+                    Text(t("Where to get one"), fontWeight = FontWeight.SemiBold)
+                    Text(t("• Your own Reddit \"installed app\", if you made one before the shutdown. Use its redirect URI too."))
                     Text(
-                        "• Otherwise, the approach Boost for Reddit documents: log in to RedReader once, and Reddit " +
-                            "emails you \"App ID: …\". Paste that whole line below and keep the default redirect URI " +
-                            "and user agent.",
+                        t("• Otherwise, the approach Boost for Reddit documents: log in to RedReader once, and Reddit emails you \"App ID: …\". Paste that whole line below and keep the default redirect URI and user agent."),
                     )
                 }
             }
             OutlinedTextField(
                 value = clientId,
                 onValueChange = { clientId = it },
-                label = { Text("Client ID") },
+                label = { Text(t("Client ID")) },
                 singleLine = true,
                 isError = clientId.isNotBlank() && parsedId == null,
                 supportingText = {
                     when {
-                        clientId.isNotBlank() && parsedId == null -> Text("That doesn't look like a client ID")
-                        parsedId != null && parsedId != clientId.trim() -> Text("Will use: $parsedId")
+                        clientId.isNotBlank() && parsedId == null -> Text(t("That doesn't look like a client ID"))
+                        parsedId != null && parsedId != clientId.trim() -> Text(t("Will use: {0}", parsedId))
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -103,15 +101,15 @@ fun SetupScreen(
             OutlinedTextField(
                 value = redirectUri,
                 onValueChange = { redirectUri = it },
-                label = { Text("Redirect URI") },
+                label = { Text(t("Redirect URI")) },
                 singleLine = true,
-                supportingText = { Text("Must match the app the client ID belongs to exactly") },
+                supportingText = { Text(t("Must match the app the client ID belongs to exactly")) },
                 modifier = Modifier.fillMaxWidth(),
             )
             OutlinedTextField(
                 value = userAgent,
                 onValueChange = { userAgent = it },
-                label = { Text("User agent") },
+                label = { Text(t("User agent")) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -122,7 +120,7 @@ fun SetupScreen(
                     onDone()
                 },
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Save") }
+            ) { Text(t("Save")) }
             if (BuildConfig.DEMO) {
                 TextButton(
                     onClick = {
@@ -130,7 +128,7 @@ fun SetupScreen(
                         onDone()
                     },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("Debug: browse bundled demo data instead") }
+                ) { Text(t("Debug: browse bundled demo data instead")) }
             }
         }
     }

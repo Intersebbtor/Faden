@@ -46,13 +46,14 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.SubcomposeAsyncImage
 import coil3.compose.SubcomposeAsyncImageContent
 import io.github.radixtrator.resync.data.MediaDownloads
+import io.github.radixtrator.resync.i18n.I18n
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.DismissibleMedia
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.theme.Motion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.Locale
 
 /**
  * Sync's image viewer, with its control bar (download, host and URL, resolution, file size, then Comments / Open in
@@ -124,14 +125,14 @@ private fun ImageInfoSheet(url: String, postId: String?, downloads: MediaDownloa
         val cached = cachedImageInfo(context, url)
         val bytes = cached?.second ?: downloads.contentLength(url)
         details = listOfNotNull(
-            cached?.first?.let { "Image resolution: ${it.width}x${it.height}" },
-            bytes?.let { "File size: " + String.format(Locale.US, "%.2fMB", it / 1_048_576.0) },
+            cached?.first?.let { t("Image resolution: {0}x{1}", it.width, it.height) },
+            bytes?.let { t("File size: {0}", String.format(I18n.locale, "%.2fMB", it / 1_048_576.0)) },
         )
     }
     Column(Modifier.fillMaxWidth().background(MediaPanelColor)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.End) {
-            IconButton(onClick = onDownload) { Icon(AppIcons.Download, "Download", tint = Color.White) }
-            IconButton(onClick = onClose) { Icon(Icons.Default.Close, "Close", tint = Color.White) }
+            IconButton(onClick = onDownload) { Icon(AppIcons.Download, t("Download"), tint = Color.White) }
+            IconButton(onClick = onClose) { Icon(Icons.Default.Close, t("Close"), tint = Color.White) }
         }
         MediaLinkInfo(url, details)
         MediaActionBar(url, postId)
@@ -171,7 +172,7 @@ private fun ZoomableImage(url: String, onTap: () -> Unit, onZoomChange: (Boolean
             is AsyncImagePainter.State.Loading, AsyncImagePainter.State.Empty ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Color.White) }
             is AsyncImagePainter.State.Error ->
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Couldn't load image", color = Color.White) }
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(t("Couldn't load image"), color = Color.White) }
             is AsyncImagePainter.State.Success -> SubcomposeAsyncImageContent()
         }
     }

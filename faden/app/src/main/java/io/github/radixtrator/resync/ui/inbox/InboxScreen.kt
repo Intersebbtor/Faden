@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -112,7 +113,7 @@ class InboxViewModel(container: AppContainer) : ListingViewModel<InboxItem>(cont
         updateItems { list -> list.map { it.copy(isNew = false) } }
         container.setInboxCount(0)
         viewModelScope.launch {
-            runCatching { container.api.markAllRead() }.onFailure { showMessage("Couldn't mark all read: ${it.message}") }
+            runCatching { container.api.markAllRead() }.onFailure { showMessage(t("Couldn't mark all read: {0}", it.message)) }
         }
     }
 }
@@ -138,13 +139,13 @@ fun InboxScreen(route: InboxRoute, container: AppContainer) {
             container = container,
             home = route.home,
             tab = HomeTab.INBOX,
-            smallTitle = "Inbox".takeIf { headerGone },
+            smallTitle = t("Inbox").takeIf { headerGone },
             scrollBehavior = scrollBehavior,
             snackbar = snackbar,
             quickActions = quickActions(container, onRefresh = vm::refresh),
             onReselectTab = { scope.launch { listState.animateScrollToItem(0) } },
             actions = {
-                if (loggedIn) IconButton(onClick = vm::markAllRead) { Icon(AppIcons.DoubleCheck, "Mark all as read") }
+                if (loggedIn) IconButton(onClick = vm::markAllRead) { Icon(AppIcons.DoubleCheck, t("Mark all as read")) }
             },
         ) { padding ->
             if (!loggedIn) {
@@ -153,9 +154,9 @@ fun InboxScreen(route: InboxRoute, container: AppContainer) {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text("Log in to see your inbox")
+                    Text(t("Log in to see your inbox"))
                     Spacer(Modifier.padding(8.dp))
-                    Button(onClick = { nav.push(LoginRoute) }) { Text("Log in") }
+                    Button(onClick = { nav.push(LoginRoute) }) { Text(t("Log in")) }
                 }
                 return@ShellScaffold
             }
@@ -171,13 +172,13 @@ fun InboxScreen(route: InboxRoute, container: AppContainer) {
                     onRetry = vm::retry,
                     listState = listState,
                     contentPadding = PaddingValues(bottom = padding.calculateBottomPadding()),
-                    emptyText = "No messages",
+                    emptyText = t("No messages"),
                     header = {
                         item(key = "header") {
-                            LargeHeader("Inbox") {
+                            LargeHeader(t("Inbox")) {
                                 HeaderChip(box.label, Icons.Outlined.Email, { boxOpen = true }, dropdown = true)
-                                HeaderChip("New message", Icons.Outlined.Edit, { nav.push(ComposeRoute(ComposeMode.MESSAGE)) })
-                                HeaderChip("Mark all as read", AppIcons.DoubleCheck, vm::markAllRead)
+                                HeaderChip(t("New message"), Icons.Outlined.Edit, { nav.push(ComposeRoute(ComposeMode.MESSAGE)) })
+                                HeaderChip(t("Mark all as read"), AppIcons.DoubleCheck, vm::markAllRead)
                             }
                         }
                     },
@@ -204,7 +205,7 @@ fun InboxScreen(route: InboxRoute, container: AppContainer) {
     if (boxOpen) {
         ModalBottomSheet(onDismissRequest = { boxOpen = false }, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = { SheetHandle() }) {
             Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-                SheetTitle("Messages", topPadding = 0.dp)
+                SheetTitle(t("Messages"), topPadding = 0.dp)
                 InboxBox.entries.forEach { b ->
                     OptionRow(b.label, icon = null, selected = b == box, onClick = {
                         boxOpen = false
@@ -241,7 +242,7 @@ private fun InboxRow(item: InboxItem, sent: Boolean, onOpen: () -> Unit, onReply
                 Spacer(Modifier.width(8.dp))
             }
             Text(
-                if (item.isComment) "${item.subject.replaceFirstChar { it.uppercase() }} in r/${item.subreddit}" else item.subject,
+                if (item.isComment) t("{0} in r/{1}", item.subject.replaceFirstChar { it.uppercase() }, item.subreddit) else item.subject,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = if (item.isNew) FontWeight.Bold else FontWeight.SemiBold,
                 maxLines = 1,
@@ -251,7 +252,7 @@ private fun InboxRow(item: InboxItem, sent: Boolean, onOpen: () -> Unit, onReply
             Text(Format.timeAgo(item.createdUtc), style = MaterialTheme.typography.labelMedium, color = muted)
         }
         Text(
-            if (sent) "to u/${item.dest}" else "from u/${item.author}",
+            if (sent) t("to u/{0}", item.dest) else t("from u/{0}", item.author),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.combinedClickable { nav.push(UserRoute(if (sent) item.dest else item.author)) },
@@ -265,8 +266,8 @@ private fun InboxRow(item: InboxItem, sent: Boolean, onOpen: () -> Unit, onReply
         )
         if (!sent && (item.isComment || expanded)) {
             Row {
-                TextButton(onClick = onReply) { Text("Reply") }
-                if (item.isComment) TextButton(onClick = onOpen) { Text("Context") }
+                TextButton(onClick = onReply) { Text(t("Reply")) }
+                if (item.isComment) TextButton(onClick = onOpen) { Text(t("Context")) }
             }
         }
     }

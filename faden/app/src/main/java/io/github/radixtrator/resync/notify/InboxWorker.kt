@@ -23,6 +23,7 @@ import io.github.radixtrator.resync.FadenApp
 import io.github.radixtrator.resync.data.InboxBox
 import io.github.radixtrator.resync.data.InboxItem
 import io.github.radixtrator.resync.data.MessageCheck
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -85,7 +86,7 @@ class InboxWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
 
         /** "u/author" over the message; tapping opens the reply in its thread, or the inbox for a message. */
         private fun notify(context: Context, item: InboxItem) {
-            Notifications.channel(context, CHANNEL, "Messages", "New messages and replies in your inbox")
+            Notifications.channel(context, CHANNEL, t("Messages"), t("New messages and replies in your inbox"))
             val id = item.fullname.hashCode()
             val body = Html.fromHtml(item.bodyHtml, Html.FROM_HTML_MODE_COMPACT).toString().trim().ifEmpty { item.body }
             val open = if (item.isComment && item.postId != null) {
@@ -93,8 +94,8 @@ class InboxWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             } else {
                 Notifications.openInbox(context, id)
             }
-            val reply = NotificationCompat.Action.Builder(0, "Reply", action(context, ACTION_REPLY, item, id, mutable = true))
-                .addRemoteInput(RemoteInput.Builder(KEY_REPLY).setLabel("Reply to u/${item.author}").build())
+            val reply = NotificationCompat.Action.Builder(0, t("Reply"), action(context, ACTION_REPLY, item, id, mutable = true))
+                .addRemoteInput(RemoteInput.Builder(KEY_REPLY).setLabel(t("Reply to u/{0}", item.author)).build())
                 .build()
             val notification = NotificationCompat.Builder(context, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification_message)
@@ -107,7 +108,7 @@ class InboxWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                 .setContentIntent(open)
                 .setAutoCancel(true)
                 .setGroup(CHANNEL)
-                .addAction(0, "Mark read", action(context, ACTION_MARK_READ, item, id, mutable = false))
+                .addAction(0, t("Mark read"), action(context, ACTION_MARK_READ, item, id, mutable = false))
                 .addAction(reply)
                 .build()
             try {
@@ -152,8 +153,8 @@ class InboxWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                 withContext(Dispatchers.Main) {
                     // Dismissing also ends the reply field's spinner.
                     NotificationManagerCompat.from(context).cancel(notificationId)
-                    val done = if (intent.action == ACTION_REPLY) "Reply sent" else "Marked read"
-                    Toast.makeText(context, result.fold({ done }, { "Couldn't reach Reddit: ${it.message}" }), Toast.LENGTH_SHORT).show()
+                    val done = if (intent.action == ACTION_REPLY) t("Reply sent") else t("Marked read")
+                    Toast.makeText(context, result.fold({ done }, { t("Couldn't reach Reddit: {0}", it.message) }), Toast.LENGTH_SHORT).show()
                 }
                 pending.finish()
             }

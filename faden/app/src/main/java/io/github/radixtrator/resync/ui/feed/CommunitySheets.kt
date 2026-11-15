@@ -70,6 +70,7 @@ import io.github.radixtrator.resync.ui.navigation.Navigator
 import io.github.radixtrator.resync.ui.navigation.SearchRoute
 import io.github.radixtrator.resync.ui.navigation.UserRoute
 import kotlin.coroutines.cancellation.CancellationException
+import io.github.radixtrator.resync.i18n.t
 
 /**
  * The sheet behind a header chip or an About ⋮ item: wiki, flairs, rules or moderators. Picking something
@@ -103,12 +104,12 @@ fun AddToMultiSheet(container: AppContainer, subreddit: String, onDismiss: () ->
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     androidx.compose.runtime.LaunchedEffect(Unit) { multis = load { container.api.multis() } }
-    CommunitySheet("Add r/$subreddit to a multi", onDismiss) {
+    CommunitySheet(t("Add r/{0} to a multi", subreddit), onDismiss) {
         when (val result = multis) {
             null -> Loading()
             else -> result.fold(
                 onSuccess = { list ->
-                    if (list.isEmpty()) Problem("You have no custom feeds yet. Create one in Explore › Custom feeds, then add communities here.")
+                    if (list.isEmpty()) Problem(t("You have no custom feeds yet. Create one in Explore › Custom feeds, then add communities here."))
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         list.forEach { multi ->
                             val has = subreddit.lowercase() in multi.subreddits.map { it.lowercase() }
@@ -118,17 +119,17 @@ fun AddToMultiSheet(container: AppContainer, subreddit: String, onDismiss: () ->
                                         if (has) container.api.removeFromMulti(multi.path, subreddit) else container.api.addToMulti(multi.path, subreddit)
                                     }.fold(
                                         onSuccess = {
-                                            Toast.makeText(context, if (has) "Removed from ${multi.name}" else "Added to ${multi.name}", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, if (has) t("Removed from {0}", multi.name) else t("Added to {0}", multi.name), Toast.LENGTH_SHORT).show()
                                             multis = load { container.api.multis() }
                                         },
-                                        onFailure = { Toast.makeText(context, it.message ?: "Couldn't change the feed", Toast.LENGTH_SHORT).show() },
+                                        onFailure = { Toast.makeText(context, it.message ?: t("Couldn't change the feed"), Toast.LENGTH_SHORT).show() },
                                     )
                                 }
                             })
                         }
                     }
                 },
-                onFailure = { Problem("Couldn't load your custom feeds: ${it.message}") },
+                onFailure = { Problem(t("Couldn't load your custom feeds: {0}", it.message)) },
             )
         }
     }
@@ -147,30 +148,30 @@ fun EditFlairSheet(container: AppContainer, subreddit: String, onDismiss: () -> 
         scope.launch {
             load { container.api.setUserFlair(subreddit, user, flair) }.fold(
                 onSuccess = {
-                    Toast.makeText(context, if (flair == null) "Flair cleared" else "Flair set", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, if (flair == null) t("Flair cleared") else t("Flair set"), Toast.LENGTH_SHORT).show()
                     onDismiss()
                 },
-                onFailure = { Toast.makeText(context, it.message ?: "Couldn't set the flair", Toast.LENGTH_SHORT).show() },
+                onFailure = { Toast.makeText(context, it.message ?: t("Couldn't set the flair"), Toast.LENGTH_SHORT).show() },
             )
         }
     }
-    CommunitySheet("Edit flair", onDismiss) {
+    CommunitySheet(t("Edit flair"), onDismiss) {
         when {
-            me == null -> Problem("Log in to edit your flair")
+            me == null -> Problem(t("Log in to edit your flair"))
             else -> when (val result = flairs) {
                 null -> Loading()
                 else -> result.fold(
                     onSuccess = { list ->
-                        if (list.isEmpty()) Problem("r/$subreddit doesn't let you pick a flair")
+                        if (list.isEmpty()) Problem(t("r/{0} doesn't let you pick a flair", subreddit))
                         FlowRow(
                             Modifier.verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            TextButton(onClick = { pick(null) }) { Text("No flair") }
+                            TextButton(onClick = { pick(null) }) { Text(t("No flair")) }
                             list.forEach { f -> FlairChip(f.text, f.color, Modifier.clickable { pick(f) }) }
                         }
                     },
-                    onFailure = { Problem("Couldn't load flairs: ${it.message}") },
+                    onFailure = { Problem(t("Couldn't load flairs: {0}", it.message)) },
                 )
             }
         }
@@ -201,18 +202,18 @@ fun rememberWatchToggle(container: AppContainer, onMessage: (String) -> Unit): (
     var pending by remember { mutableStateOf<String?>(null) }
     fun watch(name: String) {
         container.setWatching(name, true)
-        onMessage("Watching r/$name: you'll get a notification for each new post")
+        onMessage(t("Watching r/{0}: you'll get a notification for each new post", name))
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         val name = pending ?: return@rememberLauncherForActivityResult
         pending = null
-        if (granted) watch(name) else onMessage("Allow notifications to watch communities")
+        if (granted) watch(name) else onMessage(t("Allow notifications to watch communities"))
     }
     return { name ->
         when {
             container.watch.isWatching(name) -> {
                 container.setWatching(name, false)
-                onMessage("Stopped watching r/$name")
+                onMessage(t("Stopped watching r/{0}", name))
             }
             Notifications.canNotify(context) -> watch(name)
             else -> {
@@ -261,17 +262,17 @@ fun WikiSheet(container: AppContainer, subreddit: String, onDismiss: () -> Unit)
                         var textTop by remember(html) { mutableStateOf(0) }
                         Column(Modifier.verticalScroll(scroll).padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
                             if (history.size > 1) {
-                                TextButton(onClick = { history = history.dropLast(1) }) { Text("Back to ${history[history.size - 2]}") }
+                                TextButton(onClick = { history = history.dropLast(1) }) { Text(t("Back to {0}", history[history.size - 2])) }
                             }
                             val others = pages.filter { it != pageName }
                             if (others.isNotEmpty()) {
-                                Text("Pages", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                                Text(t("Pages"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 8.dp)) {
                                     others.forEach { name -> AssistChip(onClick = { history = history + name }, label = { Text(name) }) }
                                 }
                             }
                             if (headings.size > 1) {
-                                Text("Contents", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                                Text(t("Contents"), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                                 headings.forEach { h ->
                                     Text(
                                         h.text,
@@ -299,7 +300,7 @@ fun WikiSheet(container: AppContainer, subreddit: String, onDismiss: () -> Unit)
                         }
                     },
                     onFailure = {
-                        Problem(if ((it as? RedditException)?.code == 404) "r/$subreddit has no wiki page \"$pageName\"" else "Couldn't load the wiki: ${it.message}")
+                        Problem(if ((it as? RedditException)?.code == 404) t("r/{0} has no wiki page \"{1}\"", subreddit, pageName) else t("Couldn't load the wiki: {0}", it.message))
                     },
                 )
             }
@@ -315,13 +316,13 @@ fun WikiSheet(container: AppContainer, subreddit: String, onDismiss: () -> Unit)
 @Composable
 fun FlairsSheet(container: AppContainer, subreddit: String, onPick: (LinkFlair) -> Unit, onDismiss: () -> Unit) {
     val flairs by produceState<Result<List<LinkFlair>>?>(null, subreddit) { value = load { container.api.linkFlairs(subreddit) } }
-    CommunitySheet("Post flairs", onDismiss) {
+    CommunitySheet(t("Post flairs"), onDismiss) {
         when (val result = flairs) {
             null -> Loading()
             else -> result.fold(
                 onSuccess = { list ->
                     if (list.isEmpty()) {
-                        Problem("r/$subreddit has no post flairs")
+                        Problem(t("r/{0} has no post flairs", subreddit))
                     } else {
                         FlowRow(
                             Modifier.verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
@@ -332,7 +333,7 @@ fun FlairsSheet(container: AppContainer, subreddit: String, onPick: (LinkFlair) 
                         }
                     }
                 },
-                onFailure = { Problem("Couldn't load post flairs: ${it.message}") },
+                onFailure = { Problem(t("Couldn't load post flairs: {0}", it.message)) },
             )
         }
     }
@@ -342,13 +343,13 @@ fun FlairsSheet(container: AppContainer, subreddit: String, onPick: (LinkFlair) 
 @Composable
 fun RulesSheet(container: AppContainer, subreddit: String, onDismiss: () -> Unit) {
     val rules by produceState<Result<List<SubredditRule>>?>(null, subreddit) { value = load { container.api.rules(subreddit) } }
-    CommunitySheet("Rules", onDismiss) {
+    CommunitySheet(t("Rules"), onDismiss) {
         when (val result = rules) {
             null -> Loading()
             else -> result.fold(
                 onSuccess = { list ->
                     if (list.isEmpty()) {
-                        Problem("r/$subreddit has no rules listed")
+                        Problem(t("r/{0} has no rules listed", subreddit))
                     } else {
                         Column(
                             Modifier.verticalScroll(rememberScrollState()).padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
@@ -371,7 +372,7 @@ fun RulesSheet(container: AppContainer, subreddit: String, onDismiss: () -> Unit
                         }
                     }
                 },
-                onFailure = { Problem("Couldn't load the rules: ${it.message}") },
+                onFailure = { Problem(t("Couldn't load the rules: {0}", it.message)) },
             )
         }
     }
@@ -381,7 +382,7 @@ fun RulesSheet(container: AppContainer, subreddit: String, onDismiss: () -> Unit
 @Composable
 fun ModeratorsSheet(container: AppContainer, subreddit: String, onOpen: (String) -> Unit, onDismiss: () -> Unit) {
     val mods by produceState<Result<List<String>>?>(null, subreddit) { value = load { container.api.moderators(subreddit) } }
-    CommunitySheet("Moderators", onDismiss) {
+    CommunitySheet(t("Moderators"), onDismiss) {
         when (val result = mods) {
             null -> Loading()
             else -> result.fold(
@@ -390,7 +391,7 @@ fun ModeratorsSheet(container: AppContainer, subreddit: String, onOpen: (String)
                         names.forEach { name -> OptionRow("u/$name", Icons.Outlined.Person, onClick = { onOpen(name) }) }
                     }
                 },
-                onFailure = { Problem("Couldn't load the moderators: ${it.message}") },
+                onFailure = { Problem(t("Couldn't load the moderators: {0}", it.message)) },
             )
         }
     }

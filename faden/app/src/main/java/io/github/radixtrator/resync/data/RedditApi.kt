@@ -1,5 +1,6 @@
 package io.github.radixtrator.resync.data
 
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
@@ -156,7 +157,7 @@ class RedditApi(private val client: RedditClient) {
      */
     suspend fun wikiPage(subreddit: String, page: String = "index"): String {
         val html = client.get("/r/$subreddit/wiki/$page").jsonObject.obj("data")?.string("content_html")
-            ?: throw RedditException("r/$subreddit has no wiki page \"$page\"")
+            ?: throw RedditException(t("r/{0} has no wiki page \"{1}\"", subreddit, page))
         return WIKI_TOC.replace(html, "")
     }
 
@@ -200,7 +201,7 @@ class RedditApi(private val client: RedditClient) {
     suspend fun moderators(subreddit: String): List<String> = Parser.moderators(client.get("/r/$subreddit/about/moderators"))
 
     suspend fun subredditAbout(name: String): Subreddit {
-        val data = client.get("/r/$name/about").jsonObject.obj("data") ?: throw RedditException("No info for r/$name")
+        val data = client.get("/r/$name/about").jsonObject.obj("data") ?: throw RedditException(t("No info for r/{0}", name))
         return Parser.subreddit(data)
     }
 

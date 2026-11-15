@@ -52,6 +52,8 @@ import io.github.radixtrator.resync.ui.navigation.PostRoute
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.I18n
 
 class ModViewModel(container: AppContainer, private val subreddit: String) : ListingViewModel<ProfileItem>(container) {
     private val _section = MutableStateFlow(ModSection.MODQUEUE)
@@ -81,7 +83,7 @@ class ModViewModel(container: AppContainer, private val subreddit: String) : Lis
         viewModelScope.launch {
             runCatching { if (approve) container.api.approve(item.fullname) else container.api.remove(item.fullname, spam) }
                 .onSuccess { updateItems { list -> list.filterNot { it.fullname == item.fullname } } }
-                .onFailure { e -> _state.value = _state.value.copy(message = e.message ?: "Couldn't do that") }
+                .onFailure { e -> _state.value = _state.value.copy(message = e.message ?: t("Couldn't do that")) }
         }
     }
 }
@@ -111,15 +113,15 @@ fun ModScreen(subreddit: String, container: AppContainer) {
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {
                         Column {
-                            Text("Moderator", style = MaterialTheme.typography.titleMedium)
+                            Text(t("Moderator"), style = MaterialTheme.typography.titleMedium)
                             Text("r/$subreddit", style = MaterialTheme.typography.labelSmall)
                         }
                     },
                     actions = {
-                        IconButton(onClick = { nav.push(ModMailRoute(subreddit)) }) { Icon(Icons.Outlined.Email, "Mod mail") }
+                        IconButton(onClick = { nav.push(ModMailRoute(subreddit)) }) { Icon(Icons.Outlined.Email, t("Mod mail")) }
                         TextButton(onClick = { menuOpen = true }) { Text("${section.label} ▾") }
                         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                             ModSection.entries.forEach { s ->
@@ -136,7 +138,7 @@ fun ModScreen(subreddit: String, container: AppContainer) {
                     key = { it.fullname },
                     onLoadMore = vm::loadMore,
                     onRetry = vm::retry,
-                    emptyText = "Nothing in ${section.label.lowercase()}",
+                    emptyText = t("Nothing in {0}", section.label.let { if (I18n.locale.language == "en") it.lowercase() else it }),
                 ) { item ->
                     Column {
                         when (item) {
@@ -146,9 +148,9 @@ fun ModScreen(subreddit: String, container: AppContainer) {
                             }
                         }
                         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.End) {
-                            TextButton(onClick = { vm.moderate(item, approve = true) }) { Text("Approve") }
-                            TextButton(onClick = { vm.moderate(item, approve = false) }) { Text("Remove") }
-                            TextButton(onClick = { vm.moderate(item, approve = false, spam = true) }) { Text("Spam") }
+                            TextButton(onClick = { vm.moderate(item, approve = true) }) { Text(t("Approve")) }
+                            TextButton(onClick = { vm.moderate(item, approve = false) }) { Text(t("Remove")) }
+                            TextButton(onClick = { vm.moderate(item, approve = false, spam = true) }) { Text(t("Spam")) }
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }

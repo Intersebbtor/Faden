@@ -60,6 +60,7 @@ import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.navigation.isFrontpageOrAll
 import io.github.radixtrator.resync.ui.navigation.SearchRoute
 import io.github.radixtrator.resync.ui.navigation.SwipeModeRoute
+import io.github.radixtrator.resync.i18n.t
 
 /**
  * Sync's Swipe mode: one post per page, swipe horizontally for the next or previous one. Each page is a
@@ -111,7 +112,7 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
         Scaffold(
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {
                         // Sync: the feed name with ▾ over the sort; tapping it opens Explore to switch feeds.
                         Column(Modifier.clickable { exploreOpen = true }) {
@@ -123,14 +124,14 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.weight(1f, fill = false),
                                 )
-                                Icon(Icons.Default.KeyboardArrowDown, "Switch feed", Modifier.size(20.dp))
+                                Icon(Icons.Default.KeyboardArrowDown, t("Switch feed"), Modifier.size(20.dp))
                             }
                             Text(sort.label, style = MaterialTheme.typography.labelSmall)
                         }
                     },
                     actions = {
-                        IconButton(onClick = { nav.push(SearchRoute(subreddit = subreddit)) }) { Icon(Icons.Outlined.Search, "Search") }
-                        IconButton(onClick = { sortOpen = true }) { Icon(AppIcons.Sort, "Sort") }
+                        IconButton(onClick = { nav.push(SearchRoute(subreddit = subreddit)) }) { Icon(Icons.Outlined.Search, t("Search")) }
+                        IconButton(onClick = { sortOpen = true }) { Icon(AppIcons.Sort, t("Sort")) }
                     },
                 )
             },
@@ -155,8 +156,8 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
                     posts.isEmpty() && state.loading -> CenteredBox { CircularProgressIndicator() }
                     posts.isEmpty() -> CenteredBox {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.error ?: "This sub has no posts", textAlign = TextAlign.Center)
-                            TextButton(onClick = vm::retry) { Text("Retry") }
+                            Text(state.error ?: t("This sub has no posts"), textAlign = TextAlign.Center)
+                            TextButton(onClick = vm::retry) { Text(t("Retry")) }
                         }
                     }
                     else -> HorizontalPager(pager, Modifier.fillMaxSize(), beyondViewportPageCount = 1, key = { posts[it].fullname }) { page ->

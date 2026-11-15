@@ -42,6 +42,8 @@ import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.data.Listing
 import io.github.radixtrator.resync.data.ModMailConversation
 import io.github.radixtrator.resync.data.ModMailState
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 import io.github.radixtrator.resync.ui.common.Format
 import io.github.radixtrator.resync.ui.common.ListingViewModel
 import io.github.radixtrator.resync.ui.common.PagedList
@@ -95,9 +97,9 @@ class ModMailViewModel(container: AppContainer, private val subreddit: String?) 
                         if (stays) list.map { if (it.id == conversation.id) it.copy(archived = archived) else it }
                         else list.filterNot { it.id == conversation.id }
                     }
-                    showMessage(if (archived) "Archived" else "Unarchived")
+                    showMessage(if (archived) t("Archived") else t("Unarchived"))
                 }
-                .onFailure { e -> showMessage(e.message ?: "Couldn't do that") }
+                .onFailure { e -> showMessage(e.message ?: t("Couldn't do that")) }
         }
     }
 }
@@ -125,22 +127,22 @@ fun ModMailScreen(subreddit: String?, container: AppContainer) {
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {
                         Column {
-                            Text("Mod mail", style = MaterialTheme.typography.titleMedium)
+                            Text(t("Mod mail"), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                if (allCommunities || subreddit == null) "All communities" else "r/$subreddit",
+                                if (allCommunities || subreddit == null) t("All communities") else "r/$subreddit",
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         }
                     },
                     actions = {
                         if (subreddit != null) {
-                            TextButton(onClick = { communityMenu = true }) { Text(if (allCommunities) "All ▾" else "r/$subreddit ▾", maxLines = 1) }
+                            TextButton(onClick = { communityMenu = true }) { Text(if (allCommunities) t("All") + " ▾" else "r/$subreddit ▾", maxLines = 1) }
                             DropdownMenu(expanded = communityMenu, onDismissRequest = { communityMenu = false }) {
                                 DropdownMenuItem(text = { Text("r/$subreddit") }, onClick = { communityMenu = false; vm.setAllCommunities(false) })
-                                DropdownMenuItem(text = { Text("All communities") }, onClick = { communityMenu = false; vm.setAllCommunities(true) })
+                                DropdownMenuItem(text = { Text(t("All communities")) }, onClick = { communityMenu = false; vm.setAllCommunities(true) })
                             }
                         }
                         TextButton(onClick = { boxMenu = true }) { Text("${box.label} ▾") }
@@ -163,7 +165,7 @@ fun ModMailScreen(subreddit: String?, container: AppContainer) {
                     key = { it.id },
                     onLoadMore = vm::loadMore,
                     onRetry = vm::retry,
-                    emptyText = "No mod mail in ${box.label.lowercase()}",
+                    emptyText = t("No mod mail in {0}", box.label.lowercase()),
                 ) { conversation ->
                     Column {
                         ModMailRow(
@@ -189,7 +191,7 @@ private fun ModMailRow(conversation: ModMailConversation, onOpen: () -> Unit, on
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                conversation.subject.ifBlank { "(no subject)" },
+                conversation.subject.ifBlank { t("(no subject)") },
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = if (conversation.unread) FontWeight.Bold else FontWeight.Normal,
                 color = if (conversation.highlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -199,8 +201,8 @@ private fun ModMailRow(conversation: ModMailConversation, onOpen: () -> Unit, on
             val meta = buildList {
                 if (conversation.community.isNotEmpty()) add("r/${conversation.community}")
                 if (conversation.lastUpdatedUtc > 0) add(Format.timeAgo(conversation.lastUpdatedUtc))
-                if (conversation.numMessages > 0) add(if (conversation.numMessages == 1) "1 message" else "${conversation.numMessages} messages")
-                if (conversation.archived) add("archived")
+                if (conversation.numMessages > 0) add(tn(conversation.numMessages, "{0} message", "{0} messages", conversation.numMessages))
+                if (conversation.archived) add(t("archived"))
             }.joinToString(" • ")
             Text(meta, style = MaterialTheme.typography.labelMedium, color = muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             if (conversation.participants.isNotEmpty()) {
@@ -213,6 +215,6 @@ private fun ModMailRow(conversation: ModMailConversation, onOpen: () -> Unit, on
                 )
             }
         }
-        TextButton(onClick = onArchive) { Text(if (conversation.archived) "Unarchive" else "Archive") }
+        TextButton(onClick = onArchive) { Text(if (conversation.archived) t("Unarchive") else t("Archive")) }
     }
 }

@@ -13,6 +13,7 @@ import io.github.radixtrator.resync.ui.common.ListingViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import io.github.radixtrator.resync.i18n.t
 
 /** A feed's posts, or on the "Comments" sort its newest comments. */
 class FeedViewModel(container: AppContainer, val subreddit: String?, val domain: String? = null) : ListingViewModel<ProfileItem>(container) {
@@ -93,7 +94,7 @@ class FeedViewModel(container: AppContainer, val subreddit: String?, val domain:
         viewModelScope.launch {
             runCatching { container.api.subredditAbout(subreddit!!) }
                 .onSuccess { _about.value = it }
-                .onFailure { if (!quiet) showMessage("Couldn't load community info: ${it.message}") }
+                .onFailure { if (!quiet) showMessage(t("Couldn't load community info: {0}", it.message)) }
         }
     }
 
@@ -106,7 +107,7 @@ class FeedViewModel(container: AppContainer, val subreddit: String?, val domain:
                 .onSuccess { container.refreshSubscriptions(force = true) }
                 .onFailure {
                     _about.value = sub
-                    showMessage("Couldn't update subscription: ${it.message}")
+                    showMessage(t("Couldn't update subscription: {0}", it.message))
                 }
         }
     }

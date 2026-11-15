@@ -60,6 +60,8 @@ import io.github.radixtrator.resync.ui.common.shouldBlur
 import io.github.radixtrator.resync.ui.home.FeedIcon
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.theme.FadenColors
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 
 // Sync's Swipe mode page (sync-reference/SYNC_PARITY_LOG.md §3.20): a header over media that fills the rest of
 // the page, with the post's actions in the screen's bottom bar ([SwipeBottomBar]) rather than on the page.
@@ -112,8 +114,8 @@ private fun SwipeHeader(post: Post, iconUrl: String?, modifier: Modifier) {
                             append(" • ")
                             withStyle(SpanStyle(color = accent)) { append(it) }
                         }
-                        if (post.over18) withStyle(SpanStyle(color = FadenColors.Nsfw, fontWeight = FontWeight.Bold)) { append(" • NSFW") }
-                        if (post.spoiler) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(" • Spoiler") }
+                        if (post.over18) withStyle(SpanStyle(color = FadenColors.Nsfw, fontWeight = FontWeight.Bold)) { append(" • " + t("NSFW")) }
+                        if (post.spoiler) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(" • " + t("Spoiler")) }
                     },
                     style = meta,
                     color = muted,
@@ -176,16 +178,16 @@ private fun SwipeMedia(post: Post, onMedia: () -> Unit) {
             )
         }
         val badge: Pair<ImageVector, String>? = when (post.media) {
-            is PostMedia.Gallery -> AppIcons.Gallery to "Gallery"
-            is PostMedia.Video -> AppIcons.PlayCircle to "Play video"
-            is PostMedia.Link -> AppIcons.OpenExternal to "Open link"
+            is PostMedia.Gallery -> AppIcons.Gallery to t("Gallery")
+            is PostMedia.Video -> AppIcons.PlayCircle to t("Play video")
+            is PostMedia.Link -> AppIcons.OpenExternal to t("Open link")
             // A plain image needs no badge unless its picture is missing (data saving).
-            is PostMedia.Image -> if (image == null) AppIcons.Image to "Image" else null
+            is PostMedia.Image -> if (image == null) AppIcons.Image to t("Image") else null
             PostMedia.None -> null
         }
         if (blur) {
             Text(
-                if (post.over18) "NSFW" else "Spoiler",
+                if (post.over18) t("NSFW") else t("Spoiler"),
                 color = Color.White,
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier
@@ -255,26 +257,26 @@ internal fun SwipeBottomBar(
     BottomAppBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { onVote(if (post.likes == true) 0 else 1) }) {
-                Icon(AppIcons.ArrowUp, "Upvote", tint = if (post.likes == true) FadenColors.Upvote else muted)
+                Icon(AppIcons.ArrowUp, t("Upvote"), tint = if (post.likes == true) FadenColors.Upvote else muted)
             }
             IconButton(onClick = { onVote(if (post.likes == false) 0 else -1) }) {
-                Icon(AppIcons.ArrowDown, "Downvote", tint = if (post.likes == false) FadenColors.Downvote else muted)
+                Icon(AppIcons.ArrowDown, t("Downvote"), tint = if (post.likes == false) FadenColors.Downvote else muted)
             }
             IconButton(onClick = onToggleSave) {
                 Icon(
                     if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
-                    if (post.saved) "Unsave" else "Save",
+                    if (post.saved) t("Unsave") else t("Save"),
                     tint = if (post.saved) FadenColors.Saved else muted,
                 )
             }
-            IconButton(onClick = onComments) { Icon(AppIcons.Comment, "Comments", tint = muted) }
+            IconButton(onClick = onComments) { Icon(AppIcons.Comment, t("Comments"), tint = muted) }
             IconButton(onClick = onDownload, enabled = canDownload) {
-                Icon(AppIcons.Download, "Download", tint = if (canDownload) muted else muted.copy(alpha = 0.38f))
+                Icon(AppIcons.Download, t("Download"), tint = if (canDownload) muted else muted.copy(alpha = 0.38f))
             }
-            IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, "Post options", tint = muted) }
+            IconButton(onClick = onMore) { Icon(Icons.Default.MoreVert, t("Post options"), tint = muted) }
         }
     }
 }
 
-private fun pointsLabel(score: Int, short: Boolean) = if (score == 1) "1 point" else "${Format.count(score, short)} points"
-private fun commentsLabel(n: Int, short: Boolean) = if (n == 1) "1 comment" else "${Format.count(n, short)} comments"
+private fun pointsLabel(score: Int, short: Boolean) = tn(score, "{0} point", "{0} points", Format.count(score, short))
+private fun commentsLabel(n: Int, short: Boolean) = tn(n, "{0} comment", "{0} comments", Format.count(n, short))

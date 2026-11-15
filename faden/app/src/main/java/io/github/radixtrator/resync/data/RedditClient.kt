@@ -3,6 +3,7 @@ package io.github.radixtrator.resync.data
 import android.content.res.AssetManager
 import android.util.Log
 import io.github.radixtrator.resync.BuildConfig
+import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -43,7 +44,7 @@ class RedditClient(
     private val tokenLock = Mutex()
 
     private val config: ApiConfig
-        get() = configStore.load() ?: throw RedditException("Reddit API isn't set up yet")
+        get() = configStore.load() ?: throw RedditException(t("Reddit API isn't set up yet"))
 
     val redirectUri: String get() = config.redirectUri
 
@@ -66,7 +67,7 @@ class RedditClient(
             "redirect_uri" to config.redirectUri,
         )
         val refresh = response.string("refresh_token")
-            ?: throw RedditException("Reddit didn't return a refresh token")
+            ?: throw RedditException(t("Reddit didn't return a refresh token"))
         val access = storeAccessToken(response)
         // Ask who this is with the new token directly; the active account isn't switched yet.
         val me = withContext(Dispatchers.IO) {
@@ -79,7 +80,7 @@ class RedditClient(
         val name = runCatching { JSON.parseToJsonElement(me).jsonObject.string("name") }.getOrNull()
         if (name == null) {
             tokens.clearSession()
-            throw RedditException("Couldn't read the account name")
+            throw RedditException(t("Couldn't read the account name"))
         }
         tokens.upsert(Account(name, refresh))
         tokens.activeUsername = name
@@ -107,8 +108,8 @@ class RedditClient(
      */
     suspend fun uploadImage(filename: String, mime: String, bytes: ByteArray): String {
         val lease = post("/api/media/asset.json", mapOf("filepath" to filename, "mimetype" to mime)).jsonObject
-        val args = lease.obj("args") ?: throw RedditException("Reddit didn't offer an upload")
-        val action = args.string("action") ?: throw RedditException("Reddit didn't offer an upload")
+        val args = lease.obj("args") ?: throw RedditException(t("Reddit didn't offer an upload"))
+        val action = args.string("action") ?: throw RedditException(t("Reddit didn't offer an upload"))
         val uploadUrl = if (action.startsWith("//")) "https:$action" else action
         val fields = args.arr("fields").orEmpty().mapNotNull { it as? JsonObject }
         val form = okhttp3.MultipartBody.Builder().setType(okhttp3.MultipartBody.FORM).apply {
@@ -116,11 +117,11 @@ class RedditClient(
             // S3 wants the file last.
             addFormDataPart("file", filename, bytes.toRequestBody(mime.toMediaType()))
         }.build()
-        val key = fields.firstOrNull { it.string("name") == "key" }?.string("value") ?: throw RedditException("Reddit's upload form had no key")
+        val key = fields.firstOrNull { it.string("name") == "key" }?.string("value") ?: throw RedditException(t("Reddit's upload form had no key"))
         val code = withContext(Dispatchers.IO) {
             http.newCall(Request.Builder().url(uploadUrl).post(form).build()).execute().use { it.code }
         }
-        if (code !in 200..299) throw RedditException("Image upload failed ($code)", code)
+        if (code !in 200..299) throw RedditException(t("Image upload failed ({0})", code), code)
         return uploadUrl.trimEnd('/') + "/" + key
     }
 
@@ -175,7 +176,7 @@ class RedditClient(
     }
 
     private fun storeAccessToken(response: JsonObject): String {
-        val token = response.string("access_token") ?: throw RedditException("Reddit didn't return an access token")
+        val token = response.string("access_token") ?: throw RedditException(t("Reddit didn't return an access token"))
         val expiresIn = response.long("expires_in") ?: 3600
         tokens.accessToken = token
         tokens.accessExpiresAt = System.currentTimeMillis() + expiresIn * 1000
@@ -215,7 +216,7 @@ class RedditClient(
             else -> "demo/listing.json"
         }
         val text = runCatching { assets.open(file).bufferedReader().use { it.readText() } }
-            .getOrElse { throw RedditException("Demo data is only bundled in debug builds") }
+            .getOrElse { throw RedditException(t("Demo data is only bundled in debug builds")) }
         JSON.parseToJsonElement(text)
     }
 
@@ -229,19 +230,19 @@ class RedditClient(
     }
 
     private fun httpError(code: Int) = when (code) {
-        401 -> "Reddit rejected the login (401). Try logging in again."
-        403 -> "Reddit refused the request (403). It may be private, quarantined, or blocked for this client ID."
-        404 -> "Not found (404)."
-        429 -> "Rate limited by Reddit (429). Slow down for a minute."
-        in 500..599 -> "Reddit is having trouble ($code)."
-        else -> "Request failed ($code)."
+        401 -> t("Reddit rejected the login (401). Try logging in again.")
+        403 -> t("Reddit refused the request (403). It may be private, quarantined, or blocked for this client ID.")
+        404 -> t("Not found (404).")
+        429 -> t("Rate limited by Reddit (429). Slow down for a minute.")
+        in 500..599 -> t("Reddit is having trouble ({0}).", code)
+        else -> t("Request failed ({0}).", code)
     }
 
     private fun tokenError(error: String) = when (error) {
-        "invalid_grant" -> "Login expired or was revoked. Log in again."
+        "invalid_grant" -> t("Login expired or was revoked. Log in again.")
         "unauthorized_client", "invalid_client", "http 401" ->
-            "Reddit rejected the client ID. Check it in Settings."
-        else -> "Couldn't get a Reddit token ($error)."
+            t("Reddit rejected the client ID. Check it in Settings.")
+        else -> t("Couldn't get a Reddit token ({0}).", error)
     }
 
     companion object {

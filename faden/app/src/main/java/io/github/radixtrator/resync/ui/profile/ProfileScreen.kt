@@ -71,6 +71,8 @@ import io.github.radixtrator.resync.data.Trophy
 import io.github.radixtrator.resync.data.UserProfile
 import io.github.radixtrator.resync.data.UserSort
 import io.github.radixtrator.resync.data.UserWhere
+import io.github.radixtrator.resync.i18n.I18n
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.ChipMenu
 import io.github.radixtrator.resync.ui.common.HeaderChip
@@ -103,7 +105,6 @@ import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.navigation.PostRoute
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -148,11 +149,11 @@ class ProfileViewModel(container: AppContainer, val name: String, initialTab: Us
     fun block() {
         viewModelScope.launch {
             runCatching { container.api.blockUser(name) }
-                .onSuccess { showMessage("Blocked u/$name") }
+                .onSuccess { showMessage(t("Blocked u/{0}", name)) }
                 .onFailure {
                     // Logins from before Block existed lack Reddit's "account" permission.
                     val relogin = (it as? RedditException)?.code == 403
-                    showMessage(if (relogin) "Log in again to let Faden block users" else "Couldn't block u/$name: ${it.message}")
+                    showMessage(if (relogin) t("Log in again to let Faden block users") else t("Couldn't block u/{0}: {1}", name, it.message))
                 }
         }
     }
@@ -221,7 +222,7 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                     gridState = gridState,
                     bottomPadding = padding.calculateBottomPadding(),
                     preloadsOf = { (it as? ProfileItem.PostItem)?.post?.let(postPreloads).orEmpty() },
-                    emptyText = "Nothing to show",
+                    emptyText = t("Nothing to show"),
                     header = {
                         LargeHeader(
                             title = name,
@@ -229,7 +230,7 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                             overline = user?.let { u ->
                                 {
                                     Text(
-                                        "${u.linkKarma + u.commentKarma} karma",
+                                        t("{0} karma", u.linkKarma + u.commentKarma),
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -238,12 +239,12 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                         ) {
                             ChipMenu(tab.label, Icons.Outlined.Person, UserWhere.entries.filter { isSelf || !it.ownOnly }, { it.label }, vm::setTab)
                             ChipMenu(sort.label, sortIcon(sort), UserSort.entries, { it.label }, vm::setSort)
-                            HeaderChip("About", Icons.Outlined.Info, { aboutOpen = true })
-                            if (canAct) HeaderChip("Message", Icons.Outlined.Email, message)
-                            HeaderChip("Trophies", AppIcons.Trophy, { trophiesOpen = true })
-                            if (!isSelf) HeaderChip("Tag user", AppIcons.TagUser, { tagging = true })
-                            if (canAct) HeaderChip("Block", AppIcons.Block, { confirmBlock = true })
-                            HeaderChip("Share", Icons.Outlined.Share, { nav.share("https://www.reddit.com/user/$name", "u/$name") })
+                            HeaderChip(t("About"), Icons.Outlined.Info, { aboutOpen = true })
+                            if (canAct) HeaderChip(t("Message"), Icons.Outlined.Email, message)
+                            HeaderChip(t("Trophies"), AppIcons.Trophy, { trophiesOpen = true })
+                            if (!isSelf) HeaderChip(t("Tag user"), AppIcons.TagUser, { tagging = true })
+                            if (canAct) HeaderChip(t("Block"), AppIcons.Block, { confirmBlock = true })
+                            HeaderChip(t("Share"), Icons.Outlined.Share, { nav.share("https://www.reddit.com/user/$name", "u/$name") })
                         }
                     },
                 ) { item ->
@@ -273,15 +274,15 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
     if (confirmBlock) {
         AlertDialog(
             onDismissRequest = { confirmBlock = false },
-            title = { Text("Block u/$name?") },
-            text = { Text("You won't see their posts and comments, and they can't message you.") },
+            title = { Text(t("Block u/{0}?", name)) },
+            text = { Text(t("You won't see their posts and comments, and they can't message you.")) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmBlock = false
                     vm.block()
-                }) { Text("Block", color = MaterialTheme.colorScheme.error) }
+                }) { Text(t("Block"), color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { confirmBlock = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmBlock = false }) { Text(t("Cancel")) } },
         )
     }
 }
@@ -296,7 +297,7 @@ private fun sortIcon(sort: UserSort): ImageVector = when (sort) {
 private fun SortMenu(onPick: (UserSort) -> Unit) {
     var open by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { open = true }) { Icon(AppIcons.Sort, "Sort") }
+        IconButton(onClick = { open = true }) { Icon(AppIcons.Sort, t("Sort")) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             UserSort.entries.forEach { sort ->
                 DropdownMenuItem(text = { Text(sort.label) }, onClick = {
@@ -336,18 +337,18 @@ private fun ProfileAboutSheet(
             AboutStat(AppIcons.Link, user.linkKarma.toString())
             AboutStat(AppIcons.Comment, user.commentKarma.toString())
             // Sync writes the cake day as "21 Apr 2012".
-            AboutStat(Icons.Outlined.DateRange, SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(user.createdUtc * 1000)))
+            AboutStat(Icons.Outlined.DateRange, SimpleDateFormat("d MMM yyyy", I18n.locale).format(Date(user.createdUtc * 1000)))
         }
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
             val chip = MaterialTheme.colorScheme.surfaceVariant
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                onMessage?.let { HeaderChip("Message", Icons.Outlined.Email, it, container = chip) }
-                HeaderChip("Trophies", AppIcons.Trophy, onTrophies, container = chip)
-                onTag?.let { HeaderChip("Tag user", AppIcons.TagUser, it, container = chip) }
+                onMessage?.let { HeaderChip(t("Message"), Icons.Outlined.Email, it, container = chip) }
+                HeaderChip(t("Trophies"), AppIcons.Trophy, onTrophies, container = chip)
+                onTag?.let { HeaderChip(t("Tag user"), AppIcons.TagUser, it, container = chip) }
             }
             Surface(color = chip, shape = RoundedCornerShape(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                 Text(
-                    user.description ?: "This user has no public description",
+                    user.description ?: t("This user has no public description"),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(16.dp),
                 )
@@ -364,12 +365,12 @@ private fun TrophiesSheet(container: AppContainer, name: String, onDismiss: () -
     }
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = { SheetHandle() }) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-            SheetTitle("Trophies", topPadding = 0.dp)
+            SheetTitle(t("Trophies"), topPadding = 0.dp)
             when (val result = trophies) {
                 null -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
                 else -> {
                     val list = result.getOrDefault(emptyList())
-                    val note = result.exceptionOrNull()?.let { "Couldn't load trophies: ${it.message}" } ?: "No trophies yet".takeIf { list.isEmpty() }
+                    val note = result.exceptionOrNull()?.let { t("Couldn't load trophies: {0}", it.message) } ?: t("No trophies yet").takeIf { list.isEmpty() }
                     note?.let {
                         Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                     }

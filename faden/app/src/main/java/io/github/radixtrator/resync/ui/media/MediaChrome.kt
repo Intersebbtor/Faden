@@ -37,6 +37,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import io.github.radixtrator.resync.data.MediaDownloads
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.PostRoute
@@ -71,14 +72,14 @@ internal fun MediaActionBar(url: String, postId: String?) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (postId != null) {
-            IconButton(onClick = { nav.push(PostRoute(postId)) }) { Icon(AppIcons.Comment, "Comments", tint = Color.White) }
+            IconButton(onClick = { nav.push(PostRoute(postId)) }) { Icon(AppIcons.Comment, t("Comments"), tint = Color.White) }
         }
-        IconButton(onClick = { nav.openExternal(url) }) { Icon(AppIcons.OpenExternal, "Open in browser", tint = Color.White) }
+        IconButton(onClick = { nav.openExternal(url) }) { Icon(AppIcons.OpenExternal, t("Open in browser"), tint = Color.White) }
         IconButton(onClick = {
             clipboard.setText(AnnotatedString(url))
-            Toast.makeText(context, "Link copied", Toast.LENGTH_SHORT).show()
-        }) { Icon(AppIcons.Copy, "Copy link", tint = Color.White) }
-        IconButton(onClick = { nav.share(url, "") }) { Icon(Icons.Default.Share, "Share", tint = Color.White) }
+            Toast.makeText(context, t("Link copied"), Toast.LENGTH_SHORT).show()
+        }) { Icon(AppIcons.Copy, t("Copy link"), tint = Color.White) }
+        IconButton(onClick = { nav.share(url, "") }) { Icon(Icons.Default.Share, t("Share"), tint = Color.White) }
     }
 }
 
@@ -89,7 +90,7 @@ internal fun rememberDownloader(downloads: MediaDownloads): (String) -> Unit {
     var pending by remember { mutableStateOf<String?>(null) }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         pending?.let { url ->
-            if (granted) downloads.save(url) else Toast.makeText(context, "Saving needs storage access", Toast.LENGTH_SHORT).show()
+            if (granted) downloads.save(url) else Toast.makeText(context, t("Saving needs storage access"), Toast.LENGTH_SHORT).show()
         }
         pending = null
     }

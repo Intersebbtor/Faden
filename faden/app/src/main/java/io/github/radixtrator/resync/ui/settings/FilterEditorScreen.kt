@@ -42,6 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.data.FilterType
+import io.github.radixtrator.resync.i18n.AppLanguage
+import io.github.radixtrator.resync.i18n.I18n
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.HeaderChip
 import io.github.radixtrator.resync.ui.common.LargeHeader
 import io.github.radixtrator.resync.ui.common.SwipeBack
@@ -69,7 +72,7 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {},
                 )
             },
@@ -77,7 +80,7 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
             LazyColumn(Modifier.padding(padding).fillMaxSize().imePadding()) {
                 item(key = "header") {
                     LargeHeader(title = type.title) {
-                        if (entries.isNotEmpty()) HeaderChip(label = "Remove all", icon = Icons.Outlined.Delete, onClick = { confirmClear = true })
+                        if (entries.isNotEmpty()) HeaderChip(label = t("Remove all"), icon = Icons.Outlined.Delete, onClick = { confirmClear = true })
                     }
                 }
                 item(key = "add") {
@@ -95,7 +98,7 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
                             keyboardActions = KeyboardActions(onDone = { if (type.normalize(text).isNotEmpty()) add() }),
                             modifier = Modifier.weight(1f),
                         )
-                        Button(onClick = add, enabled = type.normalize(text).isNotEmpty()) { Text("Add") }
+                        Button(onClick = add, enabled = type.normalize(text).isNotEmpty()) { Text(t("Add")) }
                     }
                 }
                 if (entries.isEmpty()) {
@@ -115,7 +118,7 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
                     ListItem(
                         headlineContent = { Text(label) },
                         trailingContent = {
-                            IconButton(onClick = { container.filters.remove(type, entry) }) { Icon(Icons.Default.Close, "Stop filtering $label") }
+                            IconButton(onClick = { container.filters.remove(type, entry) }) { Icon(Icons.Default.Close, t("Stop filtering {0}", label)) }
                         },
                     )
                 }
@@ -126,15 +129,19 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("Remove all?") },
-            text = { Text("Every entry in ${type.title.lowercase()} will be removed.") },
+            title = { Text(t("Remove all?")) },
+            text = {
+                // German capitalizes nouns, so only English lowercases the list's name.
+                val list = if (I18n.language == AppLanguage.ENGLISH) type.title.lowercase() else type.title
+                Text(t("Every entry in {0} will be removed.", list))
+            },
             confirmButton = {
                 TextButton(onClick = {
                     container.filters.clear(type)
                     confirmClear = false
-                }) { Text("Remove all") }
+                }) { Text(t("Remove all")) }
             },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(t("Cancel")) } },
         )
     }
 }

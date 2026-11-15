@@ -46,6 +46,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.data.ModMailMessage
 import io.github.radixtrator.resync.data.ModMailThread
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.Format
 import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.SwipeBack
@@ -85,7 +86,7 @@ class ModMailConversationViewModel(private val container: AppContainer, private 
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(loading = false, error = e.message ?: "Couldn't load this conversation") }
+                _state.update { it.copy(loading = false, error = e.message ?: t("Couldn't load this conversation")) }
             }
         }
     }
@@ -106,7 +107,7 @@ class ModMailConversationViewModel(private val container: AppContainer, private 
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _state.update { it.copy(sending = false, message = e.message ?: "Couldn't send the reply") }
+                _state.update { it.copy(sending = false, message = e.message ?: t("Couldn't send the reply")) }
             }
         }
     }
@@ -116,9 +117,9 @@ class ModMailConversationViewModel(private val container: AppContainer, private 
         viewModelScope.launch {
             runCatching { container.api.setModMailArchived(id, archived) }
                 .onSuccess {
-                    _state.update { s -> s.copy(thread = thread.copy(conversation = thread.conversation.copy(archived = archived)), message = if (archived) "Archived" else "Unarchived") }
+                    _state.update { s -> s.copy(thread = thread.copy(conversation = thread.conversation.copy(archived = archived)), message = if (archived) t("Archived") else t("Unarchived")) }
                 }
-                .onFailure { e -> _state.update { it.copy(message = e.message ?: "Couldn't do that") } }
+                .onFailure { e -> _state.update { it.copy(message = e.message ?: t("Couldn't do that")) } }
         }
     }
 
@@ -151,11 +152,11 @@ fun ModMailConversationScreen(id: String, container: AppContainer) {
             snackbarHost = { SnackbarHost(snackbar) },
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {
                         Column {
                             Text(
-                                conversation?.subject?.ifBlank { null } ?: "Mod mail",
+                                conversation?.subject?.ifBlank { null } ?: t("Mod mail"),
                                 style = MaterialTheme.typography.titleMedium,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
@@ -168,7 +169,7 @@ fun ModMailConversationScreen(id: String, container: AppContainer) {
                     actions = {
                         if (conversation != null) {
                             TextButton(onClick = { vm.setArchived(!conversation.archived) }) {
-                                Text(if (conversation.archived) "Unarchive" else "Archive")
+                                Text(if (conversation.archived) t("Unarchive") else t("Archive"))
                             }
                         }
                     },
@@ -180,8 +181,8 @@ fun ModMailConversationScreen(id: String, container: AppContainer) {
                     when {
                         state.thread == null && state.loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                         state.thread == null -> Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(state.error ?: "Couldn't load this conversation", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            TextButton(onClick = vm::load) { Text("Retry") }
+                            Text(state.error ?: t("Couldn't load this conversation"), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            TextButton(onClick = vm::load) { Text(t("Retry")) }
                         }
                         else -> LazyColumn(Modifier.fillMaxSize(), state = listState) {
                             items(messages, key = { it.id }) { message ->
@@ -197,7 +198,7 @@ fun ModMailConversationScreen(id: String, container: AppContainer) {
                             value = state.draft,
                             onValueChange = vm::setDraft,
                             modifier = Modifier.weight(1f),
-                            placeholder = { Text("Reply") },
+                            placeholder = { Text(t("Reply")) },
                             enabled = !state.sending,
                             maxLines = 6,
                         )
@@ -205,7 +206,7 @@ fun ModMailConversationScreen(id: String, container: AppContainer) {
                             Box(Modifier.padding(12.dp)) { CircularProgressIndicator(Modifier.size(24.dp)) }
                         } else {
                             IconButton(onClick = vm::send, enabled = state.draft.isNotBlank()) {
-                                Icon(Icons.AutoMirrored.Filled.Send, "Send")
+                                Icon(Icons.AutoMirrored.Filled.Send, t("Send"))
                             }
                         }
                     }
@@ -229,9 +230,9 @@ private fun ModMailMessageItem(message: ModMailMessage, onAuthor: () -> Unit) {
                 )
             }
             val tags = buildList {
-                if (message.authorIsMod) add("mod")
-                if (message.authorHidden) add("as subreddit")
-                if (message.internal) add("private note")
+                if (message.authorIsMod) add(t("mod"))
+                if (message.authorHidden) add(t("as subreddit"))
+                if (message.internal) add(t("private note"))
                 if (message.dateUtc > 0) add(Format.timeAgo(message.dateUtc))
             }
             if (tags.isNotEmpty()) {

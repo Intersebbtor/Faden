@@ -76,6 +76,7 @@ import io.github.radixtrator.resync.data.MediaDownloads
 import io.github.radixtrator.resync.data.Redgifs
 import io.github.radixtrator.resync.data.RedgifsVideo
 import io.github.radixtrator.resync.data.VideoQuality
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.DismissibleMedia
 import io.github.radixtrator.resync.ui.common.dataSavingActive
@@ -113,7 +114,7 @@ fun VideoPlayerScreen(url: String, loop: Boolean, postId: String?, downloads: Me
         failure = null
         runCatching { Redgifs.resolve(redgifsId) }
             .onSuccess { resolved = it }
-            .onFailure { failure = it.message ?: "Couldn't reach RedGifs" }
+            .onFailure { failure = it.message ?: t("Couldn't reach RedGifs") }
     }
     val video = resolved
     when {
@@ -138,8 +139,8 @@ fun VideoPlayerScreen(url: String, loop: Boolean, postId: String?, downloads: Me
                     ) {
                         Text(message, color = Color.White, textAlign = TextAlign.Center)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = { attempt++ }) { Text("Retry") }
-                            OutlinedButton(onClick = { nav.openExternal(url) }) { Text("Open in browser", color = Color.White) }
+                            Button(onClick = { attempt++ }) { Text(t("Retry")) }
+                            OutlinedButton(onClick = { nav.openExternal(url) }) { Text(t("Open in browser"), color = Color.White) }
                         }
                     }
                 }
@@ -233,7 +234,7 @@ private fun VideoPlayer(
                 if (e.errorCode == PlaybackException.ERROR_CODE_DECODING_FAILED && !softwareFirst) {
                     softwareFirst = true
                 } else {
-                    error = "Can't play this video (${e.errorCodeName})"
+                    error = t("Can't play this video ({0})", e.errorCodeName)
                 }
             }
         }
@@ -309,8 +310,8 @@ private fun VideoPlayer(
                             error = null
                             player.prepare()
                             player.play()
-                        }) { Text("Retry") }
-                        OutlinedButton(onClick = { nav.openExternal(url) }) { Text("Open in browser", color = Color.White) }
+                        }) { Text(t("Retry")) }
+                        OutlinedButton(onClick = { nav.openExternal(url) }) { Text(t("Open in browser"), color = Color.White) }
                     }
                 }
             }
@@ -333,7 +334,7 @@ private fun VideoPlayer(
                         IconButton(onClick = {
                             player.seekTo(0)
                             player.play()
-                        }, modifier = Modifier.size(38.dp)) { Icon(AppIcons.Restart, "Restart", tint = Color.White) }
+                        }, modifier = Modifier.size(38.dp)) { Icon(AppIcons.Restart, t("Restart"), tint = Color.White) }
                         IconButton(modifier = Modifier.size(38.dp), onClick = {
                             if (playing) {
                                 player.pause()
@@ -341,17 +342,17 @@ private fun VideoPlayer(
                                 if (player.playbackState == Player.STATE_ENDED) player.seekTo(0)
                                 player.play()
                             }
-                        }) { Icon(if (playing) AppIcons.Pause else Icons.Default.PlayArrow, if (playing) "Pause" else "Play", tint = Color.White) }
+                        }) { Icon(if (playing) AppIcons.Pause else Icons.Default.PlayArrow, if (playing) t("Pause") else t("Play"), tint = Color.White) }
                         IconButton(onClick = { muted = !muted }, modifier = Modifier.size(38.dp)) {
-                            Icon(if (muted) AppIcons.VolumeOff else AppIcons.VolumeOn, if (muted) "Unmute" else "Mute", tint = Color.White)
+                            Icon(if (muted) AppIcons.VolumeOff else AppIcons.VolumeOn, if (muted) t("Unmute") else t("Mute"), tint = Color.White)
                         }
                         Spacer(Modifier.width(8.dp))
                         Text("${clock(position)} / ${clock(duration)}", color = Color.White, style = MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.weight(1f))
                         // The file itself when there's one to hand (RedGifs' HD mp4), else the link as given.
-                        IconButton(onClick = { download(hdStream ?: url) }) { Icon(AppIcons.Download, "Download", tint = Color.White) }
+                        IconButton(onClick = { download(hdStream ?: url) }) { Icon(AppIcons.Download, t("Download"), tint = Color.White) }
                         IconButton(onClick = { panelOpen = !panelOpen }) {
-                            if (panelOpen) Icon(Icons.Default.Close, "Close", tint = Color.White) else Icon(Icons.Default.MoreVert, "More", tint = Color.White)
+                            if (panelOpen) Icon(Icons.Default.Close, t("Close"), tint = Color.White) else Icon(Icons.Default.MoreVert, t("More"), tint = Color.White)
                         }
                     }
                     if (panelOpen) {
@@ -421,7 +422,7 @@ private fun SpeedControl(speed: Float, onChange: (Float) -> Unit) {
     val index = SPEEDS.indexOf(speed).coerceAtLeast(0)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = { onChange(SPEEDS[(index - 1).coerceAtLeast(0)]) }, enabled = index > 0) {
-            Icon(AppIcons.RemoveCircleFilled, "Slower", tint = Color.White)
+            Icon(AppIcons.RemoveCircleFilled, t("Slower"), tint = Color.White)
         }
         Text(
             speedLabel(speed),
@@ -431,7 +432,7 @@ private fun SpeedControl(speed: Float, onChange: (Float) -> Unit) {
             modifier = Modifier.width(56.dp),
         )
         IconButton(onClick = { onChange(SPEEDS[(index + 1).coerceAtMost(SPEEDS.lastIndex)]) }, enabled = index < SPEEDS.lastIndex) {
-            Icon(Icons.Default.AddCircle, "Faster", tint = Color.White)
+            Icon(Icons.Default.AddCircle, t("Faster"), tint = Color.White)
         }
     }
 }

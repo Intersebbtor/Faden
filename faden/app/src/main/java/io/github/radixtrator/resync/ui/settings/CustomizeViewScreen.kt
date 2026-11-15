@@ -50,6 +50,7 @@ import io.github.radixtrator.resync.ui.common.gutter
 import io.github.radixtrator.resync.ui.common.spacing
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.theme.FullSizeText
+import io.github.radixtrator.resync.i18n.t
 
 /**
  * Sync's Customize view (Settings > View type, also the Change view sheet's "Customize view" button): a large
@@ -78,20 +79,20 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
                     title = {},
                     actions = {
                         IconButton(
                             onClick = { container.settings.update { it.copy(viewOptions = it.viewOptions - layout) } },
                             enabled = customized,
-                        ) { Icon(Icons.Outlined.Refresh, "Reset ${layout.label} to defaults") }
+                        ) { Icon(Icons.Outlined.Refresh, t("Reset {0} to defaults", layout.label)) }
                     },
                 )
             },
         ) { padding ->
             Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
                 // Sync's chip row runs from the richest layout to the plainest.
-                LargeHeader(title = "View type") {
+                LargeHeader(title = t("View type")) {
                     PostLayout.entries.reversed().forEach { option ->
                         HeaderChip(
                             label = option.label,
@@ -128,11 +129,11 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
                                     }
                                     ViewRow.Columns -> {
                                         // Labelled so it's clear which of the two this screen is using right now.
-                                        fun title(name: String, here: Boolean) = if (here) "$name (this screen)" else name
-                                        Choice(title("Columns on main screen", !coverScreen), PostColumns.entries, options.columns, PostColumns::label) { v ->
+                                        fun title(name: String, here: Boolean) = if (here) t("{0} (this screen)", name) else name
+                                        Choice(title(t("Columns on main screen"), !coverScreen), PostColumns.entries, options.columns, PostColumns::label) { v ->
                                             change { it.copy(columns = v) }
                                         }
-                                        Choice(title("Columns on cover screen", coverScreen), PostColumns.entries, options.coverColumns, PostColumns::label) { v ->
+                                        Choice(title(t("Columns on cover screen"), coverScreen), PostColumns.entries, options.coverColumns, PostColumns::label) { v ->
                                             change { it.copy(coverColumns = v) }
                                         }
                                     }
@@ -151,8 +152,8 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
 
 /** One switch on a View type screen, with the catalogue's title and the [ViewOptions] field it flips. */
 internal enum class ViewOption(
-    val title: String,
-    val summary: String?,
+    private val enTitle: String,
+    private val enSummary: String?,
     val read: (ViewOptions) -> Boolean,
     val write: (ViewOptions, Boolean) -> ViewOptions,
 ) {
@@ -183,12 +184,15 @@ internal enum class ViewOption(
     SHARE_BUTTON("Share", null, { it.shareButton }, { o, v -> o.copy(shareButton = v) }),
     MOD_BUTTON("Mod tools", "This is only shown for subs you moderate", { it.modButton }, { o, v -> o.copy(modButton = v) }),
     VOTE_RIGHT("Right aligned voting", null, { it.voteRight }, { o, v -> o.copy(voteRight = v) }),
-    HIDE_ALL_BUTTONS("Hide all buttons", null, { it.hideAllButtons }, { o, v -> o.copy(hideAllButtons = v) }),
+    HIDE_ALL_BUTTONS("Hide all buttons", null, { it.hideAllButtons }, { o, v -> o.copy(hideAllButtons = v) });
+
+    val title: String get() = t(enTitle)
+    val summary: String? get() = enSummary?.let { t(it) }
 }
 
 /** One font size choice on a View type screen: the size half of one of Sync's font pickers. */
 internal enum class ViewFontSize(
-    val title: String,
+    private val enTitle: String,
     val read: (ViewOptions) -> TitleSize,
     val write: (ViewOptions, TitleSize) -> ViewOptions,
 ) {
@@ -199,7 +203,9 @@ internal enum class ViewFontSize(
     DESCRIPTION("Description font size", { it.descriptionSize }, { o, v -> o.copy(descriptionSize = v) }),
 
     /** [ViewOptions.selftextSize], Sync's "Selftext font". */
-    SELFTEXT("Selftext font size", { it.selftextSize }, { o, v -> o.copy(selftextSize = v) }),
+    SELFTEXT("Selftext font size", { it.selftextSize }, { o, v -> o.copy(selftextSize = v) });
+
+    val title: String get() = t(enTitle)
 }
 
 /** A row on a View type screen: a [ViewOption] switch, a [ViewFontSize] choice, or Columns. */
@@ -222,10 +228,10 @@ private fun fontSizes(vararg sizes: ViewFontSize): List<ViewRow> = sizes.map { V
  */
 private fun sectionsFor(layout: PostLayout): List<Pair<String, List<ViewRow>>> = when (layout) {
     PostLayout.SLIDES -> listOf(
-        "Preview options" to switches(ViewOption.IMAGE_PREVIEWS, ViewOption.SELFTEXT_PREVIEWS, ViewOption.SUBREDDIT_ICONS),
-        "Image options" to switches(ViewOption.SLIDE_FULL_HEIGHT, ViewOption.SLIDE_FULL_WIDTH, ViewOption.SLIDE_IMAGE_TOP),
-        "Fonts and sizing" to fontSizes(ViewFontSize.TITLE, ViewFontSize.DESCRIPTION, ViewFontSize.SELFTEXT),
-        "Buttons" to switches(
+        t("Preview options") to switches(ViewOption.IMAGE_PREVIEWS, ViewOption.SELFTEXT_PREVIEWS, ViewOption.SUBREDDIT_ICONS),
+        t("Image options") to switches(ViewOption.SLIDE_FULL_HEIGHT, ViewOption.SLIDE_FULL_WIDTH, ViewOption.SLIDE_IMAGE_TOP),
+        t("Fonts and sizing") to fontSizes(ViewFontSize.TITLE, ViewFontSize.DESCRIPTION, ViewFontSize.SELFTEXT),
+        t("Buttons") to switches(
             ViewOption.SAVE_BUTTON,
             ViewOption.HIDE_BUTTON,
             ViewOption.SHARE_BUTTON,
@@ -233,29 +239,29 @@ private fun sectionsFor(layout: PostLayout): List<Pair<String, List<ViewRow>>> =
             ViewOption.VOTE_RIGHT,
             ViewOption.HIDE_ALL_BUTTONS,
         ),
-        "Experimental options" to switches(ViewOption.THICK_DIVIDER, ViewOption.SELFTEXT_BORDER),
+        t("Experimental options") to switches(ViewOption.THICK_DIVIDER, ViewOption.SELFTEXT_BORDER),
     )
     PostLayout.CARD -> listOf(
-        "Image options" to switches(ViewOption.IMAGE_ABOVE_TITLE, ViewOption.CARD_FULL_HEIGHT),
-        "Selftext options" to switches(ViewOption.SELFTEXT_PREVIEWS),
-        "Card options" to listOf(ViewRow.Switch(ViewOption.CARD_FULL_WIDTH), ViewRow.Columns),
-        "Fonts and sizing" to fontSizes(ViewFontSize.TITLE, ViewFontSize.DESCRIPTION, ViewFontSize.SELFTEXT),
-        "Buttons" to switches(ViewOption.CARD_SAVE_BUTTON, ViewOption.HIDE_BUTTON, ViewOption.SHARE_BUTTON, ViewOption.MOD_BUTTON),
+        t("Image options") to switches(ViewOption.IMAGE_ABOVE_TITLE, ViewOption.CARD_FULL_HEIGHT),
+        t("Selftext options") to switches(ViewOption.SELFTEXT_PREVIEWS),
+        t("Card options") to listOf(ViewRow.Switch(ViewOption.CARD_FULL_WIDTH), ViewRow.Columns),
+        t("Fonts and sizing") to fontSizes(ViewFontSize.TITLE, ViewFontSize.DESCRIPTION, ViewFontSize.SELFTEXT),
+        t("Buttons") to switches(ViewOption.CARD_SAVE_BUTTON, ViewOption.HIDE_BUTTON, ViewOption.SHARE_BUTTON, ViewOption.MOD_BUTTON),
     )
     PostLayout.SMALL_CARDS -> listOf(
-        "Image options" to switches(ViewOption.THUMBNAIL_LEFT),
-        "Card options" to listOf(ViewRow.Columns),
-        "Fonts and sizing" to fontSizes(ViewFontSize.TITLE, ViewFontSize.DESCRIPTION),
-        "Buttons" to switches(ViewOption.CARD_SAVE_BUTTON, ViewOption.HIDE_BUTTON, ViewOption.SHARE_BUTTON, ViewOption.MOD_BUTTON),
+        t("Image options") to switches(ViewOption.THUMBNAIL_LEFT),
+        t("Card options") to listOf(ViewRow.Columns),
+        t("Fonts and sizing") to fontSizes(ViewFontSize.TITLE, ViewFontSize.DESCRIPTION),
+        t("Buttons") to switches(ViewOption.CARD_SAVE_BUTTON, ViewOption.HIDE_BUTTON, ViewOption.SHARE_BUTTON, ViewOption.MOD_BUTTON),
     )
     PostLayout.SMALLER_CARDS, PostLayout.COMPACT, PostLayout.LIST -> listOf(
-        "Image options" to if (layout == PostLayout.SMALLER_CARDS) {
+        t("Image options") to if (layout == PostLayout.SMALLER_CARDS) {
             switches(ViewOption.TYPE_INDICATORS, ViewOption.THUMBNAIL_RIGHT)
         } else {
             switches(ViewOption.THUMBNAILS, ViewOption.TYPE_INDICATORS, ViewOption.THUMBNAIL_RIGHT)
         },
         // Sync's order: Title font, the one-line switch, then Description font.
-        "Fonts and sizing" to listOf(
+        t("Fonts and sizing") to listOf(
             ViewRow.FontSize(ViewFontSize.TITLE),
             ViewRow.Switch(ViewOption.SINGLE_LINE_TITLE),
             ViewRow.FontSize(ViewFontSize.DESCRIPTION),
@@ -291,7 +297,7 @@ private val SamplePosts: List<Post>
                 fullname = "t3_faden_example_image",
                 subreddit = "pics",
                 author = "ljdawson",
-                title = "Example post",
+                title = t("Example post"),
                 selfText = "",
                 selfTextHtml = null,
                 url = SAMPLE_IMAGE,
@@ -306,7 +312,7 @@ private val SamplePosts: List<Post>
                 isSelf = false,
                 likes = true,
                 saved = true,
-                flair = "Example",
+                flair = t("Example"),
                 media = PostMedia.Image(ImageSource(SAMPLE_IMAGE, 1600, 1200), SAMPLE_IMAGE, isGif = false),
             ),
             Post(
@@ -314,8 +320,8 @@ private val SamplePosts: List<Post>
                 fullname = "t3_faden_example_text",
                 subreddit = "faden",
                 author = "ljdawson",
-                title = "Example text post",
-                selfText = "This is how a text post's preview looks in this view.\n\nThe rest of the post stays in the thread.",
+                title = t("Example text post"),
+                selfText = t("This is how a text post's preview looks in this view.\n\nThe rest of the post stays in the thread."),
                 selfTextHtml = null,
                 url = "https://www.reddit.com/r/faden/comments/faden_example_text/example_text_post/",
                 domain = "self.faden",

@@ -115,6 +115,8 @@ import io.github.radixtrator.resync.ui.theme.FadenColors
 import io.github.radixtrator.resync.ui.navigation.SettingsRoute
 import io.github.radixtrator.resync.ui.settings.SettingsCategory
 import kotlinx.coroutines.launch
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 
 @Composable
 fun FeedScreen(route: FeedRoute, container: AppContainer) {
@@ -209,7 +211,7 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
                 scope.launch { gridState.animateScrollToItem(0) }
                 vm.refresh()
             },
-            actions = { IconButton(onClick = { sortOpen = true }) { Icon(AppIcons.Sort, "Sort") } },
+            actions = { IconButton(onClick = { sortOpen = true }) { Icon(AppIcons.Sort, t("Sort")) } },
             showSearch = true,
             searchSubreddit = subreddit.takeIf { vm.isCommunity },
         ) { padding ->
@@ -229,7 +231,7 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
                     gridState = gridState,
                     bottomPadding = padding.calculateBottomPadding(),
                     preloadsOf = { (it as? ProfileItem.PostItem)?.post?.let(postPreloads).orEmpty() },
-                    emptyText = if (sort.kind == SortKind.COMMENTS) "No comments here" else "No posts here",
+                    emptyText = if (sort.kind == SortKind.COMMENTS) t("No comments here") else t("No posts here"),
                     header = {
                         FeedHeader(
                             title = title,
@@ -268,7 +270,7 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
     var offerToSave by remember { mutableStateOf<Sort?>(null) }
     fun remindOfSetting(message: String) {
         scope.launch {
-            val result = snackbar.showSnackbar(message, actionLabel = "Settings", duration = SnackbarDuration.Short)
+            val result = snackbar.showSnackbar(message, actionLabel = t("Settings"), duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) nav.push(SettingsRoute(SettingsCategory.POSTS))
         }
     }
@@ -276,7 +278,7 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
         SortSheet(current = sort, options = vm.sortOptions, onDismiss = { sortOpen = false }, onPick = { picked ->
             vm.setSort(picked)
             if (picked != (settings.sortFor(vm.feedKey) ?: vm.openingSort)) {
-                if (settings.askToKeepSort) offerToSave = picked else remindOfSetting("Sorted by ${picked.label} for now. To keep sorts, turn on \"Ask to keep a new sort\".")
+                if (settings.askToKeepSort) offerToSave = picked else remindOfSetting(t("Sorted by {0} for now. To keep sorts, turn on \"Ask to keep a new sort\".", picked.label))
             }
         })
     }
@@ -286,14 +288,14 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
             if (keep) vm.saveSort(picked)
             offerToSave = null
             container.settings.update { it.copy(askToKeepSort = false) }
-            remindOfSetting("Won't ask again. Settings › Post options › \"Ask to keep a new sort\" turns it back on.")
+            remindOfSetting(t("Won't ask again. Settings › Post options › \"Ask to keep a new sort\" turns it back on."))
         }
         AlertDialog(
             onDismissRequest = { answered(false) },
-            title = { Text("Always use ${picked.label}?") },
-            text = { Text("Open $title sorted by ${picked.label} from now on. This is only asked once; you can turn the question back on in Settings › Post options.") },
-            confirmButton = { TextButton(onClick = { answered(true) }) { Text("Always") } },
-            dismissButton = { TextButton(onClick = { answered(false) }) { Text("Just this time") } },
+            title = { Text(t("Always use {0}?", picked.label)) },
+            text = { Text(t("Open {0} sorted by {1} from now on. This is only asked once; you can turn the question back on in Settings › Post options.", title, picked.label)) },
+            confirmButton = { TextButton(onClick = { answered(true) }) { Text(t("Always")) } },
+            dismissButton = { TextButton(onClick = { answered(false) }) { Text(t("Just this time")) } },
         )
     }
     if (viewOpen) ChangeViewSheet(container, layoutFeed, current = layout, onDismiss = { viewOpen = false })
@@ -352,18 +354,18 @@ private fun FeedHeader(
         HeaderChip(sort.label, sortIcon(sort.kind), onSort, dropdown = true)
         if (isCommunity) {
             val joined = about?.isSubscribed == true
-            HeaderChip(if (joined) "Joined" else "Join", if (joined) Icons.Outlined.Check else AppIcons.PlaylistAdd, onJoin)
-            HeaderChip("About", Icons.Outlined.Info, onAbout)
-            HeaderChip("Wiki", AppIcons.Book, onWiki)
-            HeaderChip("Flairs", AppIcons.Tag, onFlairs, dropdown = true)
+            HeaderChip(if (joined) t("Joined") else t("Join"), if (joined) Icons.Outlined.Check else AppIcons.PlaylistAdd, onJoin)
+            HeaderChip(t("About"), Icons.Outlined.Info, onAbout)
+            HeaderChip(t("Wiki"), AppIcons.Book, onWiki)
+            HeaderChip(t("Flairs"), AppIcons.Tag, onFlairs, dropdown = true)
             HeaderChip(
-                if (watching) "Watching" else "Watch",
+                if (watching) t("Watching") else t("Watch"),
                 if (watching) Icons.Filled.Notifications else Icons.Outlined.Notifications,
                 onWatch,
             )
         }
-        HeaderChip("Change view", AppIcons.ViewStack, onChangeView)
-        onRandom?.let { HeaderChip("Random", AppIcons.Dice, it) }
+        HeaderChip(t("Change view"), AppIcons.ViewStack, onChangeView)
+        onRandom?.let { HeaderChip(t("Random"), AppIcons.Dice, it) }
     }
 }
 
@@ -417,9 +419,8 @@ fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
         withStyle(SpanStyle(color = scoreColor)) {
             append(
                 when {
-                    comment.scoreHidden -> "[score hidden]"
-                    comment.score == 1 -> "1 point"
-                    else -> "${Format.count(comment.score)} points"
+                    comment.scoreHidden -> t("[score hidden]")
+                    else -> tn(comment.score, "{0} point", "{0} points", Format.count(comment.score))
                 },
             )
         }
@@ -448,7 +449,7 @@ internal fun SortSheet(current: Sort, options: List<SortKind>, onDismiss: () -> 
     TopSheet(onDismiss = onDismiss) {
         val kind = timedKind
         if (kind == null) {
-            SheetTitle("Subreddit sort")
+            SheetTitle(t("Subreddit sort"))
             options.forEach { option ->
                 OptionRow(
                     label = option.label,
@@ -484,7 +485,7 @@ private fun ChangeViewSheet(container: AppContainer, subreddit: String?, current
     val nav = LocalNavigator.current
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = { SheetHandle() }) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 16.dp)) {
-            SheetTitle("Change view", topPadding = 0.dp)
+            SheetTitle(t("Change view"), topPadding = 0.dp)
             PostLayout.entries.forEach { layout ->
                 OptionRow(
                     label = layout.label,
@@ -500,14 +501,14 @@ private fun ChangeViewSheet(container: AppContainer, subreddit: String?, current
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Cancel") }
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(t("Cancel")) }
                 FilledTonalButton(
                     onClick = {
                         onDismiss()
                         nav.push(CustomizeViewRoute(current))
                     },
                     modifier = Modifier.weight(1f),
-                ) { Text("Customize view") }
+                ) { Text(t("Customize view")) }
             }
         }
     }

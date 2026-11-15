@@ -49,6 +49,7 @@ import io.github.radixtrator.resync.ui.common.SheetHandle
 import io.github.radixtrator.resync.ui.common.SheetTitle
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.launch
+import io.github.radixtrator.resync.i18n.t
 
 /** A name prompt for a custom feed: "New custom feed" and "Rename". [onConfirm] gets the trimmed name. */
 @Composable
@@ -62,13 +63,13 @@ fun MultiNameDialog(title: String, initial: String, confirm: String, onConfirm: 
                 value = name,
                 onValueChange = { name = it },
                 singleLine = true,
-                label = { Text("Name") },
+                label = { Text(t("Name")) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { if (name.isNotBlank()) onConfirm(name.trim()) }),
             )
         },
         confirmButton = { TextButton(onClick = { onConfirm(name.trim()) }, enabled = name.isNotBlank()) { Text(confirm) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Cancel")) } },
     )
 }
 
@@ -77,10 +78,10 @@ fun MultiNameDialog(title: String, initial: String, confirm: String, onConfirm: 
 fun DeleteMultiDialog(multi: Multi, onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete ${multi.name}?") },
-        text = { Text("The custom feed is deleted from your Reddit account. Its communities stay joined.") },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Delete") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        title = { Text(t("Delete {0}?", multi.name)) },
+        text = { Text(t("The custom feed is deleted from your Reddit account. Its communities stay joined.")) },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(t("Delete")) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(t("Cancel")) } },
     )
 }
 
@@ -115,8 +116,8 @@ fun ManageMultiSheet(container: AppContainer, multi: Multi, onChanged: () -> Uni
                     onChanged()
                 },
                 onFailure = {
-                    val what = if (add) "add r/$subreddit" else "remove r/$subreddit"
-                    Toast.makeText(context, "Couldn't $what: ${it.message}", Toast.LENGTH_SHORT).show()
+                    val failed = if (add) t("Couldn't add r/{0}: {1}", subreddit, it.message) else t("Couldn't remove r/{0}: {1}", subreddit, it.message)
+                    Toast.makeText(context, failed, Toast.LENGTH_SHORT).show()
                 },
             )
             busy = false
@@ -139,16 +140,16 @@ fun ManageMultiSheet(container: AppContainer, multi: Multi, onChanged: () -> Uni
                     value = text,
                     onValueChange = { text = it },
                     singleLine = true,
-                    label = { Text("Add a community") },
+                    label = { Text(t("Add a community")) },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { if (typed.isNotEmpty()) change(typed, add = true) }),
                     modifier = Modifier.weight(1f),
                 )
-                Button(onClick = { change(typed, add = true) }, enabled = typed.isNotEmpty() && !busy) { Text("Add") }
+                Button(onClick = { change(typed, add = true) }, enabled = typed.isNotEmpty() && !busy) { Text(t("Add")) }
             }
             if (subreddits.isEmpty()) {
                 Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("No communities yet", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t("No communities yet"), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             } else {
                 LazyColumn(Modifier.heightIn(max = 480.dp)) {
@@ -156,7 +157,7 @@ fun ManageMultiSheet(container: AppContainer, multi: Multi, onChanged: () -> Uni
                         ListItem(
                             headlineContent = { Text("r/$name") },
                             trailingContent = {
-                                IconButton(onClick = { change(name, add = false) }, enabled = !busy) { Icon(Icons.Default.Close, "Remove r/$name") }
+                                IconButton(onClick = { change(name, add = false) }, enabled = !busy) { Icon(Icons.Default.Close, t("Remove r/{0}", name)) }
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         )

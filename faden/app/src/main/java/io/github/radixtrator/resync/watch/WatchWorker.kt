@@ -22,6 +22,8 @@ import io.github.radixtrator.resync.FadenApp
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.Sort
 import io.github.radixtrator.resync.data.SortKind
+import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.i18n.tn
 import io.github.radixtrator.resync.notify.Notifications
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.cancellation.CancellationException
@@ -107,7 +109,7 @@ class WatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         /** "3 new comments" on a watched post; tapping opens it, "Stop watching" unwatches it. */
         private fun notifyComments(context: Context, post: Post, added: Int) {
             if (!Notifications.canNotify(context)) return
-            Notifications.channel(context, CHANNEL_POSTS, "Watched posts", "New comments on posts you watch")
+            Notifications.channel(context, CHANNEL_POSTS, t("Watched posts"), t("New comments on posts you watch"))
             val id = ("comments:" + post.id).hashCode()
             val stop = PendingIntent.getBroadcast(
                 context,
@@ -119,13 +121,13 @@ class WatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
             )
             val notification = NotificationCompat.Builder(context, CHANNEL_POSTS)
                 .setSmallIcon(R.drawable.ic_notification_watch)
-                .setContentTitle(if (added == 1) "1 new comment" else "$added new comments")
+                .setContentTitle(tn(added, "{0} new comment", "{0} new comments", added))
                 .setContentText(post.title)
                 .setSubText("r/${post.subreddit}")
                 .setStyle(NotificationCompat.BigTextStyle().bigText(post.title))
                 .setContentIntent(Notifications.openPost(context, id, post.id))
                 .setAutoCancel(true)
-                .addAction(0, "Stop watching", stop)
+                .addAction(0, t("Stop watching"), stop)
                 .build()
             try {
                 NotificationManagerCompat.from(context).notify(id, notification)
@@ -137,7 +139,7 @@ class WatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
         /** "r/pics" over the post's title. Tapping opens the post; "Stop watching" unwatches the community. */
         private fun notify(context: Context, community: String, post: Post) {
             if (!Notifications.canNotify(context)) return
-            Notifications.channel(context, CHANNEL, "Watched communities", "New posts in communities you watch")
+            Notifications.channel(context, CHANNEL, t("Watched communities"), t("New posts in communities you watch"))
             val id = post.id.hashCode()
             val open = Notifications.openPost(context, id, post.id)
             val stop = PendingIntent.getBroadcast(
@@ -158,7 +160,7 @@ class WatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                 .setContentIntent(open)
                 .setAutoCancel(true)
                 .setGroup("watch:${community.lowercase()}")
-                .addAction(0, "Stop watching", stop)
+                .addAction(0, t("Stop watching"), stop)
                 .build()
             try {
                 NotificationManagerCompat.from(context).notify(id, notification)
@@ -180,7 +182,7 @@ class WatchWorker(context: Context, params: WorkerParameters) : CoroutineWorker(
                 else -> return
             }
             NotificationManagerCompat.from(context).cancel(intent.getIntExtra(EXTRA_NOTIFICATION, 0))
-            Toast.makeText(context, if (community != null) "Stopped watching r/$community" else "Stopped watching the post", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, if (community != null) t("Stopped watching r/{0}", community) else t("Stopped watching the post"), Toast.LENGTH_SHORT).show()
         }
     }
 }
