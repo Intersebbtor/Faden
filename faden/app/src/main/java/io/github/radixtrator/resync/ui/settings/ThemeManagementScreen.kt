@@ -193,13 +193,13 @@ fun ThemeManagementScreen(container: AppContainer) {
                 Section(t("Saved themes"))
                 if (settings.savedThemes.isEmpty()) {
                     ListItem(
-                        headlineContent = { Text(t("None yet")) },
                         supportingContent = { Text(t("Save the theme you're using to switch back to it later")) },
-                    )
+                    ) { Text(t("None yet")) }
                 }
                 settings.savedThemes.forEach { theme ->
                     val inUse = !dynamic && theme.matches(settings)
                     ListItem(
+                        onClick = { update { theme.applyTo(it) } },
                         leadingContent = {
                             val dark = when (theme.mode) {
                                 ThemeMode.SYSTEM -> systemDark
@@ -213,7 +213,6 @@ fun ThemeManagementScreen(container: AppContainer) {
                                 onClick = null,
                             )
                         },
-                        headlineContent = { Text(theme.name) },
                         supportingContent = { Text(if (inUse) t("{0} · In use", describe(theme)) else describe(theme)) },
                         trailingContent = {
                             Row {
@@ -223,34 +222,29 @@ fun ThemeManagementScreen(container: AppContainer) {
                                 IconButton(onClick = { deleting = theme }) { Icon(Icons.Outlined.Delete, t("Delete {0}", theme.name)) }
                             }
                         },
-                        modifier = Modifier.clickable { update { theme.applyTo(it) } },
-                    )
+                    ) { Text(theme.name) }
                 }
                 ListItem(
-                    headlineContent = { Text(t("Save current theme")) },
+                    onClick = { saving = true },
                     supportingContent = { Text(describe(SavedTheme.from(settings, ""))) },
-                    modifier = Modifier.clickable { saving = true },
-                )
+                ) { Text(t("Save current theme")) }
 
                 Section(t("Extra"))
                 ListItem(
-                    headlineContent = { Text(t("View palette")) },
+                    onClick = { viewingPalette = true },
                     supportingContent = { Text(t("The colors the theme in use is built from")) },
-                    modifier = Modifier.clickable { viewingPalette = true },
-                )
+                ) { Text(t("View palette")) }
                 ListItem(
-                    headlineContent = { Text(t("Share theme")) },
-                    supportingContent = { Text(t("Send the theme you're using as a code to paste")) },
-                    modifier = Modifier.clickable {
+                    onClick = {
                         val name = settings.savedThemes.firstOrNull { it.matches(settings) }?.name ?: t("Faden theme")
                         nav.share(ThemeCode.encode(SavedTheme.from(settings, name)), name)
                     },
-                )
+                    supportingContent = { Text(t("Send the theme you're using as a code to paste")) },
+                ) { Text(t("Share theme")) }
                 ListItem(
-                    headlineContent = { Text(t("Load theme")) },
+                    onClick = { loading = true },
                     supportingContent = { Text(t("Paste a shared theme code")) },
-                    modifier = Modifier.clickable { loading = true },
-                )
+                ) { Text(t("Load theme")) }
                 Spacer(Modifier.height(16.dp))
             }
         }

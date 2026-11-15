@@ -122,28 +122,25 @@ internal fun BackupSection(container: AppContainer) {
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
     )
     ListItem(
-        headlineContent = { Text(t("Backup now")) },
-        supportingContent = { Text(t("Save a backup file wherever you choose")) },
-        modifier = Modifier.clickable {
+        onClick = {
             if (container.hasBackupAccounts) exportOptions = true else backupLauncher.launch(Backup.fileName())
         },
-    )
+        supportingContent = { Text(t("Save a backup file wherever you choose")) },
+    ) { Text(t("Backup now")) }
     ListItem(
-        headlineContent = { Text(t("Restore from backup")) },
+        onClick = { restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*")) },
         supportingContent = { Text(t("Replace this device's data with a backup file")) },
-        modifier = Modifier.clickable { restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/*")) },
-    )
+    ) { Text(t("Restore from backup")) }
     if (snapshotCreated != null) {
         ListItem(
-            headlineContent = { Text(t("Undo last restore")) },
+            onClick = { confirmUndo = true },
             supportingContent = {
                 Text(
                     snapshotCreated.takeIf { it.length >= 10 }?.let { t("Put back everything as it was before restoring on {0}", it.take(10)) }
                         ?: t("Put back everything as it was before restoring"),
                 )
             },
-            modifier = Modifier.clickable { confirmUndo = true },
-        )
+        ) { Text(t("Undo last restore")) }
     }
 
     if (exportOptions) {
