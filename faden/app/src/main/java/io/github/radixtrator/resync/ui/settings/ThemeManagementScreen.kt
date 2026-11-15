@@ -32,6 +32,9 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -116,22 +119,17 @@ fun ThemeManagementScreen(container: AppContainer) {
                 val canDynamic = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
                 val manual = !dynamic && settings.seedColor != null
                 val automatic = if (canDynamic) dynamic else settings.seedColor == null
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                    SegmentedButton(
                         selected = automatic,
                         onClick = { update { it.copy(dynamicColor = canDynamic, seedColor = null) } },
-                        label = { Text(t("Automatic")) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    FilterChip(
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    ) { Text(t("Automatic"), maxLines = 1) }
+                    SegmentedButton(
                         selected = manual,
                         onClick = { update { it.copy(dynamicColor = false, seedColor = it.seedColor ?: THEME_SEEDS.first()) } },
-                        label = { Text(t("Manual selection")) },
-                        modifier = Modifier.weight(1f),
-                    )
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    ) { Text(t("Manual selection"), maxLines = 1) }
                 }
                 Text(
                     when {
