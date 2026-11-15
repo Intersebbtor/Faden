@@ -6,6 +6,18 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.8.0
+- Faden has its own look: blue with orange accents, the Figtree typeface, rounder cards and a new app icon. Prefer the old colors? Pick Classic in Settings › Theme management
+- Communities and profiles show their banner at the top of the page
+- Comment threads are drawn as threads, each reply looping off its parent, and top-level threads sit on their own panels
+- Scores and comment counts sit in small pills, and post titles are bolder
+- New icons throughout, a slimmer navigation bar and rail, and new loading animations
+- Accent colors are generated so text stays readable in light, dark and black; downvotes are now violet
+- Settings › View type opens Customize view directly, with the default layout and media preview size in it
+- Faster scrolling and theme changes, lighter memory use in the image viewer, and videos that replay from a cache
+- Better TalkBack support: toggles, choices, color swatches, search fields and the video seek bar announce themselves
+- Drag the top sheet up to close it
+
 ## 0.7.0
 - Resync is now called Faden. It's the same app, so your settings, accounts and updates carry on
 - Pick the app's language in Settings › General: English or German (Deutsch, in r/ich_iel's words: Pfosten, Faden, Hochwähli)
