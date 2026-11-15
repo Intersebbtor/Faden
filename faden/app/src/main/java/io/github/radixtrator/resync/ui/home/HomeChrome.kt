@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.radixtrator.resync.ui.home
 
@@ -15,14 +15,17 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Checkbox
@@ -46,14 +49,17 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.material3.WideNavigationRail
+import androidx.compose.material3.WideNavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -98,7 +104,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -139,21 +146,19 @@ import io.github.radixtrator.resync.ui.theme.LocalDarkTheme
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.I18n
 
-/** Sync's bottom-navigation tabs. Explore isn't a page: it opens [ExploreSheet] over the current one. */
+/** The bottom-navigation tabs. Explore isn't a page: it opens [ExploreSheet] over the current one. */
 enum class HomeTab { POSTS, INBOX }
 
-private val NavBarHeight = 80.dp
+/** [ShortNavigationBar]'s container height (M3 Expressive: 64dp, down from NavigationBar's 80dp), without the system inset. */
+private val NavBarHeight = 64.dp
 
-/** Material's navigation rail width; the page and the FAB keep clear of it. */
-private val RailWidth = 80.dp
+/** A collapsed [WideNavigationRail]'s width (96dp); the page and the FAB keep clear of it (plus the system inset on its side). */
+private val RailWidth = 96.dp
 
 private val FabSize = 56.dp
 
-// Sync's nav labels are larger than M3's 12sp.
-private val NavLabel @Composable get() = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp)
-
 /**
- * The frame shared by Sync-style top-level pages (feeds, inbox): a toolbar that hides on scroll with
+ * The frame shared by Faden's top-level pages (feeds, inbox): a toolbar that hides on scroll with
  * the account avatar (or a back arrow) and a ⋮ that drops the More actions sheet; on [home] pages the
  * bottom navigation; and the ⋯ FAB (tap: More actions, long-press: jump to a subreddit).
  *
@@ -204,6 +209,10 @@ fun ShellScaffold(
     val drawer = home && !rail && settings.drawerNavigation
     val bar = home && !rail && !drawer
     val navInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // The rail pads itself by the system bars on its side (cutout, gesture inset), so the page clears that too.
+    val layoutDirection = LocalLayoutDirection.current
+    val sideInsets = WindowInsets.systemBars.asPaddingValues()
+    val railClearance = RailWidth + ((if (railRight) layoutDirection == LayoutDirection.Rtl else layoutDirection == LayoutDirection.Ltr).let { left -> if (left) sideInsets.calculateLeftPadding(layoutDirection) else sideInsets.calculateRightPadding(layoutDirection) })
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -232,7 +241,8 @@ fun ShellScaffold(
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                    // Tints only while the toolbar is shown over scrolled content (overlappedFraction); at the top it blends in.
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
                 navigationIcon = {
                     if (home) {
@@ -259,7 +269,7 @@ fun ShellScaffold(
         },
     ) { padding ->
         Box(Modifier.fillMaxSize()) {
-            Box(Modifier.fillMaxSize().padding(start = if (rail && !railRight) RailWidth else 0.dp, end = if (railRight) RailWidth else 0.dp)) {
+            Box(Modifier.fillMaxSize().padding(start = if (rail && !railRight) railClearance else 0.dp, end = if (railRight) railClearance else 0.dp)) {
             content(
                 PaddingValues(
                     top = padding.calculateTopPadding(),
@@ -274,36 +284,40 @@ fun ShellScaffold(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     // Clear of a right-hand rail.
-                    .padding(end = 24.dp + if (railRight) RailWidth else 0.dp, bottom = 16.dp + navInset + if (bar) NavBarHeight else 0.dp)
+                    .padding(end = 24.dp + if (railRight) railClearance else 0.dp, bottom = 16.dp + navInset + if (bar) NavBarHeight else 0.dp)
                     .graphicsLayer {
                         val travel = 16.dp.toPx() + FabSize.toPx() + if (bar) NavBarHeight.toPx() + navInset.toPx() else navInset.toPx()
                         translationY = toolbar.collapsedFraction * travel
                     },
             )
             if (rail) {
-                androidx.compose.material3.NavigationRail(
-                    modifier = Modifier.align(if (railRight) Alignment.CenterEnd else Alignment.CenterStart).fillMaxHeight(),
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                // Collapsed Expressive rail; its items sit in the vertical middle as the old rail's did.
+                WideNavigationRail(
+                    modifier = Modifier.align(if (railRight) Alignment.CenterEnd else Alignment.CenterStart),
+                    arrangement = Arrangement.Center,
+                    windowInsets = if (railRight) WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.End)
+                    else WindowInsets.systemBars.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start),
                 ) {
-                    Spacer(Modifier.weight(1f))
-                    androidx.compose.material3.NavigationRailItem(
+                    WideNavigationRailItem(
                         selected = tab == HomeTab.POSTS, onClick = { if (tab == HomeTab.POSTS) onReselectTab() else nav.popWhile { it is InboxRoute } },
-                        icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) }, label = { Text(t("Posts"), style = NavLabel) },
+                        icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) }, label = { Text(t("Posts")) },
+                        railExpanded = false,
                     )
-                    androidx.compose.material3.NavigationRailItem(
+                    WideNavigationRailItem(
                         selected = false, onClick = { explore = ExploreMode.BROWSE },
-                        icon = { Icon(AppIcons.Compass, null) }, label = { Text(t("Explore"), style = NavLabel) },
+                        icon = { Icon(AppIcons.Compass, null) }, label = { Text(t("Explore")) },
+                        railExpanded = false,
                     )
-                    androidx.compose.material3.NavigationRailItem(
+                    WideNavigationRailItem(
                         selected = tab == HomeTab.INBOX, onClick = { if (tab == HomeTab.INBOX) onReselectTab() else nav.push(InboxRoute(home = true)) },
                         icon = {
                             BadgedBox(badge = { if (inboxCount > 0) Badge { Text("$inboxCount") } }) {
                                 Icon(if (tab == HomeTab.INBOX) Icons.Filled.Email else Icons.Outlined.Email, null)
                             }
                         },
-                        label = { Text(t("Inbox"), style = NavLabel) },
+                        label = { Text(t("Inbox")) },
+                        railExpanded = false,
                     )
-                    Spacer(Modifier.weight(1f))
                 }
             }
             if (bar) {
@@ -556,20 +570,24 @@ private fun HomeNavigationBar(
     onInbox: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Sync keeps unselected items at full contrast; only the pill marks the current tab.
-    val colors = NavigationBarItemDefaults.colors(
-        indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
-        unselectedIconColor = MaterialTheme.colorScheme.onSurface,
-        unselectedTextColor = MaterialTheme.colorScheme.onSurface,
-    )
-    NavigationBar(modifier = modifier, containerColor = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 0.dp) {
-        NavItem(t("Posts"), if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, tab == HomeTab.POSTS, onPosts, colors)
-        NavItem(t("Explore"), AppIcons.Compass, false, onExplore, colors)
-        NavigationBarItem(
+    // M3's own item colors and label type; the theme's indicator marks the current tab.
+    ShortNavigationBar(modifier = modifier) {
+        ShortNavigationBarItem(
+            selected = tab == HomeTab.POSTS,
+            onClick = onPosts,
+            icon = { Icon(if (tab == HomeTab.POSTS) Icons.Filled.Home else Icons.Outlined.Home, null) },
+            label = { Text(t("Posts")) },
+        )
+        ShortNavigationBarItem(
+            selected = false,
+            onClick = onExplore,
+            icon = { Icon(AppIcons.Compass, null) },
+            label = { Text(t("Explore")) },
+        )
+        ShortNavigationBarItem(
             selected = tab == HomeTab.INBOX,
             onClick = onInbox,
-            colors = colors,
-            label = { Text(t("Inbox"), style = NavLabel) },
+            label = { Text(t("Inbox")) },
             icon = {
                 BadgedBox(badge = { if (inboxCount > 0) Badge { Text("$inboxCount") } }) {
                     Icon(if (tab == HomeTab.INBOX) Icons.Filled.Email else Icons.Outlined.Email, null)
@@ -704,25 +722,15 @@ private fun LazyListScope.drawerFeeds(
     }
 }
 
-@Composable
-private fun RowScope.NavItem(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit,
-    colors: androidx.compose.material3.NavigationBarItemColors,
-) {
-    NavigationBarItem(selected = selected, onClick = onClick, colors = colors, label = { Text(label, style = NavLabel) }, icon = { Icon(icon, null) })
-}
-
-/** Sync's FAB: a rounded square with ⋯. */
+/** The ⋯ FAB, a FAB look-alike (M3's has no long-press): FAB shape and elevation, tap and long-press. */
 @Composable
 private fun MoreFab(onClick: () -> Unit, onLongClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
+        shape = FloatingActionButtonDefaults.shape,
         color = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        shadowElevation = 3.dp,
+        // FloatingActionButtonDefaults.elevation()'s default (Level3); its shadowElevation accessor is internal.
+        shadowElevation = 6.dp,
         modifier = modifier.size(FabSize),
     ) {
         Box(Modifier.combinedClickable(onClick = onClick, onLongClick = onLongClick), contentAlignment = Alignment.Center) {
@@ -769,7 +777,7 @@ private fun AccountCard(container: AppContainer, onDismiss: () -> Unit) {
         Box(Modifier.fillMaxSize().clickable(onClick = onDismiss, indication = null, interactionSource = null)) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 modifier = Modifier
                     .statusBarsPadding()
                     .padding(start = 16.dp, end = 16.dp, top = 56.dp)
