@@ -135,8 +135,8 @@ class ToneScheme(
     val inverseSurface: Int, val inverseOnSurface: Int, val inversePrimary: Int,
 ) {
     companion object {
-        /** Faden's own red: the thread. The palette when no accent is picked. */
-        const val FADEN_SEED = 0xFFB4233C.toInt()
+        /** Faden's own blue, the launcher icon's: the palette when no accent is picked. */
+        const val FADEN_SEED = 0xFF2F5BD3.toInt()
 
         private const val ERROR_HUE = 27f
         private const val ERROR_CHROMA = 0.19f
@@ -145,17 +145,20 @@ class ToneScheme(
          * The scheme for [seed] (ARGB). The accent palette has the seed's hue and chroma, the secondary a third of
          * it, the tertiary half of it at hue +60; neutrals are the seed's hue at very low chroma ([extra]: a lot
          * more of it, so backgrounds and cards are visibly tinted). [intensity] scales every chroma: 0 gives greys,
-         * 2 twice the colour.
+         * 2 twice the colour. [fadenDefault] is Faden's own palette: neutrals about 2.5 times as tinted, so surfaces
+         * read as cool blue rather than grey.
          */
-        fun generate(seed: Int, dark: Boolean, extra: Boolean, intensity: Float): ToneScheme {
+        fun generate(seed: Int, dark: Boolean, extra: Boolean, intensity: Float, fadenDefault: Boolean = false): ToneScheme {
             val scale = intensity.coerceIn(0f, 2f)
             val lch = Tones.lchOf(seed)
             val chroma = lch.chroma.coerceIn(0.08f, 0.30f)
             val accent = Tones.Palette(lch.hue, chroma * scale)
             val secondary = Tones.Palette(lch.hue, chroma / 3 * scale)
             val tertiary = Tones.Palette((lch.hue + 60f) % 360f, chroma / 2 * scale)
-            val neutral = Tones.Palette(lch.hue, (if (extra) 0.035f else 0.010f) * scale)
-            val variant = Tones.Palette(lch.hue, (if (extra) 0.050f else 0.018f) * scale)
+            val neutralChroma = if (extra) 0.035f else if (fadenDefault) 0.026f else 0.010f
+            val variantChroma = if (extra) 0.050f else if (fadenDefault) 0.045f else 0.018f
+            val neutral = Tones.Palette(lch.hue, neutralChroma * scale)
+            val variant = Tones.Palette(lch.hue, variantChroma * scale)
             val error = Tones.Palette(ERROR_HUE, ERROR_CHROMA)
             return if (dark) {
                 ToneScheme(
@@ -188,6 +191,6 @@ class ToneScheme(
         }
 
         /** [FADEN_SEED]'s scheme, at the default intensity: Faden's default palette. */
-        fun faden(dark: Boolean) = generate(FADEN_SEED, dark, extra = false, intensity = 1f)
+        fun faden(dark: Boolean) = generate(FADEN_SEED, dark, extra = false, intensity = 1f, fadenDefault = true)
     }
 }

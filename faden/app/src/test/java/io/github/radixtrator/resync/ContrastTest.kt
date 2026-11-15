@@ -20,8 +20,8 @@ class ContrastTest {
     private val cases = buildList {
         add(Case("default", null, ThemePalette.FADEN))
         add(Case("classic", null, ThemePalette.CLASSIC))
-        // Intensity and Extra colorful don't touch the default scheme, but the red thread as a picked seed takes them.
-        add(Case("faden red seed", ToneScheme.FADEN_SEED, ThemePalette.FADEN))
+        // Intensity and Extra colorful don't touch the default scheme, but Faden blue as a picked seed takes them.
+        add(Case("faden blue seed", ToneScheme.FADEN_SEED, ThemePalette.FADEN))
         THEME_SEEDS.forEach { add(Case("seed %06X".format(it and 0xFFFFFF), it, ThemePalette.FADEN)) }
     }
 
@@ -81,7 +81,7 @@ class ContrastTest {
     @Test
     fun fadenSeedMatchesDefaultScheme() {
         for (dark in listOf(false, true)) {
-            val generated = ToneScheme.generate(ToneScheme.FADEN_SEED, dark, extra = false, intensity = 1f)
+            val generated = ToneScheme.faden(dark)
             val default = fadenColorScheme(dark, black = false, seed = null, extra = false)
             assertTrue(generated.primary == default.primary.argb() && generated.background == default.background.argb())
         }
