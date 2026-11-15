@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.IntOffset
 import io.github.radixtrator.resync.ui.common.SwipeBackState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -111,6 +112,7 @@ import io.github.radixtrator.resync.ui.theme.LocalBaseFontScale
 import io.github.radixtrator.resync.ui.theme.FullSizeText
 import io.github.radixtrator.resync.ui.theme.Motion
 import io.github.radixtrator.resync.ui.theme.FadenTheme
+import io.github.radixtrator.resync.ui.theme.ThemeSpec
 import io.github.radixtrator.resync.i18n.t
 
 class MainActivity : ComponentActivity() {
@@ -135,18 +137,24 @@ class MainActivity : ComponentActivity() {
         }
         val container = (application as FadenApp).container
         setContent {
-            val settings by container.settings.settings.collectAsStateWithLifecycle()
-            CompositionLocalProvider(LocalBaseFontScale provides settings.baseFontSize.scale) {
-                FadenTheme(settings) {
+            val settingsState = container.settings.settings.collectAsStateWithLifecycle()
+            // Narrow views of the settings, so a write to an unrelated one doesn't recompose the app's root.
+            val baseFontScale by remember { derivedStateOf { settingsState.value.baseFontSize.scale } }
+            val themeSpec by remember { derivedStateOf { ThemeSpec.of(settingsState.value) } }
+            val overlayAlpha by remember {
+                derivedStateOf {
+                    val s = settingsState.value
+                    if (s.darkOverlay) s.darkOverlayLevel.coerceIn(Settings.DARK_OVERLAY_MIN, Settings.DARK_OVERLAY_MAX) else 0f
+                }
+            }
+            CompositionLocalProvider(LocalBaseFontScale provides baseFontScale) {
+                FadenTheme(themeSpec) {
                     // Sync's "Dark overlay": a black layer drawn over everything after it, so it dims without
                     // taking touches. Dialogs and sheets are their own windows and stay undimmed.
                     Box(
                         Modifier.fillMaxSize().drawWithContent {
                             drawContent()
-                            if (settings.darkOverlay) {
-                                val alpha = settings.darkOverlayLevel.coerceIn(Settings.DARK_OVERLAY_MIN, Settings.DARK_OVERLAY_MAX)
-                                drawRect(Color.Black.copy(alpha = alpha))
-                            }
+                            if (overlayAlpha > 0f) drawRect(Color.Black.copy(alpha = overlayAlpha))
                         },
                     ) {
                         FadenNavHost(
