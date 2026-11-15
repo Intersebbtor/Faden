@@ -102,7 +102,7 @@ object FadenColors {
     val Hide = Color(0xFFB71C1C)
 
     /**
-     * Comment thread rails, cycling by depth: the red thread first (depth 0), then amber, teal, blue and violet. Amber
+     * Comment thread rails, cycling by depth: the orange thread first (depth 0), then amber, teal, blue and violet. Amber
      * and teal sit a little deeper than their usual brights so every rail keeps 3:1 against a card in light and dark.
      */
     val Depth = listOf(
@@ -222,11 +222,11 @@ val FadenShapes = Shapes(
 )
 
 /**
- * The accent choices offered in Settings › Theme color, after "Default" (Faden red, #B4233C) and "Classic" (ARGB):
- * rust, ochre, moss, teal, blue, violet and plum.
+ * The accent choices offered in Settings › Theme color, after "Default" (Faden blue) and "Classic" (ARGB):
+ * Faden red (#B4233C, the old default), rust, ochre, moss, teal, blue, violet and plum.
  */
 val THEME_SEEDS = listOf(
-    0xFFC2581C.toInt(), 0xFFA0841A.toInt(), 0xFF3E8E41.toInt(), 0xFF00897B.toInt(),
+    0xFFB4233C.toInt(), 0xFFC2581C.toInt(), 0xFFA0841A.toInt(), 0xFF3E8E41.toInt(), 0xFF00897B.toInt(),
     0xFF2F6FB5.toInt(), 0xFF6750A4.toInt(), 0xFF8E4585.toInt(),
 )
 
@@ -243,7 +243,7 @@ private fun ColorScheme.blackened() = copy(
 /**
  * Faden's own palette (not Material You), and pure black when [black] (dark only). With a [seed] (ARGB) picked it is
  * generated from it ([extra] colorful or not, at Color [intensity]), whichever [palette]; without one it is
- * [palette]'s own: Faden's red thread, or Sync's sampled "Classic" colors, which are fixed. Theme management draws
+ * [palette]'s own: Faden's blue and orange, or Sync's sampled "Classic" colors, which are fixed. Theme management draws
  * its previews with this too.
  */
 fun fadenColorScheme(

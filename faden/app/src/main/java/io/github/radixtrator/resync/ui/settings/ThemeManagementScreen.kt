@@ -179,7 +179,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                     Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // Default (Faden's red thread), Classic (Sync's own colors), then the generated accents.
+                    // Default (Faden's blue), Classic (Sync's own colors), then the generated accents.
                     val choices = listOf<Pair<Int?, ThemePalette>>(null to ThemePalette.FADEN, null to ThemePalette.CLASSIC) +
                         THEME_SEEDS.map { it to ThemePalette.FADEN }
                     choices.forEach { (seed, palette) ->
