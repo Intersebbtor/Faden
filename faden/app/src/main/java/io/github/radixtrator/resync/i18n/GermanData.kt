@@ -1,6 +1,14 @@
 package io.github.radixtrator.resync.i18n
 
 internal fun germanData(): Map<String, String> = mapOf(
+    // Crash report screen (CrashReporter.kt)
+    "No crash report was saved." to "Es wurde kein Absturzbericht gespeichert.",
+    "Faden crashed" to "Faden ist abgestürzt",
+    "Please send this report to the developer (Share or Copy below). It says what went wrong." to "Bitte schick diesen Bericht an den Entwickler (unten Teilen oder Kopieren). Er sagt, was schiefgelaufen ist.",
+    "Copied" to "Kopiert",
+    "Faden crash report" to "Faden-Absturzbericht",
+    "Share crash report" to "Absturzbericht teilen",
+    "Reopen" to "Wieder öffnen",
     "Best" to "Beste",
     "Hot" to "Heiß",
     "New" to "Neu",

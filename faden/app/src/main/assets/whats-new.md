@@ -6,6 +6,11 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.7.0
+- Resync is now called Faden. It's the same app, so your settings, accounts and updates carry on
+- Pick the app's language in Settings › General: English or German (Deutsch, in r/ich_iel's words: Pfosten, Faden, Hochwähli)
+- If the app crashes, it shows a report you can copy or share instead of closing
+
 ## 0.6.0
 - Pictures posted in comments show in the comment instead of as a preview.redd.it link
 - Faden tells you when a new version is out, and what changed once you've updated

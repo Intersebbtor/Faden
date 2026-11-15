@@ -10,6 +10,8 @@ import coil3.gif.GifDecoder
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import io.github.radixtrator.resync.data.Http
+import io.github.radixtrator.resync.data.SettingsStore
+import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.notify.InboxWorker
 import io.github.radixtrator.resync.ui.theme.Motion
 import io.github.radixtrator.resync.watch.WatchWorker
@@ -21,8 +23,15 @@ class FadenApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        // The crash report screen's process shows a saved report and nothing else.
+        if (CrashReporter.isCrashProcess(this)) {
+            // Its text follows the Language setting too, read straight from the saved settings.
+            I18n.use(SettingsStore(getSharedPreferences("resync", android.content.Context.MODE_PRIVATE)).settings.value.language)
+            return
+        }
+        CrashReporter.install(this)
         container = AppContainer(this)
-        io.github.radixtrator.resync.i18n.I18n.use(container.settings.settings.value.language)
+        I18n.use(container.settings.settings.value.language)
         // WorkManager opens its database the first time it's used, so the schedules are checked off the main
         // thread, where they'd only hold up the first frame.
         Thread {
