@@ -2,6 +2,7 @@ package io.github.radixtrator.resync.i18n
 
 internal fun germanCompose(): Map<String, String> = mapOf(
     "Drag handle" to "Ziehgriff",
+    "Seek bar" to "Zeitleiste",
     // Composer
     "Couldn't send" to "Konnte nicht senden",
     "Reply to \"{0}\"" to "Antwort auf „{0}“",
