@@ -86,6 +86,22 @@ palette, and Sync's palette stays as a named built-in theme.
 
 ## Owed / not verified
 
-- **Baseline profile** (`app/src/release/generated/baselineProfiles/`) still lists classes that were renamed, split or removed (e.g. `SyncCard`, material-icons). Harmless, but startup optimisation is weaker until it's regenerated with `./gradlew :app:generateBaselineProfile`. Not run here: it installs on *every* connected device, and your phone was connected over wireless ADB.
-- **Seen on the emulator** (Pixel-class, API 37, light and dark): feed, post + comments, More-actions sheets, Settings, Theme management, launcher icon. **Not exercised by hand:** gestures (top-sheet drag-to-dismiss, the video seek slider vs. swipe-to-dismiss, the 3-stage swipe with the new settle spring), the floating reader/sports toolbars, the wide-screen rail, TalkBack output, pull-to-refresh motion.
+- **Baseline profile** (`app/src/release/generated/baselineProfiles/`) still lists classes that were renamed, split or removed (`SyncCard`, the old feed/comment row classes, material-icons). Harmless, but first-launch performance is weaker until it's regenerated with `./gradlew :app:generateBaselineProfile`. Not run here: it installs on *every* connected device, and your phone was connected over wireless ADB.
+- **Checked on the emulator** (API 37, 1080×2400, debug build unless noted):
+  - feed, post + comments, More-actions bottom and top sheets, Settings, Theme management, in light and dark;
+  - wide layout at 686dp with the rail on the left and on the right;
+  - Classic palette, which matches the old look's colours;
+  - gestures: the post-row swipe springs back, slide-back from a post, dragging the top sheet up dismisses it, and taps inside it still work;
+  - German labels in the nav bar, sheets and Theme management;
+  - the launcher icon;
+  - the **minified benchmarkRelease build (R8)**: setup → demo feed → post → Settings, no crashes.
+- **Not exercised by hand:**
+  - the video seek slider against swipe-to-dismiss;
+  - the floating reader/sports toolbars;
+  - pull-to-refresh motion;
+  - TalkBack output;
+  - dual pane;
+  - the M21 48dp touch target.
+- **Seen in passing, probably older than this work:** "Fingerfeger-Modus" breaks mid-word in the German More-actions grid.
 - **New on-disk use:** video now streams through a 100 MB LRU cache in the app's cache dir (`cache/video`).
+- **One-way migration:** history moves to a new `faden_history` prefs file. Downgrading to 0.7.0 afterwards would show empty read posts, recents and explore history (settings are unaffected).
