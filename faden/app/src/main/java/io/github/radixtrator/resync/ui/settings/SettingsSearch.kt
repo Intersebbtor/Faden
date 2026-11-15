@@ -33,14 +33,15 @@ object SettingsIndex {
     private fun theme(title: String, summary: String? = null, keywords: String = "") =
         SettingsEntry(title, summary, t("Theme management"), { ThemeManagementRoute }, keywords)
 
-    private fun view(title: String, summary: String? = null) =
-        SettingsEntry(title, summary, t("View type") + " › " + t("Customize view"), { CustomizeViewRoute(it) }, "layout card list post ansicht karte liste pfosten")
+    // Every view setting is on Customize view, which is the View type category's page.
+    private fun view(title: String, summary: String? = null, keywords: String = "") =
+        SettingsEntry(title, summary, t("View type"), { CustomizeViewRoute(it) }, "layout card list post ansicht karte liste pfosten customize anpassen $keywords")
 
     /** Built on each read, so titles and summaries follow the current language. */
     val entries: List<SettingsEntry>
         get() =
             // The categories themselves, so "theme" or "backup" finds the page too.
-            SettingsCategory.entries.map { SettingsEntry(it.title, it.summary, t("Settings"), { _ -> SettingsRoute(it) }) } + listOf(
+            SettingsCategory.entries.map { category -> SettingsEntry(category.title, category.summary, t("Settings"), { layout -> category.route(layout) }) } + listOf(
                 row(SettingsCategory.GENERAL, t("Language"), keywords = "language deutsch german english sprache"),
                 row(SettingsCategory.GENERAL, t("Drawer navigation"), t("A side drawer, opened from your avatar, replaces the bottom bar"), "menu sidebar menü seitenleiste"),
                 row(SettingsCategory.GENERAL, t("Confirm exit"), t("Ask before back closes the app"), "quit close beenden schließen"),
@@ -68,9 +69,8 @@ object SettingsIndex {
                 row(SettingsCategory.DARK_MODE, t("Dark overlay"), t("Dim the whole app, for reading at night"), "dim brightness abdunkeln helligkeit"),
                 row(SettingsCategory.DARK_MODE, t("Overlay darkness"), t("With Dark overlay on"), "dim brightness abdunkeln helligkeit"),
 
-                row(SettingsCategory.VIEW_TYPE, t("Default post layout"), keywords = "card list compact slides karte liste kompakt folien"),
-                SettingsEntry(t("Customize view"), t("Each layout's previews, sizes and buttons"), SettingsCategory.VIEW_TYPE.title, { CustomizeViewRoute(it) }),
-                row(SettingsCategory.VIEW_TYPE, t("Post media preview size"), keywords = "image cropped bild zugeschnitten"),
+                view(t("Default post layout"), keywords = "card list compact slides karte liste kompakt folien"),
+                view(t("Post media preview size"), keywords = "image cropped bild zugeschnitten"),
 
                 row(SettingsCategory.COMMENTS, t("Show user flair")),
                 row(SettingsCategory.COMMENTS, t("Show profile pictures"), t("Authors' avatars in comment headers"), "avatar profilbild"),

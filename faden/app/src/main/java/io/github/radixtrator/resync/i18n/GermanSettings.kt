@@ -37,7 +37,7 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     "Preview, save, share and load themes" to "Themen ansehen, speichern, teilen und laden",
     "Theme" to "Thema",
     "Default post layout" to "Standard-Pfostenansicht",
-    "Each layout's previews, sizes and buttons" to "Vorschauen, Größen und Knöpfe jeder Ansicht",
+    "All layouts" to "Alle Ansichten",
     "Post media preview size" to "Größe der Medienvorschau im Pfosten",
     "Show user flair" to "Nutzer-Gespür zeigen",
     "Show profile pictures" to "Profilbilder zeigen",

@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.data.ImageSource
+import io.github.radixtrator.resync.data.MediaPreviewSize
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostColumns
 import io.github.radixtrator.resync.data.isCoverScreen
@@ -51,9 +52,10 @@ import io.github.radixtrator.resync.ui.theme.FullSizeText
 import io.github.radixtrator.resync.i18n.t
 
 /**
- * Sync's Customize view (Settings > View type, also the Change view sheet's "Customize view" button): a large
- * "View type" title, a chip per layout in Sync's order (Slides … List), a live preview of example posts in the
- * chosen layout, then that layout's options. Changes apply to every feed using the layout at once; the toolbar's
+ * Customize view, the one page for every view setting (Settings > View type opens it, as does the Change view
+ * sheet's "Customize view" button): a large "View type" title, a chip per layout in Sync's order (Slides … List), a
+ * live preview of example posts in the chosen layout, the settings shared by all layouts (default layout, media
+ * preview size), then the chosen layout's options. Changes apply to every feed using the layout at once; the toolbar's
  * reset icon puts the chosen layout back to its defaults. Of Sync's font pickers (Title, Description, Selftext) only
  * the size half is here, as Small / Normal / Large.
  */
@@ -115,6 +117,14 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
                 }
                 FullSizeText {
                     Column(Modifier.padding(bottom = 16.dp)) {
+                        // The view settings that aren't per layout, so this screen is the one place for all of them.
+                        Section(t("All layouts"))
+                        Choice(t("Default post layout"), PostLayout.entries, settings.layout, PostLayout::label) { v ->
+                            container.settings.update { it.copy(layout = v) }
+                        }
+                        Choice(t("Post media preview size"), MediaPreviewSize.entries, settings.postMediaPreview, MediaPreviewSize::label) { v ->
+                            container.settings.update { it.copy(postMediaPreview = v) }
+                        }
                         sectionsFor(layout).forEach { (title, rows) ->
                             Section(title)
                             rows.forEach { row ->

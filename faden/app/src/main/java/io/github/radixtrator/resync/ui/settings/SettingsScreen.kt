@@ -88,7 +88,6 @@ import io.github.radixtrator.resync.data.DataSaving
 import io.github.radixtrator.resync.data.FilterType
 import io.github.radixtrator.resync.data.Typeface
 import io.github.radixtrator.resync.data.LiveRefresh
-import io.github.radixtrator.resync.data.MediaPreviewSize
 import io.github.radixtrator.resync.data.MessageCheck
 import io.github.radixtrator.resync.data.NsfwMode
 import io.github.radixtrator.resync.data.PostLayout
@@ -100,6 +99,7 @@ import io.github.radixtrator.resync.notify.Notifications
 import io.github.radixtrator.resync.ui.common.SwipeBack
 import io.github.radixtrator.resync.ui.home.WhatsNewDialog
 import io.github.radixtrator.resync.ui.navigation.CustomizeViewRoute
+import androidx.navigation3.runtime.NavKey
 import io.github.radixtrator.resync.ui.navigation.FilterEditorRoute
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.SetupRoute
@@ -140,6 +140,10 @@ enum class SettingsCategory(private val enGroup: String, private val enTitle: St
     val group: String get() = t(enGroup)
     val title: String get() = t(enTitle)
     val summary: String get() = t(enSummary)
+
+    /** The page this category opens: its own, except View type, whose settings all live on Customize view. */
+    fun route(currentLayout: PostLayout): NavKey =
+        if (this == VIEW_TYPE) CustomizeViewRoute(currentLayout) else SettingsRoute(this)
 }
 
 /** The glyph beside each category on the root screen. */
@@ -231,7 +235,7 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
                         Section(group, divider = i > 0)
                         entries.forEach { entry ->
                             ListItem(
-                                onClick = { nav.push(SettingsRoute(entry)) },
+                                onClick = { nav.push(entry.route(settings.layout)) },
                                 supportingContent = { Text(entry.summary) },
                                 leadingContent = { Icon(entry.icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                             ) { Text(entry.title) }
@@ -345,14 +349,9 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
             Choice(t("Theme"), ThemeMode.entries, settings.theme, ThemeMode::label) { v -> update { it.copy(theme = v) } }
             DarkOverlayRows(settings, update)
         }
-        SettingsCategory.VIEW_TYPE -> {
-            Choice(t("Default post layout"), PostLayout.entries, settings.layout, PostLayout::label) { v -> update { it.copy(layout = v) } }
-            ListItem(
-                onClick = { nav.push(CustomizeViewRoute(settings.layout)) },
-                supportingContent = { Text(t("Each layout's previews, sizes and buttons")) },
-            ) { Text(t("Customize view")) }
-            Choice(t("Post media preview size"), MediaPreviewSize.entries, settings.postMediaPreview, MediaPreviewSize::label) { v -> update { it.copy(postMediaPreview = v) } }
-        }
+        // View type has no page of its own: its row opens Customize view (see [SettingsCategory.route]), which holds
+        // every view setting.
+        SettingsCategory.VIEW_TYPE -> Unit
         SettingsCategory.COMMENTS -> {
             Toggle(t("Show user flair"), null, settings.commentFlair) { v -> update { it.copy(commentFlair = v) } }
             Toggle(t("Show profile pictures"), t("Authors' avatars in comment headers"), settings.profilePictures) { v -> update { it.copy(profilePictures = v) } }
