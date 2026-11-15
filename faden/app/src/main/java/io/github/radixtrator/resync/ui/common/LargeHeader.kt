@@ -57,8 +57,8 @@ fun LargeHeader(
             }
             Column {
                 overline?.invoke()
-                // Faden's page titles: the theme's headlineLarge (Figtree) at semibold.
-                Text(title, style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                // Faden's page titles: the theme's headlineLarge (Figtree) at extra bold.
+                Text(title, style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
         Row(

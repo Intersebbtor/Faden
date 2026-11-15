@@ -39,11 +39,11 @@ import io.github.radixtrator.resync.ui.theme.FadenColors
 
 // Feed text, sized from Sync's screenshots: cards read a size up from rows, and lines sit 1.2em apart.
 internal val CardTitle: TextStyle
-    @Composable get() = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 20.sp)
+    @Composable get() = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold)
 internal val CardMeta: TextStyle
     @Composable get() = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, lineHeight = 1.2.em)
 internal val RowTitle: TextStyle
-    @Composable get() = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, lineHeight = 1.2.em)
+    @Composable get() = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, lineHeight = 1.2.em, fontWeight = FontWeight.SemiBold)
 internal val RowMeta: TextStyle
     @Composable get() = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 1.2.em)
 

@@ -105,6 +105,7 @@ import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.navigation.PostRoute
 import io.github.radixtrator.resync.ui.navigation.SettingsRoute
+import io.github.radixtrator.resync.ui.theme.FadenAccents
 import io.github.radixtrator.resync.ui.theme.FadenColors
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
@@ -294,7 +295,11 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                         expanded = true,
                         modifier = inset,
                         floatingActionButton = {
-                            FloatingToolbarDefaults.StandardFloatingActionButton(onClick = { reply(post.fullname, post.title) }) {
+                            FloatingToolbarDefaults.StandardFloatingActionButton(
+                                onClick = { reply(post.fullname, post.title) },
+                                containerColor = FadenAccents.fabContainer,
+                                contentColor = FadenAccents.onFab,
+                            ) {
                                 Icon(AppIcons.Reply, t("Reply to post"))
                             }
                         },
@@ -308,7 +313,12 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                         IconButton(onClick = next) { Icon(Symbols.KeyboardArrowDown, t("Next comment")) }
                     }
                 } else if (post != null) {
-                    FloatingActionButton(onClick = { reply(post.fullname, post.title) }, modifier = inset) { Icon(AppIcons.Reply, t("Reply to post")) }
+                    FloatingActionButton(
+                        onClick = { reply(post.fullname, post.title) },
+                        modifier = inset,
+                        containerColor = FadenAccents.fabContainer,
+                        contentColor = FadenAccents.onFab,
+                    ) { Icon(AppIcons.Reply, t("Reply to post")) }
                 }
             },
         ) { padding ->

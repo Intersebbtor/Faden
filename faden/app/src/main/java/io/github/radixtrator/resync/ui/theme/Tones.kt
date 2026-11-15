@@ -51,6 +51,14 @@ object Tones {
         return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
     }
 
+    /** Perceptual distance (OKLab Euclidean, ΔE_ok) of two ARGB colors: about 0.02 is a just-noticeable difference, 0.1 is clearly another color. */
+    fun deltaEOk(a: Int, b: Int): Double {
+        fun lab(c: Int) = oklab(linear(c shr 16 and 0xFF), linear(c shr 8 and 0xFF), linear(c and 0xFF))
+        val x = lab(a)
+        val y = lab(b)
+        return sqrt(((x[0] - y[0]).toDouble().pow(2) + (x[1] - y[1]).toDouble().pow(2) + (x[2] - y[2]).toDouble().pow(2)))
+    }
+
     private fun linear(channel: Int): Double {
         val c = channel / 255.0
         return if (c <= 0.04045) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
@@ -135,33 +143,46 @@ class ToneScheme(
     val inverseSurface: Int, val inverseOnSurface: Int, val inversePrimary: Int,
 ) {
     companion object {
-        /** Faden's own red: the thread. The palette when no accent is picked. */
-        const val FADEN_SEED = 0xFFB4233C.toInt()
+        /** Faden's own blue, the launcher icon's: the palette when no accent is picked. */
+        const val FADEN_SEED = 0xFF2F5BD3.toInt()
+
+        /** The upvote orange: the default palette's tertiary hue and chroma, and its signature accent. */
+        private const val FADEN_ORANGE = 0xFFFF7500.toInt()
 
         private const val ERROR_HUE = 27f
         private const val ERROR_CHROMA = 0.19f
 
         /**
          * The scheme for [seed] (ARGB). The accent palette has the seed's hue and chroma, the secondary a third of
-         * it, the tertiary half of it at hue +60; neutrals are the seed's hue at very low chroma ([extra]: a lot
+         * it, the tertiary half of it at hue +60 (Faden's default: the upvote orange's); neutrals are the seed's hue at very low chroma ([extra]: a lot
          * more of it, so backgrounds and cards are visibly tinted). [intensity] scales every chroma: 0 gives greys,
-         * 2 twice the colour.
+         * 2 twice the colour. [fadenDefault] is Faden's own palette: neutrals about 2.5 times as tinted, so surfaces
+         * read as cool blue rather than grey.
          */
-        fun generate(seed: Int, dark: Boolean, extra: Boolean, intensity: Float): ToneScheme {
+        fun generate(seed: Int, dark: Boolean, extra: Boolean, intensity: Float, fadenDefault: Boolean = false): ToneScheme {
             val scale = intensity.coerceIn(0f, 2f)
             val lch = Tones.lchOf(seed)
             val chroma = lch.chroma.coerceIn(0.08f, 0.30f)
             val accent = Tones.Palette(lch.hue, chroma * scale)
             val secondary = Tones.Palette(lch.hue, chroma / 3 * scale)
-            val tertiary = Tones.Palette((lch.hue + 60f) % 360f, chroma / 2 * scale)
-            val neutral = Tones.Palette(lch.hue, (if (extra) 0.035f else 0.010f) * scale)
-            val variant = Tones.Palette(lch.hue, (if (extra) 0.050f else 0.018f) * scale)
+            val tertiary = if (fadenDefault) {
+                val orange = Tones.lchOf(FADEN_ORANGE)
+                Tones.Palette(orange.hue, orange.chroma * scale)
+            } else {
+                Tones.Palette((lch.hue + 60f) % 360f, chroma / 2 * scale)
+            }
+            // Faden's tertiaryContainer is the orange itself, in both modes (it is the FAB); a picked accent's is a pale tone-90 / deep tone-30.
+            val tertiaryContainerTone = if (fadenDefault) 65 else if (dark) 30 else 90
+            val neutralChroma = if (extra) 0.035f else if (fadenDefault) 0.026f else 0.010f
+            val variantChroma = if (extra) 0.050f else if (fadenDefault) 0.045f else 0.018f
+            val neutral = Tones.Palette(lch.hue, neutralChroma * scale)
+            val variant = Tones.Palette(lch.hue, variantChroma * scale)
             val error = Tones.Palette(ERROR_HUE, ERROR_CHROMA)
             return if (dark) {
                 ToneScheme(
                     accent.tone(80), accent.tone(20), accent.tone(30), accent.tone(90),
                     secondary.tone(80), secondary.tone(20), secondary.tone(30), secondary.tone(90),
-                    tertiary.tone(80), tertiary.tone(20), tertiary.tone(30), tertiary.tone(90),
+                    tertiary.tone(80), tertiary.tone(20), tertiary.tone(tertiaryContainerTone), tertiary.tone(if (fadenDefault) 10 else 90),
                     error.tone(80), error.tone(20), error.tone(30), error.tone(90),
                     neutral.tone(6), neutral.tone(90), neutral.tone(6), neutral.tone(90),
                     variant.tone(30), variant.tone(80), variant.tone(60), variant.tone(30),
@@ -173,7 +194,7 @@ class ToneScheme(
                 ToneScheme(
                     accent.tone(40), accent.tone(100), accent.tone(90), accent.tone(10),
                     secondary.tone(40), secondary.tone(100), secondary.tone(90), secondary.tone(10),
-                    tertiary.tone(40), tertiary.tone(100), tertiary.tone(90), tertiary.tone(10),
+                    tertiary.tone(40), tertiary.tone(100), tertiary.tone(tertiaryContainerTone), tertiary.tone(10),
                     error.tone(40), error.tone(100), error.tone(90), error.tone(10),
                     // The app's surfaces are a window with lighter cards on it (cards, sheets and chips are
                     // surfaceContainerLow), then the nav bar and selected rows a step darker than the window. M3's
@@ -188,6 +209,6 @@ class ToneScheme(
         }
 
         /** [FADEN_SEED]'s scheme, at the default intensity: Faden's default palette. */
-        fun faden(dark: Boolean) = generate(FADEN_SEED, dark, extra = false, intensity = 1f)
+        fun faden(dark: Boolean) = generate(FADEN_SEED, dark, extra = false, intensity = 1f, fadenDefault = true)
     }
 }

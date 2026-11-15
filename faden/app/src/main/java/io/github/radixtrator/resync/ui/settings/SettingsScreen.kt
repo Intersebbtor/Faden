@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.border
@@ -71,6 +73,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -319,9 +322,9 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
             }
             if (!(settings.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
                 Text(t("Theme color"), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 16.dp, top = 12.dp))
-                Row(Modifier.selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.horizontalScroll(rememberScrollState()).selectableGroup().padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     (listOf<Int?>(null) + THEME_SEEDS).forEach { seed ->
-                        // "Default" (no seed) is Faden's own red palette; Classic lives in Theme management.
+                        // "Default" (no seed) is Faden's own blue palette; Classic lives in Theme management.
                         val selected = settings.seedColor == seed && (seed != null || settings.palette == ThemePalette.FADEN)
                         Box(
                             Modifier
@@ -554,7 +557,7 @@ internal fun Section(title: String, divider: Boolean = true) {
     if (divider) HorizontalDivider(Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
     Text(
         title,
-        style = MaterialTheme.typography.labelLarge,
+        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
     )

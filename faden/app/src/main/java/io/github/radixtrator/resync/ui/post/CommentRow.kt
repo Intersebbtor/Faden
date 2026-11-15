@@ -50,6 +50,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
@@ -215,7 +216,7 @@ private fun CommentHeader(comment: Comment, avatarUrl: String?, collapsed: Boole
     // The age ("4h") is part of the text, so it is rebuilt when the shared clock moves on a minute.
     val minute = LocalMinuteClock.current.value
     val text = remember(comment, nameColor, muted, scoreColor, flairBackground, tag, tagStyle, language, minute) { buildAnnotatedString {
-        withStyle(SpanStyle(color = nameColor)) { append(comment.author) }
+        withStyle(SpanStyle(color = nameColor, fontWeight = FontWeight.SemiBold)) { append(comment.author) }
         tag?.let {
             append(" ")
             withStyle(tagStyle) { append(" $it ") }

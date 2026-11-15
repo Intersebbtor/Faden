@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.Shapes
@@ -92,6 +93,12 @@ private val DarkColors = darkColorScheme(
     outlineVariant = Color(0xFF2E3038),
 )
 
+/** Where Faden puts its signature accent: every FAB is the tertiary container, which is the upvote orange in the default palette. */
+object FadenAccents {
+    val fabContainer: Color @Composable get() = MaterialTheme.colorScheme.tertiaryContainer
+    val onFab: Color @Composable get() = MaterialTheme.colorScheme.onTertiaryContainer
+}
+
 object FadenColors {
     val Upvote = Color(0xFFFF7500)
     val Downvote = Color(0xFF9494FF)
@@ -102,15 +109,15 @@ object FadenColors {
     val Hide = Color(0xFFB71C1C)
 
     /**
-     * Comment thread rails, cycling by depth: the red thread first (depth 0), then amber, teal, blue and violet. Amber
-     * and teal sit a little deeper than their usual brights so every rail keeps 3:1 against a card in light and dark.
+     * Comment thread rails, cycling by depth: the orange thread first (depth 0, the upvote orange a little deeper), then
+     * teal, blue, violet and rose. Each keeps 3:1 against a card and against the window, in light and dark.
      */
     val Depth = listOf(
-        Color(0xFFE0465A), // red thread
-        Color(0xFFB87A12), // amber
+        Color(0xFFE36000), // orange thread
         Color(0xFF239379), // teal
         Color(0xFF4F7FE0), // blue
         Color(0xFF9B6BD6), // violet
+        Color(0xFFD4478A), // rose
     )
 }
 
@@ -222,11 +229,11 @@ val FadenShapes = Shapes(
 )
 
 /**
- * The accent choices offered in Settings › Theme color, after "Default" (Faden red, #B4233C) and "Classic" (ARGB):
- * rust, ochre, moss, teal, blue, violet and plum.
+ * The accent choices offered in Settings › Theme color, after "Default" (Faden blue) and "Classic" (ARGB):
+ * Faden red (#B4233C, the old default), rust, ochre, moss, teal, blue, violet and plum.
  */
 val THEME_SEEDS = listOf(
-    0xFFC2581C.toInt(), 0xFFA0841A.toInt(), 0xFF3E8E41.toInt(), 0xFF00897B.toInt(),
+    0xFFB4233C.toInt(), 0xFFC2581C.toInt(), 0xFFA0841A.toInt(), 0xFF3E8E41.toInt(), 0xFF00897B.toInt(),
     0xFF2F6FB5.toInt(), 0xFF6750A4.toInt(), 0xFF8E4585.toInt(),
 )
 
@@ -243,7 +250,7 @@ private fun ColorScheme.blackened() = copy(
 /**
  * Faden's own palette (not Material You), and pure black when [black] (dark only). With a [seed] (ARGB) picked it is
  * generated from it ([extra] colorful or not, at Color [intensity]), whichever [palette]; without one it is
- * [palette]'s own: Faden's red thread, or Sync's sampled "Classic" colors, which are fixed. Theme management draws
+ * [palette]'s own: Faden's blue and orange, or Sync's sampled "Classic" colors, which are fixed. Theme management draws
  * its previews with this too.
  */
 fun fadenColorScheme(

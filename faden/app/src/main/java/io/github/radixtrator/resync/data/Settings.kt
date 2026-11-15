@@ -39,7 +39,7 @@ enum class BaseFontSize(private val en: String, val scale: Float) {
 }
 
 /**
- * The base palette when no accent is picked: Faden's own red thread, or Sync's sampled "Classic" colors. With an
+ * The base palette when no accent is picked: Faden's own blue-and-orange palette, or Sync's sampled "Classic" colors. With an
  * accent picked both generate the same way from it, so the choice only shows with Default color.
  */
 enum class ThemePalette { FADEN, CLASSIC }
@@ -287,7 +287,7 @@ enum class SwipeAction(private val en: String, val posts: Boolean, val comments:
 data class Settings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
-    /** Faden's red palette or Sync's Classic one; only matters while no [seedColor] is picked. */
+    /** Faden's blue palette or Sync's Classic one; only matters while no [seedColor] is picked. */
     val palette: ThemePalette = ThemePalette.FADEN,
     /** A hand-picked accent (ARGB) the whole palette is generated from, instead of the [palette]. Ignored with Material You colors. */
     val seedColor: Int? = null,

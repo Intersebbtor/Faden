@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.radixtrator.resync.ui.theme.FadenAccents
 import io.github.radixtrator.resync.ui.common.AppIcons
 
 /** Sync's live-thread bar (`view_sports`): a live marker, Refresh and Stop; [seconds] is the refresh rate. */
@@ -142,7 +143,7 @@ internal fun ReaderBar(
             expanded = true,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = 8.dp),
             floatingActionButton = {
-                FloatingToolbarDefaults.StandardFloatingActionButton(onClick = onTogglePlay) {
+                FloatingToolbarDefaults.StandardFloatingActionButton(onClick = onTogglePlay, containerColor = FadenAccents.fabContainer, contentColor = FadenAccents.onFab) {
                     if (state.playing) Icon(AppIcons.Pause, t("Pause")) else Icon(Symbols.PlayArrowFilled, t("Play"))
                 }
             },

@@ -3,5 +3,5 @@
     <style name="Theme.Faden" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
     </style>
-    <color name="window_background">#FFF8EFEF</color>
+    <color name="window_background">#FFEAF1FF</color>
 </resources>

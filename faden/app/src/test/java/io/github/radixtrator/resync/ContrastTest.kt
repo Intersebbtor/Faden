@@ -20,8 +20,8 @@ class ContrastTest {
     private val cases = buildList {
         add(Case("default", null, ThemePalette.FADEN))
         add(Case("classic", null, ThemePalette.CLASSIC))
-        // Intensity and Extra colorful don't touch the default scheme, but the red thread as a picked seed takes them.
-        add(Case("faden red seed", ToneScheme.FADEN_SEED, ThemePalette.FADEN))
+        // Intensity and Extra colorful don't touch the default scheme, but Faden blue as a picked seed takes them.
+        add(Case("faden blue seed", ToneScheme.FADEN_SEED, ThemePalette.FADEN))
         THEME_SEEDS.forEach { add(Case("seed %06X".format(it and 0xFFFFFF), it, ThemePalette.FADEN)) }
     }
 
@@ -67,21 +67,69 @@ class ContrastTest {
     }
 
     @Test
-    fun depthRailsStandOutOnCards() {
+    fun defaultPaletteMeetsContrastIncludingTertiary() {
         for (dark in listOf(false, true)) {
-            val card = fadenColorScheme(dark, black = false, seed = null, extra = false).surfaceContainerLow
+            val s = fadenColorScheme(dark, black = false, seed = null, extra = false)
+            val mode = if (dark) "dark" else "light"
+            val checks = listOfNotNull(
+                need("onPrimary/primary", s.onPrimary, s.primary, 4.5),
+                need("onPrimaryContainer/primaryContainer", s.onPrimaryContainer, s.primaryContainer, 4.5),
+                need("onTertiary/tertiary", s.onTertiary, s.tertiary, 4.5),
+                need("onTertiaryContainer/tertiaryContainer", s.onTertiaryContainer, s.tertiaryContainer, 4.5),
+                need("onSurface/surfaceContainerLow", s.onSurface, s.surfaceContainerLow, 7.0),
+                need("onSurfaceVariant/surfaceContainerLow", s.onSurfaceVariant, s.surfaceContainerLow, 4.5),
+                need("primary/surfaceContainerLow", s.primary, s.surfaceContainerLow, 3.0),
+            )
+            assertTrue(checks.isEmpty(), "default $mode: " + checks.joinToString("; "))
+        }
+    }
+
+    /** A downvoted score must not read as accent text: the Downvote color keeps its distance from the default primary. */
+    @Test
+    fun downvoteIsDistinctFromThePrimary() {
+        for (dark in listOf(false, true)) {
+            val s = fadenColorScheme(dark, black = false, seed = null, extra = false)
+            val mode = if (dark) "dark" else "light"
+            val distance = Tones.deltaEOk(FadenColors.Downvote.argb(), s.primary.argb())
+            assertTrue(distance >= 0.08, "downvote vs primary ($mode): ΔE_ok %.3f".format(distance))
+            // 4.5:1 on a dark card; on the light card it is the 2.6:1 Downvote always had, as a vote tint beside an icon.
+            val onCard = ratio(FadenColors.Downvote, s.surfaceContainerLow)
+            assertTrue(onCard >= if (dark) 4.5 else 2.5, "downvote on $mode card: %.2f".format(onCard))
+        }
+    }
+
+    @Test
+    fun depthRailsStandOutOnCardsAndWindow() {
+        for (dark in listOf(false, true)) {
+            val scheme = fadenColorScheme(dark, black = false, seed = null, extra = false)
+            val mode = if (dark) "dark" else "light"
             FadenColors.Depth.forEachIndexed { depth, rail ->
-                val ratio = ratio(rail, card)
-                assertTrue(ratio >= 3.0, "rail $depth vs ${if (dark) "dark" else "light"} card: %.2f".format(ratio))
+                for ((name, ground) in listOf("card" to scheme.surfaceContainerLow, "window" to scheme.background)) {
+                    val ratio = ratio(rail, ground)
+                    assertTrue(ratio >= 3.0, "rail $depth vs $mode $name: %.2f".format(ratio))
+                }
             }
         }
         assertTrue(FadenColors.Depth.size == 5)
     }
 
     @Test
+    fun depthRailsAreDistinct() {
+        val rails = FadenColors.Depth
+        for (i in rails.indices) for (j in i + 1 until rails.size) {
+            val d = Tones.deltaEOk(rails[i].argb(), rails[j].argb())
+            assertTrue(d >= 0.08, "rails $i and $j: ΔE_ok %.3f".format(d))
+        }
+        // The first rail is the upvote orange's hue.
+        val first = Tones.lchOf(rails[0].argb()).hue
+        val orange = Tones.lchOf(FadenColors.Upvote.argb()).hue
+        assertTrue(kotlin.math.abs(first - orange) < 10f, "first rail hue $first vs upvote $orange")
+    }
+
+    @Test
     fun fadenSeedMatchesDefaultScheme() {
         for (dark in listOf(false, true)) {
-            val generated = ToneScheme.generate(ToneScheme.FADEN_SEED, dark, extra = false, intensity = 1f)
+            val generated = ToneScheme.faden(dark)
             val default = fadenColorScheme(dark, black = false, seed = null, extra = false)
             assertTrue(generated.primary == default.primary.argb() && generated.background == default.background.argb())
         }
