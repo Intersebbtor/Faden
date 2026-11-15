@@ -74,8 +74,27 @@ fun tn(count: Long, one: String, other: String, vararg args: Any?): String {
 
 fun tn(count: Int, one: String, other: String, vararg args: Any?): String = tn(count.toLong(), one, other, *args)
 
-private val PLACEHOLDER = Regex("""\{(\d+)\}""")
-
-internal fun fill(template: String, args: Array<out Any?>): String =
-    if (args.isEmpty()) template
-    else PLACEHOLDER.replace(template) { m -> m.groupValues[1].toInt().let { i -> if (i < args.size) args[i].toString() else m.value } }
+/** Replaces `{0}`, `{1}`, … with [args]; a placeholder with no matching argument, or any other brace, stays as written. */
+internal fun fill(template: String, args: Array<out Any?>): String {
+    if (args.isEmpty()) return template
+    var out: StringBuilder? = null
+    var copied = 0
+    var i = template.indexOf('{')
+    while (i >= 0) {
+        var j = i + 1
+        var index = 0
+        while (j < template.length && template[j] in '0'..'9' && index < 100_000_000) {
+            index = index * 10 + (template[j] - '0')
+            j++
+        }
+        if (j > i + 1 && j < template.length && template[j] == '}' && index < args.size) {
+            val sb = out ?: StringBuilder(template.length + 16).also { out = it }
+            sb.append(template, copied, i).append(args[index].toString())
+            copied = j + 1
+            i = template.indexOf('{', copied)
+        } else {
+            i = template.indexOf('{', i + 1)
+        }
+    }
+    return out?.append(template, copied, template.length)?.toString() ?: template
+}

@@ -81,11 +81,13 @@ fun gifUrl(link: String): String? {
     }
 }
 
+private val IMAGE_EXTENSION = Regex("""\.(?:jpe?g|png|webp)$""", RegexOption.IGNORE_CASE)
+
 /** A still picture a link points at: .jpg, .png and .webp links, including preview.redd.it's. */
 fun imageUrl(link: String): String? {
     if (!link.startsWith("http")) return null
     val path = link.substringAfter("://").substringAfter('/', "").substringBefore('?').substringBefore('#')
-    return link.takeIf { Regex("""\.(?:jpe?g|png|webp)$""", RegexOption.IGNORE_CASE).containsMatchIn(path) }
+    return link.takeIf { IMAGE_EXTENSION.containsMatchIn(path) }
 }
 
 /** A comment's GIFs (playing) and pictures, each at most 280dp either way; tapping one opens it in the image viewer. */

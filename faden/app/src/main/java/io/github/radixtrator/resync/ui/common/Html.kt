@@ -87,10 +87,12 @@ fun redditHtml(
  * Comment rows are recomposed from scratch whenever they scroll back in, so [redditMarkup]'s regex passes are
  * kept for recently shown bodies instead of being redone each time.
  */
-private val markupCache = LruCache<String, String>(300)
+private data class MarkupKey(val html: String, val revealSpoilers: Boolean, val language: Int)
+
+private val markupCache = LruCache<MarkupKey, String>(300)
 
 private fun cachedMarkup(html: String, revealSpoilers: Boolean): String {
-    val key = (if (revealSpoilers) "1" else "0") + I18n.language.ordinal + html
+    val key = MarkupKey(html, revealSpoilers, I18n.language.ordinal)
     return markupCache[key] ?: redditMarkup(html, revealSpoilers).also { markupCache.put(key, it) }
 }
 
