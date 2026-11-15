@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import io.github.radixtrator.resync.ui.common.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -382,9 +383,12 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                 }
                             }
                         }
-                        items(visible, key = { (if (it.node is Comment) "c" else "m") + it.node.id }, contentType = { it.node is Comment }) { row ->
-                            // Sync separates top-level threads with a band of the window color.
-                            val separated = row.node.depth == 0 && row !== visible.firstOrNull()
+                        itemsIndexed(visible, key = { _, it -> (if (it.node is Comment) "c" else "m") + it.node.id }, contentType = { _, it -> it.node is Comment }) { index, row ->
+                            // Each top-level thread is a rounded panel: it starts at a top-level row (with a gap of
+                            // the window color above) and ends where the next top-level row or the list's end comes,
+                            // so a collapsed top-level comment is a panel of one row, rounded at both ends.
+                            val separated = row.node.depth == 0
+                            val endsThread = visible.getOrNull(index + 1)?.let { it.node.depth == 0 } ?: true
                             when (val node = row.node) {
                                 is Comment -> CommentRow(
                                     comment = node,
@@ -393,6 +397,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                     hiddenCount = row.hiddenCount,
                                     isNew = newSince != null && node.createdUtc > newSince && !node.author.equals(account, ignoreCase = true),
                                     separated = separated,
+                                    endsThread = endsThread,
                                     selected = selected == node.id,
                                     onToggle = {
                                         selected = null
@@ -409,6 +414,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                 is MoreComments -> MoreRow(
                                     more = node,
                                     separated = separated,
+                                    endsThread = endsThread,
                                     loading = node.id in state.loadingMore,
                                     onClick = {
                                         if (node.children.isNotEmpty()) {

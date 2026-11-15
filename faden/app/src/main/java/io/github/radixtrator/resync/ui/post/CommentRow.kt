@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.CircularProgressIndicator
@@ -155,6 +156,7 @@ internal fun CommentRow(
     hiddenCount: Int,
     isNew: Boolean,
     separated: Boolean,
+    endsThread: Boolean,
     selected: Boolean,
     onToggle: () -> Unit,
     onSelect: () -> Unit,
@@ -169,16 +171,18 @@ internal fun CommentRow(
     val nav = LocalNavigator.current
     val display = LocalFeedDisplay.current
     val headerY = headerCentre(MaterialTheme.typography.bodyMedium.lineHeight)
-    // A top-level thread starts as a panel: the window shows in the 8dp gap above it and in its rounded top corners.
-    val cardTop = MaterialTheme.shapes.large.copy(bottomStart = CornerSize(0.dp), bottomEnd = CornerSize(0.dp))
-    Column(if (separated) Modifier.background(MaterialTheme.colorScheme.background) else Modifier) {
+    // A top-level thread is a panel: the window shows in the 8dp gap above it and in its rounded corners, at the top
+    // on the thread's first row and at the bottom on its last (both on a collapsed top-level comment).
+    val panel = separated || endsThread
+    val shape = threadPanelShape(top = separated, bottom = endsThread)
+    Column(if (panel) Modifier.background(MaterialTheme.colorScheme.background) else Modifier) {
         if (separated) Spacer(Modifier.height(8.dp))
         SwipeActions(
             stages = display.commentSwipeStages,
             enabled = display.commentSwipe,
             // Also as a modifier: with swipe off the shape isn't applied.
-            modifier = if (separated) Modifier.clip(cardTop) else Modifier,
-            shape = if (separated) cardTop else RectangleShape,
+            modifier = if (panel) Modifier.clip(shape) else Modifier,
+            shape = shape,
             onAction = { action ->
                 when (action) {
                     SwipeAction.UPVOTE -> onVote(if (comment.likes == true) 0 else 1)
@@ -431,14 +435,18 @@ private fun androidx.compose.foundation.layout.RowScope.BarToggle(
 }
 
 @Composable
-internal fun MoreRow(more: MoreComments, separated: Boolean, loading: Boolean, onClick: () -> Unit) {
+internal fun MoreRow(more: MoreComments, separated: Boolean, endsThread: Boolean, loading: Boolean, onClick: () -> Unit) {
     val depth = more.depth.coerceAtMost(MAX_DEPTH)
     val lineY = headerCentre(MaterialTheme.typography.bodyMedium.lineHeight, minHeight = 20.dp)
-    Column {
-        if (separated) Box(Modifier.fillMaxWidth().height(8.dp).background(MaterialTheme.colorScheme.background))
+    // Part of its thread's panel like a comment row: rounded where it starts or ends the thread.
+    val panel = separated || endsThread
+    Column(if (panel) Modifier.background(MaterialTheme.colorScheme.background) else Modifier) {
+        if (separated) Spacer(Modifier.height(8.dp))
         Row(
             Modifier
                 .fillMaxWidth()
+                .then(if (panel) Modifier.clip(threadPanelShape(top = separated, bottom = endsThread)) else Modifier)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .combinedClickable(onClick = onClick)
                 .rails(depth, lineY)
                 .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
@@ -455,6 +463,19 @@ internal fun MoreRow(more: MoreComments, separated: Boolean, loading: Boolean, o
             }
         }
     }
+}
+
+/** The thread panel's shape for one row: the theme's large corners at the [top] and/or [bottom], square elsewhere. */
+@Composable
+private fun threadPanelShape(top: Boolean, bottom: Boolean): Shape {
+    val large = MaterialTheme.shapes.large
+    val square = CornerSize(0.dp)
+    return if (!top && !bottom) RectangleShape else large.copy(
+        topStart = if (top) large.topStart else square,
+        topEnd = if (top) large.topEnd else square,
+        bottomEnd = if (bottom) large.bottomEnd else square,
+        bottomStart = if (bottom) large.bottomStart else square,
+    )
 }
 
 /** A colored initial: comment listings don't carry avatars, and fetching one per author is too costly. */
