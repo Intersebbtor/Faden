@@ -41,6 +41,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -48,6 +50,7 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.theme.Motion
 
 /**
@@ -105,9 +108,11 @@ fun SheetTitle(title: String, modifier: Modifier = Modifier, topPadding: Dp = 16
 /** Sync's bottom sheet handle sits closer to the edge than Material's: 12dp above the pill, 8dp below. */
 @Composable
 fun SheetHandle() {
+    val description = t("Drag handle")
     Box(
         Modifier
             .padding(top = 12.dp, bottom = 8.dp)
+            .semantics { contentDescription = description }
             .size(width = 32.dp, height = 4.dp)
             .clip(RoundedCornerShape(50))
             .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)),
