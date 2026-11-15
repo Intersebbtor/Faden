@@ -1,6 +1,7 @@
 package io.github.radixtrator.resync.ui.common
 
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -17,7 +18,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,9 +50,20 @@ internal fun PostCard(shape: Shape, content: @Composable ColumnScope.() -> Unit)
 internal fun CardPost(post: Post, showSubreddit: Boolean, actions: PostActions, options: ViewOptions) {
     val previewMaxHeight = if (options.cardFullHeight) null else CroppedPreviewHeight
     // Rounded, or square with "Full width cards" on.
-    PostCard(PostLayout.CARD.swipeShape) {
+    val cardShape = PostLayout.CARD.swipeShape
+    // The preview sits inset in the card with rounded corners, unless the card runs full width (square, flush).
+    val flush = cardShape == RectangleShape
+    val previewShape = MaterialTheme.shapes.medium
+    PostCard(cardShape) {
         Column(Modifier.combinedClickable(onClick = actions.onOpen, onLongClick = actions.onMore)) {
-            if (options.imageAboveTitle) CardPreview(post, onClick = actions.onMedia, maxHeight = previewMaxHeight)
+            if (options.imageAboveTitle) {
+                CardPreview(
+                    post,
+                    onClick = actions.onMedia,
+                    modifier = if (flush) Modifier else Modifier.padding(8.dp).clip(previewShape),
+                    maxHeight = previewMaxHeight,
+                )
+            }
             Column(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
                 PostTitle(post, CardTitle.scaledBy(options.titleSize.scale))
                 Spacer(Modifier.height(4.dp))
@@ -71,7 +85,12 @@ internal fun CardPost(post: Post, showSubreddit: Boolean, actions: PostActions, 
                 }
             }
             if (!options.imageAboveTitle) {
-                CardPreview(post, onClick = actions.onMedia, modifier = Modifier.padding(top = 12.dp), maxHeight = previewMaxHeight)
+                CardPreview(
+                    post,
+                    onClick = actions.onMedia,
+                    modifier = if (flush) Modifier.padding(top = 12.dp) else Modifier.padding(start = 8.dp, end = 8.dp, top = 12.dp).clip(previewShape),
+                    maxHeight = previewMaxHeight,
+                )
             }
             StatsFooter(post, actions, PostButtons(options.cardSaveButton, options.hideButton, options.shareButton, options.modButton))
         }
@@ -84,12 +103,12 @@ internal fun CardPost(post: Post, showSubreddit: Boolean, actions: PostActions, 
  */
 @Composable
 internal fun SmallCardPost(post: Post, showSubreddit: Boolean, actions: PostActions, options: ViewOptions) {
-    PostCard(MaterialTheme.shapes.medium) {
+    PostCard(PostLayout.SMALL_CARDS.swipeShape) {
         Column(Modifier.combinedClickable(onClick = actions.onOpen, onLongClick = actions.onMore)) {
             Row(Modifier.padding(start = 12.dp, end = 12.dp, top = 12.dp)) {
                 val hasThumbnail = post.thumbnail() != null
                 if (hasThumbnail && options.thumbnailLeft) {
-                    Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia)
+                    Thumbnail(post, 64.dp, MaterialTheme.shapes.medium, onClick = actions.onMedia)
                     Spacer(Modifier.width(12.dp))
                 }
                 Column(Modifier.weight(1f)) {
@@ -103,7 +122,7 @@ internal fun SmallCardPost(post: Post, showSubreddit: Boolean, actions: PostActi
                 }
                 if (hasThumbnail && !options.thumbnailLeft) {
                     Spacer(Modifier.width(12.dp))
-                    Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia)
+                    Thumbnail(post, 64.dp, MaterialTheme.shapes.medium, onClick = actions.onMedia)
                 }
             }
             StatsFooter(post, actions, PostButtons(options.cardSaveButton, options.hideButton, options.shareButton, options.modButton))
@@ -111,11 +130,15 @@ internal fun SmallCardPost(post: Post, showSubreddit: Boolean, actions: PostActi
     }
 }
 
-/** "10.6k points / 154 comments" on the left, then any of [buttons] and ⋮ on the right: Sync's card footer. */
+/** The score and comments chips on the left, then any of [buttons] and ⋮ on the right: Faden's card footer. */
 @Composable
 private fun StatsFooter(post: Post, actions: PostActions, buttons: PostButtons = PostButtons.None) {
+    val short = LocalFeedDisplay.current.shortScores
     Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        PostStats(post, Modifier.weight(1f))
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            ScoreChip(post, short)
+            CommentsChip(post, short)
+        }
         PostButtonIcons(post, actions, buttons, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         IconButton(onClick = actions.onMore) { Icon(Symbols.MoreVert, t("Post options"), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
     }

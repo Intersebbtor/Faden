@@ -54,16 +54,15 @@ val PostLayout.spacing: Dp
     @Composable get() = when (this) {
         PostLayout.LIST, PostLayout.COMPACT -> 0.dp
         PostLayout.SLIDES -> if (LocalFeedDisplay.current.viewOptionsFor(this).thickDivider) 8.dp else 0.dp
-        PostLayout.CARD -> if (fullWidthCards()) 8.dp else 16.dp
-        PostLayout.SMALLER_CARDS, PostLayout.SMALL_CARDS -> 16.dp
+        PostLayout.CARD -> if (fullWidthCards()) 8.dp else 10.dp
+        PostLayout.SMALLER_CARDS, PostLayout.SMALL_CARDS -> 10.dp
     }
 
 /** The item's outline, so the swipe panel behind a card has the card's corners. */
 val PostLayout.swipeShape: Shape
     @Composable get() = when (this) {
-        PostLayout.CARD -> if (fullWidthCards()) RectangleShape else MaterialTheme.shapes.medium
-        PostLayout.SMALL_CARDS -> MaterialTheme.shapes.medium
-        PostLayout.SMALLER_CARDS -> MaterialTheme.shapes.small
+        PostLayout.CARD -> if (fullWidthCards()) RectangleShape else MaterialTheme.shapes.large
+        PostLayout.SMALL_CARDS, PostLayout.SMALLER_CARDS -> MaterialTheme.shapes.large
         PostLayout.LIST, PostLayout.COMPACT, PostLayout.SLIDES -> RectangleShape
     }
 
@@ -109,7 +108,7 @@ fun PostLayoutItem(layout: PostLayout, post: Post, showSubreddit: Boolean, actio
     when (layout) {
         PostLayout.LIST -> RowPost(post, showSubreddit, actions, options, flushThumbnail = true, inCard = false)
         PostLayout.COMPACT -> RowPost(post, showSubreddit, actions, options, flushThumbnail = false, inCard = false)
-        PostLayout.SMALLER_CARDS -> PostCard(MaterialTheme.shapes.small) {
+        PostLayout.SMALLER_CARDS -> PostCard(layout.swipeShape) {
             RowPost(post, showSubreddit, actions, options, flushThumbnail = false, inCard = true)
         }
         PostLayout.SMALL_CARDS -> SmallCardPost(post, showSubreddit, actions, options)
