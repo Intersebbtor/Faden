@@ -378,12 +378,20 @@ private fun CommentActionBar(
 ) {
     val nav = LocalNavigator.current
     val normal = MaterialTheme.colorScheme.onSurface
+    // The pill sits inset from where the comment's content starts, on the row's own panel colour, with the threads running past it.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .rails(depth)
+            .padding(start = contentStart(depth), end = 12.dp, top = 2.dp, bottom = 8.dp),
+    ) {
     Row(
         Modifier
             .fillMaxWidth()
             .height(48.dp)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .rails(depth),
+            .clip(MaterialTheme.shapes.large)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         BarToggle(AppIcons.ArrowUp, t("Upvote"), comment.likes == true, FadenColors.Upvote, normal) { onVote(if (it) 1 else 0) }
@@ -399,6 +407,7 @@ private fun CommentActionBar(
         BarButton(AppIcons.Reply, t("Reply"), normal, onReply)
         BarButton(Symbols.KeyboardArrowUp, t("Go to parent"), normal, onParent)
         BarButton(Symbols.MoreVert, t("Comment options"), normal, onMore)
+    }
     }
 }
 
