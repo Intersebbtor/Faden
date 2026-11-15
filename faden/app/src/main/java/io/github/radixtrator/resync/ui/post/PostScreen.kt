@@ -2,6 +2,8 @@
 
 package io.github.radixtrator.resync.ui.post
 
+import io.github.radixtrator.resync.ui.common.AvatarKind
+import io.github.radixtrator.resync.ui.common.Avatar
 import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.tc
@@ -311,7 +313,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                 Modifier.clip(RoundedCornerShape(8.dp)).clickable { nav.push(FeedRoute(post.subreddit)) },
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                SubredditIcon(post.subreddit, subredditIcon, 32.dp)
+                                Avatar(subredditIcon, post.subreddit, 32.dp)
                                 Spacer(Modifier.width(12.dp))
                                 Column {
                                     Text(post.subreddit, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -965,26 +967,15 @@ private fun MoreRow(more: MoreComments, separated: Boolean, loading: Boolean, on
 /** A colored initial: comment listings don't carry avatars, and fetching one per author is too costly. */
 @Composable
 private fun UserAvatar(name: String, url: String?, size: Dp) {
-    // Snoovatars have transparent backgrounds, so a picture replaces the initial rather than covering it.
-    if (url != null) {
-        AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.size(size).clip(CircleShape))
-        return
-    }
     val color = FadenColors.Depth[name.hashCode().absoluteValue % FadenColors.Depth.size]
-    Box(Modifier.size(size).clip(CircleShape).background(color.copy(alpha = 0.35f)), contentAlignment = Alignment.Center) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
-    }
-}
-
-@Composable
-private fun SubredditIcon(name: String, url: String?, size: Dp) {
-    Box(
-        Modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-        if (url != null) AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
-    }
+    Avatar(
+        url, name, size,
+        kind = AvatarKind.User,
+        letterStyle = MaterialTheme.typography.labelSmall,
+        containerColor = color.copy(alpha = 0.35f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
+        replaceLetter = true,
+    )
 }
 
 // --- Sheets ---

@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.feed
 
+import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -157,18 +158,13 @@ fun AboutHeader(
         }
         Box(Modifier.align(Alignment.TopCenter)) { SheetHandle() }
         // Sync centers the icon a little above the banner's lower edge.
-        Box(
-            Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = BANNER - 32.dp)
-                .size(56.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.secondaryContainer),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-            iconUrl?.let { AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
-        }
+        Avatar(
+            iconUrl,
+            name,
+            56.dp,
+            Modifier.align(Alignment.TopCenter).padding(top = BANNER - 32.dp),
+            letterStyle = MaterialTheme.typography.titleLarge,
+        )
         // Sync's ⋮ sits at the right, just under the banner.
         menu?.invoke(Modifier.align(Alignment.BottomEnd).offset(y = 20.dp))
     }

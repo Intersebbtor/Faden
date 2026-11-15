@@ -472,7 +472,7 @@ private fun SlidePost(post: Post, actions: PostActions, options: ViewOptions) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (options.subredditIcons) {
-                LetterAvatar(post.subreddit, 32.dp)
+                Avatar(null, post.subreddit, 32.dp)
                 Spacer(Modifier.width(12.dp))
             }
             Column {
@@ -996,17 +996,6 @@ private fun typeIcon(post: Post): ImageVector = when (post.media) {
     is PostMedia.Video -> AppIcons.PlayCircle
     is PostMedia.Link -> AppIcons.Link
     PostMedia.None -> AppIcons.Text
-}
-
-/** A round initial standing in for a subreddit icon (listings don't carry one). */
-@Composable
-private fun LetterAvatar(name: String, size: Dp) {
-    Box(
-        Modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-    }
 }
 
 /** Sync's feed preview of a text post: its first paragraph as plain text, then "…" on a line of its own if there's more. */

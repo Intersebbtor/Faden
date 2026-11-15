@@ -2,6 +2,8 @@
 
 package io.github.radixtrator.resync.ui.profile
 
+import io.github.radixtrator.resync.ui.common.AvatarKind
+import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -226,7 +228,7 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                     header = {
                         LargeHeader(
                             title = name,
-                            leading = { Avatar(name, user?.iconUrl, 56.dp) },
+                            leading = { Avatar(user?.iconUrl, name, 56.dp, kind = AvatarKind.User, letterStyle = MaterialTheme.typography.titleLarge) },
                             overline = user?.let { u ->
                                 {
                                     Text(
@@ -306,14 +308,6 @@ private fun SortMenu(onPick: (UserSort) -> Unit) {
                 })
             }
         }
-    }
-}
-
-@Composable
-private fun Avatar(name: String, url: String?, size: Dp) {
-    Box(Modifier.size(size).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-        url?.let { AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
     }
 }
 

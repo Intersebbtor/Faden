@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.feed
 
+import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -345,7 +346,7 @@ private fun FeedHeader(
     LargeHeader(
         title = title,
         leading = if (isCommunity) {
-            { CommunityIcon(about, title) }
+            { Avatar(about?.iconUrl, title, 56.dp, letterStyle = MaterialTheme.typography.titleLarge) }
         } else null,
         overline = about?.let { sub ->
             {
@@ -372,17 +373,6 @@ private fun FeedHeader(
         }
         HeaderChip(t("Change view"), AppIcons.ViewStack, onChangeView)
         onRandom?.let { HeaderChip(t("Random"), AppIcons.Dice, it) }
-    }
-}
-
-@Composable
-private fun CommunityIcon(about: Subreddit?, name: String) {
-    Box(
-        Modifier.size(56.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(name.take(1).uppercase(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
-        about?.iconUrl?.let { AsyncImage(it, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize()) }
     }
 }
 
