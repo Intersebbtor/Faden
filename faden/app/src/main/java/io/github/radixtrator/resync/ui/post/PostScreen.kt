@@ -56,6 +56,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -372,16 +373,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                         }) { Icon(Icons.Default.KeyboardArrowDown, t("Next comment")) }
                     }
                     state.post?.let { post ->
-                        Surface(
-                            onClick = { reply(post.fullname, post.title) },
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                            shadowElevation = 3.dp,
-                            modifier = Modifier.size(56.dp),
-                        ) {
-                            Box(contentAlignment = Alignment.Center) { Icon(AppIcons.Reply, t("Reply to post")) }
-                        }
+                        FloatingActionButton(onClick = { reply(post.fullname, post.title) }) { Icon(AppIcons.Reply, t("Reply to post")) }
                     }
                 }
             },
