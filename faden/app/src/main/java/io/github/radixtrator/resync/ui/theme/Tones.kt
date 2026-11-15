@@ -51,6 +51,14 @@ object Tones {
         return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
     }
 
+    /** Perceptual distance (OKLab Euclidean, ΔE_ok) of two ARGB colors: about 0.02 is a just-noticeable difference, 0.1 is clearly another color. */
+    fun deltaEOk(a: Int, b: Int): Double {
+        fun lab(c: Int) = oklab(linear(c shr 16 and 0xFF), linear(c shr 8 and 0xFF), linear(c and 0xFF))
+        val x = lab(a)
+        val y = lab(b)
+        return sqrt(((x[0] - y[0]).toDouble().pow(2) + (x[1] - y[1]).toDouble().pow(2) + (x[2] - y[2]).toDouble().pow(2)))
+    }
+
     private fun linear(channel: Int): Double {
         val c = channel / 255.0
         return if (c <= 0.04045) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)

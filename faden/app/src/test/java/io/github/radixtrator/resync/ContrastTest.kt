@@ -84,6 +84,20 @@ class ContrastTest {
         }
     }
 
+    /** A downvoted score must not read as accent text: the Downvote color keeps its distance from the default primary. */
+    @Test
+    fun downvoteIsDistinctFromThePrimary() {
+        for (dark in listOf(false, true)) {
+            val s = fadenColorScheme(dark, black = false, seed = null, extra = false)
+            val mode = if (dark) "dark" else "light"
+            val distance = Tones.deltaEOk(FadenColors.Downvote.argb(), s.primary.argb())
+            assertTrue(distance >= 0.08, "downvote vs primary ($mode): ΔE_ok %.3f".format(distance))
+            // 4.5:1 on a dark card; on the light card it is the 2.6:1 Downvote always had, as a vote tint beside an icon.
+            val onCard = ratio(FadenColors.Downvote, s.surfaceContainerLow)
+            assertTrue(onCard >= if (dark) 4.5 else 2.5, "downvote on $mode card: %.2f".format(onCard))
+        }
+    }
+
     @Test
     fun depthRailsStandOutOnCards() {
         for (dark in listOf(false, true)) {
