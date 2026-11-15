@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.feed
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import android.Manifest
@@ -33,8 +34,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -392,7 +391,7 @@ fun ModeratorsSheet(container: AppContainer, subreddit: String, onOpen: (String)
             else -> result.fold(
                 onSuccess = { names ->
                     Column(Modifier.verticalScroll(rememberScrollState()).padding(bottom = 8.dp)) {
-                        names.forEach { name -> OptionRow("u/$name", Icons.Outlined.Person, onClick = { onOpen(name) }) }
+                        names.forEach { name -> OptionRow("u/$name", Symbols.Person, onClick = { onOpen(name) }) }
                     }
                 },
                 onFailure = { Problem(t("Couldn't load the moderators: {0}", it.message)) },

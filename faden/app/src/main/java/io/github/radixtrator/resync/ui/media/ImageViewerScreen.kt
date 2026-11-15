@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.media
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ContainedLoadingIndicator
 import android.content.Context
@@ -22,8 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -137,7 +136,7 @@ private fun ImageInfoSheet(url: String, postId: String?, downloads: MediaDownloa
     Column(Modifier.fillMaxWidth().background(MediaPanelColor)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), horizontalArrangement = Arrangement.End) {
             IconButton(onClick = onDownload) { Icon(AppIcons.Download, t("Download"), tint = Color.White) }
-            IconButton(onClick = onClose) { Icon(Icons.Default.Close, t("Close"), tint = Color.White) }
+            IconButton(onClick = onClose) { Icon(Symbols.Close, t("Close"), tint = Color.White) }
         }
         MediaLinkInfo(url, details)
         MediaActionBar(url, postId)

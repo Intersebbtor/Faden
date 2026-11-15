@@ -23,14 +23,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
@@ -283,7 +275,7 @@ private fun StatsFooter(post: Post, actions: PostActions, buttons: PostButtons =
     Row(Modifier.fillMaxWidth().padding(start = 12.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
         PostStats(post, Modifier.weight(1f))
         PostButtonIcons(post, actions, buttons, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-        IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, t("Post options"), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+        IconButton(onClick = actions.onMore) { Icon(Symbols.MoreVert, t("Post options"), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
     }
 }
 
@@ -312,11 +304,11 @@ private fun PostButtonIcons(post: Post, actions: PostActions, buttons: PostButto
         )
     }
     if (buttons.hide) {
-        actions.onHide?.let { hide -> IconButton(onClick = hide) { Icon(Icons.Default.Close, t("Hide"), tint = tint) } }
+        actions.onHide?.let { hide -> IconButton(onClick = hide) { Icon(Symbols.Close, t("Hide"), tint = tint) } }
     }
     if (buttons.share) {
         val share: () -> Unit = actions.onShare ?: { nav.share("https://www.reddit.com${post.permalink}", post.title) }
-        IconButton(onClick = share) { Icon(Icons.Outlined.Share, t("Share"), tint = tint) }
+        IconButton(onClick = share) { Icon(Symbols.Share, t("Share"), tint = tint) }
     }
     if (buttons.mod) {
         if (post.subreddit.lowercase() in LocalFeedDisplay.current.moderated) {
@@ -372,7 +364,7 @@ private fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, op
         }
         val expand = @Composable {
                 IconButton(onClick = { expanded = !expanded }, modifier = Modifier.size(40.dp)) {
-                    Icon(if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown, if (expanded) t("Collapse") else t("Expand"), tint = muted)
+                    Icon(if (expanded) Symbols.KeyboardArrowUp else Symbols.KeyboardArrowDown, if (expanded) t("Collapse") else t("Expand"), tint = muted)
                 }
             }
         val type = @Composable { Icon(typeIcon(post), null, tint = muted, modifier = Modifier.padding(8.dp).size(20.dp)) }
@@ -525,7 +517,7 @@ private fun SlidePost(post: Post, actions: PostActions, options: ViewOptions) {
             ) {
                 if (voteRight) {
                     PostButtonIcons(post, actions, buttons, tint = onSurface)
-                    IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, t("Post options")) }
+                    IconButton(onClick = actions.onMore) { Icon(Symbols.MoreVert, t("Post options")) }
                     Spacer(Modifier.weight(1f))
                     CommentsPill(post.numComments, actions.onOpen)
                     Spacer(Modifier.width(8.dp))
@@ -536,7 +528,7 @@ private fun SlidePost(post: Post, actions: PostActions, options: ViewOptions) {
                     CommentsPill(post.numComments, actions.onOpen)
                     Spacer(Modifier.weight(1f))
                     PostButtonIcons(post, actions, buttons, tint = onSurface)
-                    IconButton(onClick = actions.onMore) { Icon(Icons.Default.MoreVert, t("Post options")) }
+                    IconButton(onClick = actions.onMore) { Icon(Symbols.MoreVert, t("Post options")) }
                 }
             }
         }
@@ -594,16 +586,15 @@ private fun VotePill(likes: Boolean?, score: Int, onVote: (Int) -> Unit) {
             .background(if (likes == null) MaterialTheme.colorScheme.surfaceContainerHighest else tint.copy(alpha = 0.25f)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        StateToggle(likes == true, { onVote(if (it) 1 else 0) }, Icons.Default.KeyboardArrowUp, t("Upvote"), tint, tint, Modifier.size(40.dp))
+        StateToggle(likes == true, { onVote(if (it) 1 else 0) }, Symbols.KeyboardArrowUp, t("Upvote"), tint, tint, Modifier.size(40.dp))
         Text(Format.count(score, LocalFeedDisplay.current.shortScores), style = MaterialTheme.typography.labelLarge, color = tint)
-        StateToggle(likes == false, { onVote(if (it) -1 else 0) }, Icons.Default.KeyboardArrowDown, t("Downvote"), tint, tint, Modifier.size(40.dp))
+        StateToggle(likes == false, { onVote(if (it) -1 else 0) }, Symbols.KeyboardArrowDown, t("Downvote"), tint, tint, Modifier.size(40.dp))
     }
 }
 
 // --- Shared pieces ---
 
-// Feed text, measured from Sync's screenshots: cards read a size up from rows, and lines sit 1.2em apart
-// like Sync's Roboto (its titles are Product Sans, a little taller).
+// Feed text, sized from Sync's screenshots: cards read a size up from rows, and lines sit 1.2em apart.
 private val CardTitle: TextStyle
     @Composable get() = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp, lineHeight = 20.sp)
 private val CardMeta: TextStyle
@@ -648,7 +639,7 @@ fun PostTitle(
             Icon(AppIcons.Pin, t("Pinned"), tint = accent)
         },
         "lock" to InlineTextContent(Placeholder(0.9.em, 0.9.em, PlaceholderVerticalAlign.TextCenter)) {
-            Icon(Icons.Default.Lock, t("Locked"), tint = accent)
+            Icon(Symbols.LockFilled, t("Locked"), tint = accent)
         },
     ) }
     Text(
@@ -754,7 +745,7 @@ fun distinguishedMarks(): Map<String, InlineTextContent> {
             Icon(AppIcons.Shield, t("Admin"), tint = FadenColors.Nsfw)
         },
         "you" to InlineTextContent(Placeholder(1.15.em, 1.15.em, PlaceholderVerticalAlign.TextCenter)) {
-            Icon(Icons.Outlined.Person, t("You"), tint = you)
+            Icon(Symbols.Person, t("You"), tint = you)
         },
     ) }
 }

@@ -12,21 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import io.github.radixtrator.resync.data.PostMedia
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -230,13 +218,13 @@ fun PostActionsSheet(
                 OptionRow(t("Copy title"), AppIcons.Text, onClick = { copy(post.title) })
                 OptionRow(t("Copy permalink"), AppIcons.Link, onClick = { copy(permalink) })
                 if (!post.isSelf) OptionRow(t("Copy link"), AppIcons.Link, onClick = { copy(post.url) })
-                OptionRow(t("Copy username"), Icons.Outlined.Person, onClick = { copy(post.author) })
+                OptionRow(t("Copy username"), Symbols.Person, onClick = { copy(post.author) })
             } else if (filtering) {
                 SheetTitle(t("Filter"), topPadding = 0.dp)
                 OptionRow(t("Filter /r/{0}", post.subreddit), AppIcons.Compass, onClick = {
                     filter(t("Filtered r/{0}", post.subreddit)) { container.filters.filterSubreddit(post.subreddit) }
                 })
-                OptionRow(t("Filter /u/{0}", post.author), Icons.Outlined.AccountCircle, onClick = {
+                OptionRow(t("Filter /u/{0}", post.author), Symbols.AccountCircle, onClick = {
                     filter(t("Filtered u/{0}", post.author)) { container.filters.filterUser(post.author) }
                 })
                 post.flair?.takeIf { it.isNotBlank() }?.let { flair ->
@@ -251,12 +239,12 @@ fun PostActionsSheet(
                 }
             } else {
                 SheetTitle(t("Post options"), topPadding = 0.dp)
-                onHide?.let { hide -> OptionRow(t("Hide"), Icons.Default.Close, onClick = { act(hide) }) }
-                onMarkRead?.let { markRead -> OptionRow(t("Mark as read"), Icons.Default.Check, onClick = { act(markRead) }) }
-                OptionRow(t("Share"), Icons.Outlined.Share, onClick = { act { nav.share(permalink, post.title) } }, trailing = {
-                    IconButton(onClick = { sharing = true }) { Icon(Icons.Default.MoreVert, t("Share as…")) }
+                onHide?.let { hide -> OptionRow(t("Hide"), Symbols.Close, onClick = { act(hide) }) }
+                onMarkRead?.let { markRead -> OptionRow(t("Mark as read"), Symbols.Check, onClick = { act(markRead) }) }
+                OptionRow(t("Share"), Symbols.Share, onClick = { act { nav.share(permalink, post.title) } }, trailing = {
+                    IconButton(onClick = { sharing = true }) { Icon(Symbols.MoreVert, t("Share as…")) }
                 })
-                OptionRow(if (watching) t("Stop watching") else t("Watch"), if (watching) Icons.Filled.Notifications else Icons.Outlined.Notifications, onClick = {
+                OptionRow(if (watching) t("Stop watching") else t("Watch"), if (watching) Symbols.NotificationsFilled else Symbols.Notifications, onClick = {
                     when {
                         watching -> {
                             container.setWatchingPost(post, false)
@@ -269,20 +257,20 @@ fun PostActionsSheet(
                 })
                 if (!isOwn) OptionRow(t("Report"), AppIcons.Report, onClick = { reporting = true })
                 HorizontalDivider()
-                OptionRow("/u/${post.author}", Icons.Outlined.AccountCircle, onClick = { act { nav.push(UserRoute(post.author)) } })
+                OptionRow("/u/${post.author}", Symbols.AccountCircle, onClick = { act { nav.push(UserRoute(post.author)) } })
                 OptionRow("/r/${post.subreddit}", AppIcons.Compass, onClick = { act { nav.push(FeedRoute(post.subreddit)) } })
                 if (domain != null) OptionRow(t("Explore domain ({0})", domain), AppIcons.Compass, onClick = { act { nav.push(FeedRoute(domain = post.domain)) } })
                 OptionRow(t("Open in browser"), AppIcons.OpenExternal, onClick = { act { nav.openExternal(permalink) } })
                 HorizontalDivider()
                 OptionRow(t("Copy..."), AppIcons.Copy, onClick = { copying = true })
                 OptionRow(t("Filter..."), AppIcons.Filter, onClick = { filtering = true })
-                OptionRow(t("Add r/{0} to multi...", post.subreddit), Icons.Default.Add, onClick = { addingToMulti = true })
+                OptionRow(t("Add r/{0} to multi...", post.subreddit), Symbols.Add, onClick = { addingToMulti = true })
                 if (isOwn && post.isSelf) {
-                    OptionRow(t("Edit"), Icons.Outlined.Edit, onClick = {
+                    OptionRow(t("Edit"), Symbols.Edit, onClick = {
                         act { nav.push(ComposeRoute(ComposeMode.EDIT, target = post.fullname, quote = post.title, initial = post.selfText)) }
                     })
                 }
-                if (isOwn) OptionRow(t("Delete"), Icons.Outlined.Delete, onClick = { confirmDelete = true })
+                if (isOwn) OptionRow(t("Delete"), Symbols.Delete, onClick = { confirmDelete = true })
             }
         }
     }

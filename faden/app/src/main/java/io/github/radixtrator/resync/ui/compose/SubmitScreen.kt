@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.compose
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,8 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -173,7 +172,7 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.Default.Close, t("Discard")) } },
+                navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.Close, t("Discard")) } },
                 title = { Text(t("Create post")) },
                 actions = {
                     if (state.sending) {

@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.DropdownMenu
@@ -92,7 +90,7 @@ fun HeaderChip(
         label = { Text(label, style = HeaderChipLabel) },
         leadingIcon = icon?.let { { Icon(it, null, Modifier.size(AssistChipDefaults.IconSize)) } },
         trailingIcon = if (dropdown) {
-            { Icon(Icons.Default.ArrowDropDown, null, Modifier.size(AssistChipDefaults.IconSize)) }
+            { Icon(Symbols.ArrowDropDown, null, Modifier.size(AssistChipDefaults.IconSize)) }
         } else null,
         shape = MaterialTheme.shapes.small,
         border = null,

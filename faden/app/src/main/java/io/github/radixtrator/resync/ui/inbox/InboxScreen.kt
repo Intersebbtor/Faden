@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.inbox
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -23,9 +24,6 @@ import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -193,8 +191,8 @@ fun InboxScreen(route: InboxRoute, container: AppContainer) {
                     header = {
                         item(key = "header") {
                             LargeHeader(t("Inbox")) {
-                                HeaderChip(box.label, Icons.Outlined.Email, { boxOpen = true }, dropdown = true)
-                                HeaderChip(t("New message"), Icons.Outlined.Edit, { nav.push(ComposeRoute(ComposeMode.MESSAGE)) })
+                                HeaderChip(box.label, Symbols.Mail, { boxOpen = true }, dropdown = true)
+                                HeaderChip(t("New message"), Symbols.Edit, { nav.push(ComposeRoute(ComposeMode.MESSAGE)) })
                                 HeaderChip(t("Mark all as read"), AppIcons.DoubleCheck, vm::markAllRead)
                             }
                         }

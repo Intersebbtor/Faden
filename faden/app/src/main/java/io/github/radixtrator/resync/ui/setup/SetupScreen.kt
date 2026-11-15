@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.setup
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,8 +11,6 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,7 +55,7 @@ fun SetupScreen(
             TopAppBar(
                 title = { Text(t("Reddit API")) },
                 navigationIcon = {
-                    if (canGoBack) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) }
+                    if (canGoBack) IconButton(onClick = onBack) { Icon(Symbols.ArrowBack, t("Back")) }
                 },
             )
         },

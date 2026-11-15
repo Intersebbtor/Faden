@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.profile
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -26,12 +27,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.DateRange
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -254,14 +249,14 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                                 }
                             },
                         ) {
-                            ChipMenu(tab.label, Icons.Outlined.Person, UserWhere.entries.filter { isSelf || !it.ownOnly }, { it.label }, vm::setTab)
+                            ChipMenu(tab.label, Symbols.Person, UserWhere.entries.filter { isSelf || !it.ownOnly }, { it.label }, vm::setTab)
                             ChipMenu(sort.label, sortIcon(sort), UserSort.entries, { it.label }, vm::setSort)
-                            HeaderChip(t("About"), Icons.Outlined.Info, { aboutOpen = true })
-                            if (canAct) HeaderChip(t("Message"), Icons.Outlined.Email, message)
+                            HeaderChip(t("About"), Symbols.Info, { aboutOpen = true })
+                            if (canAct) HeaderChip(t("Message"), Symbols.Mail, message)
                             HeaderChip(t("Trophies"), AppIcons.Trophy, { trophiesOpen = true })
                             if (!isSelf) HeaderChip(t("Tag user"), AppIcons.TagUser, { tagging = true })
                             if (canAct) HeaderChip(t("Block"), AppIcons.Block, { confirmBlock = true })
-                            HeaderChip(t("Share"), Icons.Outlined.Share, { nav.share("https://www.reddit.com/user/$name", "u/$name") })
+                            HeaderChip(t("Share"), Symbols.Share, { nav.share("https://www.reddit.com/user/$name", "u/$name") })
                         }
                     },
                 ) { item ->
@@ -346,12 +341,12 @@ private fun ProfileAboutSheet(
             AboutStat(AppIcons.Link, user.linkKarma.toString())
             AboutStat(AppIcons.Comment, user.commentKarma.toString())
             // Sync writes the cake day as "21 Apr 2012".
-            AboutStat(Icons.Outlined.DateRange, SimpleDateFormat("d MMM yyyy", I18n.locale).format(Date(user.createdUtc * 1000)))
+            AboutStat(Symbols.DateRange, SimpleDateFormat("d MMM yyyy", I18n.locale).format(Date(user.createdUtc * 1000)))
         }
         Column(Modifier.verticalScroll(rememberScrollState()).navigationBarsPadding().padding(bottom = 16.dp)) {
             val chip = MaterialTheme.colorScheme.surfaceVariant
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                onMessage?.let { HeaderChip(t("Message"), Icons.Outlined.Email, it, container = chip) }
+                onMessage?.let { HeaderChip(t("Message"), Symbols.Mail, it, container = chip) }
                 HeaderChip(t("Trophies"), AppIcons.Trophy, onTrophies, container = chip)
                 onTag?.let { HeaderChip(t("Tag user"), AppIcons.TagUser, it, container = chip) }
             }

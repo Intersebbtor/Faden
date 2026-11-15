@@ -7,11 +7,6 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -63,10 +58,10 @@ val SwipeAction.icon: ImageVector
         SwipeAction.UPVOTE -> AppIcons.ArrowUp
         SwipeAction.DOWNVOTE -> AppIcons.ArrowDown
         SwipeAction.SAVE -> AppIcons.Bookmark
-        SwipeAction.PROFILE -> Icons.Outlined.Person
-        SwipeAction.SHARE -> Icons.Outlined.Share
-        SwipeAction.HIDE -> Icons.Outlined.Close
-        SwipeAction.MARK_READ -> Icons.Outlined.Check
+        SwipeAction.PROFILE -> Symbols.Person
+        SwipeAction.SHARE -> Symbols.Share
+        SwipeAction.HIDE -> Symbols.Close
+        SwipeAction.MARK_READ -> Symbols.Check
         SwipeAction.REPLY -> AppIcons.Reply
     }
 

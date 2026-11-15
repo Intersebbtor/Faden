@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.settings
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -13,10 +14,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -72,7 +69,7 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t("Back")) } },
+                    navigationIcon = { IconButton(onClick = nav::pop) { Icon(Symbols.ArrowBack, t("Back")) } },
                     title = {},
                 )
             },
@@ -80,7 +77,7 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
             LazyColumn(Modifier.padding(padding).fillMaxSize().imePadding()) {
                 item(key = "header") {
                     LargeHeader(title = type.title) {
-                        if (entries.isNotEmpty()) HeaderChip(label = t("Remove all"), icon = Icons.Outlined.Delete, onClick = { confirmClear = true })
+                        if (entries.isNotEmpty()) HeaderChip(label = t("Remove all"), icon = Symbols.Delete, onClick = { confirmClear = true })
                     }
                 }
                 item(key = "add") {
@@ -117,7 +114,7 @@ fun FilterEditorScreen(type: FilterType, container: AppContainer) {
                     val label = type.describe(entry)
                     ListItem(
                         trailingContent = {
-                            IconButton(onClick = { container.filters.remove(type, entry) }) { Icon(Icons.Default.Close, t("Stop filtering {0}", label)) }
+                            IconButton(onClick = { container.filters.remove(type, entry) }) { Icon(Symbols.Close, t("Stop filtering {0}", label)) }
                         },
                     ) { Text(label) }
                 }

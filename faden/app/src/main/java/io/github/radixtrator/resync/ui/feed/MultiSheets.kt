@@ -2,6 +2,7 @@
 
 package io.github.radixtrator.resync.ui.feed
 
+import io.github.radixtrator.resync.ui.common.Symbols
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,8 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -156,7 +155,7 @@ fun ManageMultiSheet(container: AppContainer, multi: Multi, onChanged: () -> Uni
                     items(subreddits, key = { it.lowercase() }) { name ->
                         ListItem(
                             trailingContent = {
-                                IconButton(onClick = { change(name, add = false) }, enabled = !busy) { Icon(Icons.Default.Close, t("Remove r/{0}", name)) }
+                                IconButton(onClick = { change(name, add = false) }, enabled = !busy) { Icon(Symbols.Close, t("Remove r/{0}", name)) }
                             },
                             colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         ) { Text("r/$name") }
