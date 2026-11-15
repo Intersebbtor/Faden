@@ -345,7 +345,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                 onStop = reader::stop,
                                 onReadReplies = { on ->
                                     container.settings.update { it.copy(readerReplies = on) }
-                                    state.post?.let { post -> reader.replaceItems(readerQueue(post, state.comments, ::plainText, replies = on)) }
+                                    state.post?.let { post -> scope.launch { reader.replaceItems(buildReaderQueue(post, state.comments, ::plainText, replies = on)) } }
                                 },
                                 onSpeechRate = { rate -> container.settings.update { it.copy(readerSpeechRate = rate) } },
                             )
@@ -536,7 +536,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                             reader.stop()
                         } else {
                             container.readAloud.stop()
-                            reader.start(readerQueue(post, state.comments, ::plainText, replies = settings.readerReplies))
+                            scope.launch { reader.start(buildReaderQueue(post, state.comments, ::plainText, replies = settings.readerReplies)) }
                         }
                     },
                 ) + remember(post, state.comments) { commentActionExtras(post, state.comments, nav) },
