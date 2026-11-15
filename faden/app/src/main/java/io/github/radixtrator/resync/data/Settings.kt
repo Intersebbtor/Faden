@@ -44,8 +44,12 @@ enum class BaseFontSize(private val en: String, val scale: Float) {
  */
 enum class ThemePalette { FADEN, CLASSIC }
 
-/** Typeface choices. Roboto is bundled (Sync's default); Product Sans can't be, so the rest are the system's families. */
+/**
+ * Typeface choices. Figtree (Faden's own) and Roboto (Sync's) are bundled; Product Sans can't be, so the rest are the
+ * system's families.
+ */
 enum class Typeface(private val en: String) {
+    FIGTREE("Figtree"),
     ROBOTO("Roboto"),
     SANS("Sans serif (system)"),
     SERIF("Serif"),
@@ -340,7 +344,7 @@ data class Settings(
      */
     val drawerNavigation: Boolean = false,
     val baseFontSize: BaseFontSize = BaseFontSize.SMALLER,
-    val typeface: Typeface = Typeface.ROBOTO,
+    val typeface: Typeface = Typeface.FIGTREE,
     /** General › "Language": the app's text, applied at launch and when changed (see [io.github.radixtrator.resync.i18n.I18n]). */
     val language: io.github.radixtrator.resync.i18n.AppLanguage = io.github.radixtrator.resync.i18n.AppLanguage.SYSTEM,
     /** Sync's "Action visibility": labels of More actions buttons switched off. */

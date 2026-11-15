@@ -17,12 +17,14 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import io.github.radixtrator.resync.R
 import io.github.radixtrator.resync.data.Settings
@@ -108,8 +110,23 @@ object FadenColors {
 }
 
 /**
+ * Figtree, Faden's own typeface: res/font/figtree.ttf and figtree_italic.ttf are the variable fonts (wght 300-900,
+ * OFL, third_party/figtree), so one file serves every weight. It has nothing below 300, so lighter weights clamp to Light.
+ */
+private val Figtree = FontFamily(
+    (100..900 step 100).flatMap { weight ->
+        val axis = FontVariation.Settings(FontVariation.weight(weight.coerceAtLeast(300)))
+        listOf(
+            Font(R.font.figtree, FontWeight(weight), FontStyle.Normal, variationSettings = axis),
+            Font(R.font.figtree_italic, FontWeight(weight), FontStyle.Italic, variationSettings = axis),
+        )
+    },
+)
+
+/**
  * Sync bundles Roboto and draws everything in it rather than the device font (One UI's is wider, and
- * drew italics upright). res/font/roboto.ttf is Android's variable Roboto: one file, every weight.
+ * drew italics upright). res/font/roboto.ttf is Android's variable Roboto: one file, every weight. Kept for
+ * those who pick it.
  */
 private val Roboto = FontFamily(
     (100..900 step 100).flatMap { weight ->
@@ -121,37 +138,40 @@ private val Roboto = FontFamily(
 
 /**
  * Sync's TextViews set Roboto about 1.5% wider than Compose does at the same size (titles, bodies and the
- * 34sp header all measure so in sync-reference), so this stands in for Material's own letter spacing.
+ * 34sp header all measure so in sync-reference), so the Roboto and system families use this in place of
+ * Material's own letter spacing. Figtree keeps Material's.
  */
 private val SYNC_LETTER_SPACING = 0.015.em
 
-/** Material's roles in [family], spaced like Sync's text. */
-private fun typographyFor(family: FontFamily) = Typography().run {
+/** Material's roles in [family], with [spacing] in place of Material's letter spacing when given. */
+private fun typographyFor(family: FontFamily, spacing: TextUnit? = null) = Typography().run {
+    fun TextStyle.styled() = if (spacing == null) copy(fontFamily = family) else copy(fontFamily = family, letterSpacing = spacing)
     copy(
-        displayLarge = displayLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        displayMedium = displayMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        displaySmall = displaySmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        headlineLarge = headlineLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        headlineMedium = headlineMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        headlineSmall = headlineSmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        titleLarge = titleLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        titleMedium = titleMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        titleSmall = titleSmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        bodyLarge = bodyLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        bodyMedium = bodyMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        bodySmall = bodySmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        labelLarge = labelLarge.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        labelMedium = labelMedium.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
-        labelSmall = labelSmall.copy(fontFamily = family, letterSpacing = SYNC_LETTER_SPACING),
+        displayLarge = displayLarge.styled(),
+        displayMedium = displayMedium.styled(),
+        displaySmall = displaySmall.styled(),
+        headlineLarge = headlineLarge.styled(),
+        headlineMedium = headlineMedium.styled(),
+        headlineSmall = headlineSmall.styled(),
+        titleLarge = titleLarge.styled(),
+        titleMedium = titleMedium.styled(),
+        titleSmall = titleSmall.styled(),
+        bodyLarge = bodyLarge.styled(),
+        bodyMedium = bodyMedium.styled(),
+        bodySmall = bodySmall.styled(),
+        labelLarge = labelLarge.styled(),
+        labelMedium = labelMedium.styled(),
+        labelSmall = labelSmall.styled(),
     )
 }
 
 private val Typographies by lazy {
     mapOf(
-        Typeface.ROBOTO to typographyFor(Roboto),
-        Typeface.SANS to typographyFor(FontFamily.SansSerif),
-        Typeface.SERIF to typographyFor(FontFamily.Serif),
-        Typeface.MONOSPACE to typographyFor(FontFamily.Monospace),
+        Typeface.FIGTREE to typographyFor(Figtree),
+        Typeface.ROBOTO to typographyFor(Roboto, SYNC_LETTER_SPACING),
+        Typeface.SANS to typographyFor(FontFamily.SansSerif, SYNC_LETTER_SPACING),
+        Typeface.SERIF to typographyFor(FontFamily.Serif, SYNC_LETTER_SPACING),
+        Typeface.MONOSPACE to typographyFor(FontFamily.Monospace, SYNC_LETTER_SPACING),
     )
 }
 
@@ -243,7 +263,7 @@ data class ThemeSpec(
     val extraColorful: Boolean = false,
     val colorIntensity: Float = 1.0f,
     val palette: ThemePalette = ThemePalette.FADEN,
-    val typeface: Typeface = Typeface.ROBOTO,
+    val typeface: Typeface = Typeface.FIGTREE,
 ) {
     companion object {
         fun of(settings: Settings) = ThemeSpec(
