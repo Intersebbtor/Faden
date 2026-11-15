@@ -33,6 +33,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarHostState
@@ -238,13 +239,14 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                     header = {
                         LargeHeader(
                             title = name,
+                            banner = user?.bannerUrl,
                             leading = { Avatar(user?.iconUrl, name, 56.dp, kind = AvatarKind.User, letterStyle = MaterialTheme.typography.titleLarge) },
                             overline = user?.let { u ->
                                 {
                                     Text(
                                         t("{0} karma", u.linkKarma + u.commentKarma),
                                         style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        color = LocalContentColor.current.copy(alpha = 0.8f),
                                     )
                                 }
                             },

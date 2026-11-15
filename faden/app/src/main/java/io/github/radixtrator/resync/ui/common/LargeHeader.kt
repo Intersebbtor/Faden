@@ -10,6 +10,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -46,9 +49,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * The big page title Sync puts above every top-level list ("Frontpage", "pics", "Inbox"), with an
- * optional [leading] image (a community icon), an [overline] (subscriber count) and a scrolling row of
- * [chips]. It's the list's first item, so it scrolls away while the toolbar returns on scroll-up.
+ * The page header at the top of every top-level list ("Frontpage", "pics", "Inbox"): a rounded hero card with an
+ * optional [leading] image (a community icon), an [overline] (subscriber count), the title and a scrolling row of
+ * [chips]. With a [banner] (a community's or user's banner image) the card shows it behind a dark scrim with white
+ * text; without one it's the theme's primary container with Faden's orange thread across it. It's the list's first
+ * item, so it scrolls away while the toolbar returns on scroll-up. Data saving mode skips the banner.
  */
 @Composable
 fun LargeHeader(
@@ -56,60 +61,77 @@ fun LargeHeader(
     modifier: Modifier = Modifier,
     leading: (@Composable () -> Unit)? = null,
     overline: (@Composable () -> Unit)? = null,
+    banner: String? = null,
     chips: @Composable RowScope.() -> Unit,
 ) {
     val shape = MaterialTheme.shapes.extraLarge
+    val shownBanner = banner?.takeUnless { LocalFeedDisplay.current.dataSavingActive }
     val thread = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.55f)
-    Column(
+    Box(
         modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 48.dp, bottom = 12.dp)
+            .padding(start = 16.dp, end = 16.dp, top = 48.dp, bottom = 12.dp)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .drawWithCache {
-                // Faden's thread: one orange stroke sweeping across the lower right with a single loop.
-                val w = size.width
-                val h = size.height
-                val path = Path().apply {
-                    moveTo(w * 0.35f, h * 1.08f)
-                    cubicTo(w * 0.55f, h * 0.70f, w * 0.72f, h * 1.05f, w * 0.80f, h * 0.78f)
-                    cubicTo(w * 0.88f, h * 0.50f, w * 0.66f, h * 0.52f, w * 0.72f, h * 0.74f)
-                    cubicTo(w * 0.78f, h * 0.96f, w * 0.95f, h * 0.70f, w * 1.06f, h * 0.45f)
-                }
-                val stroke = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-                onDrawBehind { drawPath(path, thread, style = stroke) }
-            }
-            .padding(20.dp),
+            .background(MaterialTheme.colorScheme.primaryContainer),
     ) {
-        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onPrimaryContainer) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (leading != null) {
-                    leading()
-                    Spacer(Modifier.width(16.dp))
-                }
-                Column {
-                    overline?.invoke()
-                    // Faden's page titles: the theme's headlineLarge (Figtree) at extra bold.
-                    Text(title, style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold, fontSize = 30.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (shownBanner != null) {
+            AsyncImage(shownBanner, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
+            // Darker toward the bottom, where the title and chips sit, so white text reads on any banner.
+            Box(Modifier.matchParentSize().background(BannerScrim))
+        } else {
+            Box(
+                Modifier.matchParentSize().drawWithCache {
+                    // Faden's thread: one orange stroke sweeping across the lower right with a single loop.
+                    val w = size.width
+                    val h = size.height
+                    val path = Path().apply {
+                        moveTo(w * 0.35f, h * 1.08f)
+                        cubicTo(w * 0.55f, h * 0.70f, w * 0.72f, h * 1.05f, w * 0.80f, h * 0.78f)
+                        cubicTo(w * 0.88f, h * 0.50f, w * 0.66f, h * 0.52f, w * 0.72f, h * 0.74f)
+                        cubicTo(w * 0.78f, h * 0.96f, w * 0.95f, h * 0.70f, w * 1.06f, h * 0.45f)
+                    }
+                    val stroke = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    onDrawBehind { drawPath(path, thread, style = stroke) }
+                },
+            )
+        }
+        Column(Modifier.padding(20.dp)) {
+            // A banner gets some room of its own above the title.
+            if (shownBanner != null) Spacer(Modifier.height(36.dp))
+            val content = if (shownBanner != null) Color.White else MaterialTheme.colorScheme.onPrimaryContainer
+            CompositionLocalProvider(LocalContentColor provides content) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (leading != null) {
+                        leading()
+                        Spacer(Modifier.width(16.dp))
+                    }
+                    Column {
+                        overline?.invoke()
+                        // Faden's page titles: the theme's headlineLarge (Figtree) at extra bold.
+                        Text(title, style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold, fontSize = 30.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
             }
+            // The chips scroll edge to edge of the hero, so they bleed past its padding instead of clipping inside it.
+            Row(
+                Modifier
+                    .padding(top = 16.dp)
+                    .layout { m, c ->
+                        val extra = 20.dp.roundToPx()
+                        val p = m.measure(c.copy(minWidth = c.maxWidth + 2 * extra, maxWidth = c.maxWidth + 2 * extra))
+                        layout(c.maxWidth, p.height) { p.place(-extra, 0) }
+                    }
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                content = chips,
+            )
         }
-        // The chips scroll edge to edge of the hero, so they bleed past its padding instead of clipping inside it.
-        Row(
-            Modifier
-                .padding(top = 16.dp)
-                .layout { m, c ->
-                    val extra = 20.dp.roundToPx()
-                    val p = m.measure(c.copy(minWidth = c.maxWidth + 2 * extra, maxWidth = c.maxWidth + 2 * extra))
-                    layout(c.maxWidth, p.height) { p.place(-extra, 0) }
-                }
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            content = chips,
-        )
     }
 }
+
+/** The scrim over a header banner: light at the top, dark where the white title and the chips sit. */
+private val BannerScrim = Brush.verticalGradient(0f to Color.Black.copy(alpha = 0.10f), 1f to Color.Black.copy(alpha = 0.70f))
 
 /** The label of the header chips: the theme's labelLarge, a point larger so it stays readable at the app's dense base font size. */
 val HeaderChipLabel: TextStyle

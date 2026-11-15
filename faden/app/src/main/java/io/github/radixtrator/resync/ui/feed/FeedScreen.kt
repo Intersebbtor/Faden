@@ -29,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -351,15 +352,18 @@ private fun FeedHeader(
 ) {
     LargeHeader(
         title = title,
+        banner = about?.bannerUrl,
         leading = if (isCommunity) {
             { Avatar(about?.iconUrl, title, 56.dp, letterStyle = MaterialTheme.typography.titleLarge) }
         } else null,
         overline = about?.let { sub ->
             {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Symbols.Person, null, Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    // The header's own content color, softened: white over a banner, onPrimaryContainer otherwise.
+                    val soft = LocalContentColor.current.copy(alpha = 0.8f)
+                    Icon(Symbols.Person, null, Modifier.size(14.dp), tint = soft)
                     Spacer(Modifier.width(4.dp))
-                    Text(Format.members(sub.subscribers), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(Format.members(sub.subscribers), style = MaterialTheme.typography.labelMedium, color = soft)
                 }
             }
         },
