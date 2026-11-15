@@ -50,8 +50,6 @@ data class Post(
     val media: PostMedia,
     /** The flair's own background (ARGB), or null for a neutral chip. */
     val flairColor: Int? = null,
-    /** Reddit's flair text color: dark text on a light chip, or light text on a dark one. */
-    val flairDarkText: Boolean = true,
     val locked: Boolean = false,
     val authorFlair: String? = null,
     /** Share of votes that are upvotes, 0..1; null when Reddit didn't say. */
@@ -88,8 +86,6 @@ data class Comment(
     val likes: Boolean?,
     val flair: String?,
     val saved: Boolean = false,
-    /** When the comment was last edited (epoch seconds), if Reddit says. */
-    val editedUtc: Long? = null,
     /** The author's account id (t2_…), for fetching their profile picture. */
     val authorFullname: String? = null,
     /** GIFs posted in the comment (Giphy picks and uploads), from its media_metadata. */

@@ -217,7 +217,6 @@ object Parser {
             flair = flair(d, "link"),
             media = media(d),
             flairColor = flairColor(d.string("link_flair_background_color")),
-            flairDarkText = d.string("link_flair_text_color") != "light",
             locked = d.bool("locked"),
             authorFlair = flair(d, "author"),
             upvoteRatio = (d["upvote_ratio"] as? JsonPrimitive)?.content?.toFloatOrNull(),
@@ -423,7 +422,6 @@ object Parser {
                 likes = d.boolOrNull("likes"),
                 flair = flair(d, "author"),
                 saved = d.bool("saved"),
-                editedUtc = d.long("edited"),
                 authorFullname = d.string("author_fullname"),
                 gifs = commentGifs(d),
             )
