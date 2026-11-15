@@ -59,10 +59,11 @@ internal fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, o
         val right = options.thumbnailRight
         val thumbnail = @Composable {
             if (flushThumbnail) {
-                Thumbnail(post, 72.dp, RectangleShape, onClick = actions.onMedia)
+                val inset = if (right) Modifier.padding(end = 12.dp, top = 10.dp) else Modifier.padding(start = 12.dp, top = 10.dp)
+                Thumbnail(post, 72.dp, MaterialTheme.shapes.medium, onClick = actions.onMedia, modifier = inset)
             } else {
                 val inset = if (right) Modifier.padding(end = 8.dp, top = 8.dp) else Modifier.padding(start = 8.dp, top = 8.dp)
-                Thumbnail(post, 64.dp, MaterialTheme.shapes.small, onClick = actions.onMedia, modifier = inset)
+                Thumbnail(post, 64.dp, MaterialTheme.shapes.medium, onClick = actions.onMedia, modifier = inset)
             }
         }
         val text = @Composable {
@@ -70,12 +71,20 @@ internal fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, o
                 PostTitle(post, RowTitle.scaledBy(options.titleSize.scale), maxLines = if (options.singleLineTitle) 1 else 4)
                 val description = RowMeta.scaledBy(options.descriptionSize.scale)
                 PostMeta(post, showSubreddit, maxLines = 1, style = description, showAuthor = feedAuthors)
-                Text(
-                    "${Format.points(post.score, short)} • ${Format.comments(post.numComments, short)}",
-                    style = description,
-                    color = muted,
-                    maxLines = 1,
-                )
+                if (flushThumbnail) {
+                    // List: the stats as small chips; Compact and Smaller cards keep the dense text line.
+                    Row(Modifier.padding(top = 4.dp, bottom = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        ScoreChip(post, short)
+                        CommentsChip(post, short)
+                    }
+                } else {
+                    Text(
+                        "${Format.points(post.score, short)} • ${Format.comments(post.numComments, short)}",
+                        style = description,
+                        color = muted,
+                        maxLines = 1,
+                    )
+                }
                 post.shownFlair()?.let {
                     Text(it, style = if (flushThumbnail) RowMeta else RowTitle, color = muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -120,7 +129,11 @@ internal fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, o
                 )
             }
         }
-        if (!inCard) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        if (!inCard) {
+            // Starts at the text, past a left thumbnail: List's is 12 + 72 wide, Compact's 8 + 64, plus the text's 12.
+            val start = if (options.thumbnails && !right) (if (flushThumbnail) 96.dp else 84.dp) else 12.dp
+            HorizontalDivider(Modifier.padding(start = start), color = MaterialTheme.colorScheme.outlineVariant)
+        }
     }
 }
 

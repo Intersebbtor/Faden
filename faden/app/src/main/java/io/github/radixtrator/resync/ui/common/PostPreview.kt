@@ -210,7 +210,7 @@ internal fun Thumbnail(post: Post, size: Dp, shape: Shape, onClick: () -> Unit, 
         modifier
             .size(size)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             // Holding it peeks at the picture, in feeds.
             .peekableClick(post, onClick),
         contentAlignment = Alignment.Center,

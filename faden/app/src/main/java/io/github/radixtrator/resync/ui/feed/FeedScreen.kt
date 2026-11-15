@@ -88,6 +88,7 @@ import io.github.radixtrator.resync.ui.common.rememberPostPreloads
 import io.github.radixtrator.resync.ui.common.PostListItem
 import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.SheetHandle
+import io.github.radixtrator.resync.ui.common.StatChip
 import io.github.radixtrator.resync.ui.common.SheetTitle
 import io.github.radixtrator.resync.ui.common.SwipeBack
 import io.github.radixtrator.resync.ui.common.TopSheet
@@ -412,27 +413,24 @@ fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
             append(" ")
             withStyle(SpanStyle(background = flairBg)) { append(" $it ") }
         }
-        append(" ")
-        val scoreColor = when (comment.likes) {
-            true -> FadenColors.Upvote
-            false -> FadenColors.Downvote
-            null -> Color.Unspecified
-        }
-        withStyle(SpanStyle(color = scoreColor)) {
-            append(
-                when {
-                    comment.scoreHidden -> t("[score hidden]")
-                    else -> Format.points(comment.score, short = true)
-                },
-            )
-        }
-        append(" • ${Format.timeAgo(comment.createdUtc)} • ${comment.subreddit}")
+        append(" ${Format.timeAgo(comment.createdUtc)} • ${comment.subreddit}")
     } }
-    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.combinedClickable(onClick = onOpen).padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.combinedClickable(onClick = onOpen).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(comment.postTitle, style = MaterialTheme.typography.bodyMedium, fontStyle = FontStyle.Italic)
             Text(meta, style = MaterialTheme.typography.bodyMedium, color = muted, inlineContent = distinguishedMarks())
             RedditBodyText(rememberRedditText(comment.bodyHtml, footnotes = false).text, MaterialTheme.typography.bodyMedium.copy(lineHeight = TextUnit.Unspecified))
+            StatChip(
+                icon = if (comment.likes == false) AppIcons.ArrowDown else AppIcons.ArrowUp,
+                value = if (comment.scoreHidden) "–" else Format.count(comment.score, short = true),
+                description = if (comment.scoreHidden) t("[score hidden]") else Format.points(comment.score, short = true),
+                modifier = Modifier.padding(top = 4.dp),
+                accent = when (comment.likes) {
+                    true -> FadenColors.Upvote
+                    false -> FadenColors.Downvote
+                    null -> null
+                },
+            )
         }
     }
 }
