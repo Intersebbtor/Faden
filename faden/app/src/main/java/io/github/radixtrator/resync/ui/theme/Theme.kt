@@ -174,10 +174,13 @@ private fun ToneScheme.toColorScheme(dark: Boolean): ColorScheme {
     )
 }
 
-/** The accent choices offered in Settings › Theme color, after "Default" (ARGB). */
+/**
+ * The accent choices offered in Settings › Theme color, after "Default" (Faden red, #B4233C) and "Classic" (ARGB):
+ * rust, ochre, moss, teal, blue, violet and plum.
+ */
 val THEME_SEEDS = listOf(
-    0xFF4484F6.toInt(), 0xFF9C27B0.toInt(), 0xFFE91E63.toInt(), 0xFFE5484D.toInt(),
-    0xFFFF9800.toInt(), 0xFF4CAF50.toInt(), 0xFF009688.toInt(), 0xFF795548.toInt(),
+    0xFFC2581C.toInt(), 0xFFA0841A.toInt(), 0xFF3E8E41.toInt(), 0xFF00897B.toInt(),
+    0xFF2F6FB5.toInt(), 0xFF6750A4.toInt(), 0xFF8E4585.toInt(),
 )
 
 /** Pure black surfaces for OLED screens; cards stay a hair lighter so they still read as cards. */
