@@ -2,7 +2,6 @@ package io.github.radixtrator.resync.ui.common
 
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -12,7 +11,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /** [HeaderChip] for a choice with a selected state: a [FilterChip], so the state is announced, styled like the header chips. */
 @Composable
@@ -25,9 +23,9 @@ fun HeaderFilterChip(
     FilterChip(
         selected = selected,
         onClick = onClick,
-        label = { Text(label, style = MaterialTheme.typography.titleSmall.copy(fontSize = 16.sp)) },
+        label = { Text(label, style = HeaderChipLabel) },
         leadingIcon = icon?.let { { Icon(it, null, Modifier.size(FilterChipDefaults.IconSize)) } },
-        shape = RoundedCornerShape(8.dp),
+        shape = MaterialTheme.shapes.small,
         border = null,
         modifier = Modifier.height(36.dp),
         colors = FilterChipDefaults.filterChipColors(
