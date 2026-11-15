@@ -9,10 +9,10 @@ Kotlin, Jetpack Compose (Material 3), Navigation 3, OkHttp, Coil 3, kotlinx.seri
 ## Install and updates
 
 Install with [Obtainium](https://github.com/ImranR98/Obtainium) to get notified of new versions:
-[add Faden to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/Radixtrator/Resync),
-or in Obtainium tap **Add app** and paste `https://github.com/Radixtrator/Resync`. Obtainium checks this repo's
+[add Faden to Obtainium](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/Radixtrator/Faden),
+or in Obtainium tap **Add app** and paste `https://github.com/Radixtrator/Faden`. Obtainium checks this repo's
 GitHub releases and offers each new APK as an update. The APK is also attached to every
-[release](https://github.com/Radixtrator/Resync/releases) for installing by hand.
+[release](https://github.com/Radixtrator/Faden/releases) for installing by hand.
 
 ## Reddit API access
 
@@ -67,7 +67,7 @@ Pushing a version tag builds a signed APK and publishes it as a GitHub release
 
    `gh secret list` should then show all four.
 
-3. In Obtainium, add `https://github.com/Radixtrator/Resync` as an app source.
+3. In Obtainium, add `https://github.com/Radixtrator/Faden` as an app source.
 
 ### Publishing a release
 

@@ -21,7 +21,7 @@ data class LatestRelease(val version: String, val url: String, val items: List<S
 
 /** Reading whats-new.md and release bodies, and comparing versions. */
 object WhatsNew {
-    const val REPO = "Radixtrator/Resync"
+    const val REPO = "Radixtrator/Faden"
 
     fun releaseUrl(version: String) = "https://github.com/$REPO/releases/tag/v$version"
 

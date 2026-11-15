@@ -85,7 +85,7 @@ jobs:
             else
               echo "::warning::whats-new.md has no section for $base" >&2
             fi
-            echo '**Install or update:** add `https://github.com/Radixtrator/Resync` in [Obtainium](https://github.com/ImranR98/Obtainium) to get updates automatically ([steps](https://github.com/Radixtrator/Resync#install)), or download the APK below.'
+            echo '**Install or update:** add `https://github.com/Radixtrator/Faden` in [Obtainium](https://github.com/ImranR98/Obtainium) to get updates automatically ([steps](https://github.com/Radixtrator/Faden#install)), or download the APK below.'
           } > "$RUNNER_TEMP/release-notes.md"
           cat "$RUNNER_TEMP/release-notes.md"
 
