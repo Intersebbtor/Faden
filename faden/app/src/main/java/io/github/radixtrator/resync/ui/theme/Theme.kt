@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.em
 import io.github.radixtrator.resync.R
 import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.data.ThemeMode
+import io.github.radixtrator.resync.data.ThemePalette
 import io.github.radixtrator.resync.data.Typeface
 
 // Sync builds its theme from Monet tonal palettes (N1/N2 neutrals, A1–A3 accents). These are the tones
@@ -187,14 +188,26 @@ private fun ColorScheme.blackened() = copy(
 )
 
 /**
- * Faden's own palette (not Material You): Sync's sampled Monet colors, or tone-based colors generated from [seed]
- * (ARGB) when one is picked ([extra] colorful or not, at Color [intensity]), and pure black when [black] (dark only). Theme management
- * draws its previews with this too.
+ * Faden's own palette (not Material You), and pure black when [black] (dark only). With a [seed] (ARGB) picked it is
+ * generated from it ([extra] colorful or not, at Color [intensity]), whichever [palette]; without one it is
+ * [palette]'s own: Faden's red thread, or Sync's sampled "Classic" colors, which are fixed. Theme management draws
+ * its previews with this too.
  */
-fun fadenColorScheme(dark: Boolean, black: Boolean, seed: Int?, extra: Boolean, intensity: Float = 1f): ColorScheme {
-    val base = if (dark) DarkColors else LightColors
-    val tinted = if (seed != null) ToneScheme.generate(seed, dark, extra, intensity).toColorScheme(dark) else base
-    return if (black && dark) tinted.blackened() else tinted
+fun fadenColorScheme(
+    dark: Boolean,
+    black: Boolean,
+    seed: Int?,
+    extra: Boolean,
+    intensity: Float = 1f,
+    palette: ThemePalette = ThemePalette.FADEN,
+): ColorScheme {
+    val base = when {
+        seed != null -> ToneScheme.generate(seed, dark, extra, intensity).toColorScheme(dark)
+        palette == ThemePalette.CLASSIC -> if (dark) DarkColors else LightColors
+        // Extra colorful and the intensity only apply to a picked accent.
+        else -> ToneScheme.faden(dark).toColorScheme(dark)
+    }
+    return if (black && dark) base.blackened() else base
 }
 
 /**
@@ -223,11 +236,12 @@ data class ThemeSpec(
     val seedColor: Int? = null,
     val extraColorful: Boolean = false,
     val colorIntensity: Float = 1.0f,
+    val palette: ThemePalette = ThemePalette.FADEN,
     val typeface: Typeface = Typeface.ROBOTO,
 ) {
     companion object {
         fun of(settings: Settings) = ThemeSpec(
-            settings.theme, settings.dynamicColor, settings.seedColor, settings.extraColorful, settings.colorIntensity, settings.typeface,
+            settings.theme, settings.dynamicColor, settings.seedColor, settings.extraColorful, settings.colorIntensity, settings.palette, settings.typeface,
         )
     }
 }
@@ -243,12 +257,12 @@ fun FadenTheme(spec: ThemeSpec, content: @Composable () -> Unit) {
     val black = spec.theme == ThemeMode.BLACK
     // MaterialTheme provides its colors through a static local and ColorScheme has no equals, so a fresh instance
     // on every call would recompose the whole app on any settings write.
-    val scheme = remember(dark, black, spec.dynamicColor, spec.seedColor, spec.extraColorful, spec.colorIntensity, context) {
+    val scheme = remember(dark, black, spec.dynamicColor, spec.seedColor, spec.extraColorful, spec.colorIntensity, spec.palette, context) {
         if (spec.dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val dynamic = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
             if (black) dynamic.blackened() else dynamic
         } else {
-            fadenColorScheme(dark, black, spec.seedColor, spec.extraColorful, spec.colorIntensity)
+            fadenColorScheme(dark, black, spec.seedColor, spec.extraColorful, spec.colorIntensity, spec.palette)
         }
     }
     CompositionLocalProvider(LocalDarkTheme provides dark) {

@@ -4,6 +4,7 @@ import io.github.radixtrator.resync.data.SavedTheme
 import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.data.ThemeCode
 import io.github.radixtrator.resync.data.ThemeMode
+import io.github.radixtrator.resync.data.ThemePalette
 import io.github.radixtrator.resync.data.withSavedTheme
 import java.util.Base64
 import kotlin.test.Test
@@ -29,6 +30,29 @@ class ThemesTest {
             val theme = SavedTheme("Plain", mode, seedColor = null, extraColorful = false)
             assertEquals(theme, ThemeCode.decode(ThemeCode.encode(theme)))
         }
+    }
+
+    @Test
+    fun classicPaletteRoundTripsAndOldCodesAreFaden() {
+        val classic = SavedTheme("Sync", ThemeMode.DARK, palette = ThemePalette.CLASSIC)
+        assertEquals(classic, ThemeCode.decode(ThemeCode.encode(classic)))
+        assertEquals(ThemePalette.FADEN, ThemeCode.decode(ThemeCode.encode(blue))?.palette)
+        // A code from before palettes existed has no "p", and one from the future may name a palette we don't know.
+        fun code(json: String) = ThemeCode.PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(json.toByteArray())
+        assertEquals(ThemePalette.FADEN, ThemeCode.decode(code("""{"v":1,"n":"x","m":"DARK"}"""))?.palette)
+        assertEquals(ThemePalette.FADEN, ThemeCode.decode(code("""{"v":1,"m":"DARK","p":"NEON"}"""))?.palette)
+        assertEquals(ThemePalette.CLASSIC, ThemeCode.decode(code("""{"v":1,"m":"DARK","p":"CLASSIC"}"""))?.palette)
+    }
+
+    @Test
+    fun paletteIsPartOfApplyAndMatch() {
+        val classic = SavedTheme("Sync", ThemeMode.LIGHT, palette = ThemePalette.CLASSIC)
+        val applied = classic.applyTo(Settings())
+        assertEquals(ThemePalette.CLASSIC, applied.palette)
+        assertTrue(classic.matches(applied))
+        assertFalse(classic.copy(palette = ThemePalette.FADEN).matches(applied))
+        assertEquals(classic.copy(name = "Saved"), SavedTheme.from(applied, "Saved"))
+        assertEquals(ThemePalette.FADEN, Settings().palette)
     }
 
     @Test

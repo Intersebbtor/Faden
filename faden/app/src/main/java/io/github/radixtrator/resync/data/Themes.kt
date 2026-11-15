@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * A theme saved in Theme management: the combination of [mode], accent [seedColor] (ARGB, null = Sync's own
- * blue palette) and [extraColorful] that [Settings] applies, under a [name] the user picked.
+ * A theme saved in Theme management: the combination of [mode], accent [seedColor] (ARGB, null = the [palette]'s
+ * own colors) and [extraColorful] that [Settings] applies, under a [name] the user picked.
  */
 @Serializable
 data class SavedTheme(
@@ -14,19 +14,21 @@ data class SavedTheme(
     val mode: ThemeMode = ThemeMode.SYSTEM,
     val seedColor: Int? = null,
     val extraColorful: Boolean = false,
+    val palette: ThemePalette = ThemePalette.FADEN,
 ) {
     /** Whether this is the combination [settings] are using now (names aside). */
     fun matches(settings: Settings): Boolean =
-        mode == settings.theme && seedColor == settings.seedColor && extraColorful == settings.extraColorful
+        mode == settings.theme && seedColor == settings.seedColor && extraColorful == settings.extraColorful &&
+            palette == settings.palette
 
     /** [settings] with this theme applied. Material You is switched off, since it would hide the accent. */
     fun applyTo(settings: Settings): Settings =
-        settings.copy(theme = mode, seedColor = seedColor, extraColorful = extraColorful, dynamicColor = false)
+        settings.copy(theme = mode, seedColor = seedColor, extraColorful = extraColorful, palette = palette, dynamicColor = false)
 
     companion object {
         /** The theme [settings] are using now, called [name]. */
         fun from(settings: Settings, name: String) =
-            SavedTheme(name.trim(), settings.theme, settings.seedColor, settings.extraColorful)
+            SavedTheme(name.trim(), settings.theme, settings.seedColor, settings.extraColorful, settings.palette)
     }
 }
 
@@ -53,6 +55,8 @@ object ThemeCode {
         val m: String = ThemeMode.SYSTEM.name,
         val s: String? = null,
         val x: Boolean = false,
+        /** The palette's name when it isn't Faden's, so codes from before Classic existed (and Faden-palette ones) read the same. */
+        val p: String? = null,
     )
 
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -63,6 +67,7 @@ object ThemeCode {
             m = theme.mode.name,
             s = theme.seedColor?.let { "%06X".format(it and 0xFFFFFF) },
             x = theme.extraColorful,
+            p = theme.palette.takeIf { it != ThemePalette.FADEN }?.name,
         )
         val bytes = json.encodeToString(Payload.serializer(), payload).toByteArray(Charsets.UTF_8)
         return PREFIX + Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
@@ -91,7 +96,8 @@ object ThemeCode {
             if (hex.length != 6 || !hex.all { it in '0'..'9' || it.uppercaseChar() in 'A'..'F' }) return null
             (hex.toIntOrNull(16) ?: return null) or 0xFF000000.toInt()
         }
-        return SavedTheme(name = payload.n.trim().take(MAX_NAME), mode = mode, seedColor = seed, extraColorful = payload.x)
+        return SavedTheme(name = payload.n.trim().take(MAX_NAME), mode = mode, seedColor = seed, extraColorful = payload.x,
+            palette = ThemePalette.entries.firstOrNull { it.name == payload.p } ?: ThemePalette.FADEN)
     }
 
     /** Longest theme name kept from a loaded code. */

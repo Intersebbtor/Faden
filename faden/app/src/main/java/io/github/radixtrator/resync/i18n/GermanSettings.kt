@@ -227,6 +227,8 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     "Mode" to "Modus",
     "Theme color {0}" to "Themenfarbe {0}",
     "Default theme color" to "Standard-Themenfarbe",
+    "Classic" to "Klassisch",
+    "Using the Classic palette, Sync's own colors." to "Nutzt die klassische Palette, die Originalfarben von Sync.",
     "Color intensity" to "Farbintensität",
     "Dark tweaks" to "Dunkel-Feinschliff",
     "Dark overlay" to "Dunkle Überlagerung",
