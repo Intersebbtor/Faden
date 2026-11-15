@@ -6,6 +6,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -25,7 +26,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
 import io.github.radixtrator.resync.R
@@ -197,6 +200,28 @@ private fun ToneScheme.toColorScheme(dark: Boolean): ColorScheme {
 }
 
 /**
+ * Faden's shape scale, rounder than Sync's 6-16dp corners. Which role is for what:
+ *  - [Shapes.extraSmall] (6dp): tiny things inside other things: badges, flair tags, mini previews' inner blocks, tooltips.
+ *  - [Shapes.small] (10dp): chips and pills (header and filter chips, segmented buttons), menus, text fields, snackbars.
+ *  - [Shapes.medium] (16dp): cards and tiles: posts, comment cards, media, swipe rows, list groups.
+ *  - [Shapes.large] (24dp): sheets and panels that sit on an edge, large buttons and floating buttons.
+ *  - [Shapes.extraLarge] (32dp): dialogs and full-height modal surfaces.
+ * The "increased" and extra-extra-large steps sit between and beyond those, for the components that ask for them
+ * (expressive buttons, large app bars, bottom sheets).
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+val FadenShapes = Shapes(
+    extraSmall = RoundedCornerShape(6.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    largeIncreased = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(32.dp),
+    extraLargeIncreased = RoundedCornerShape(40.dp),
+    extraExtraLarge = RoundedCornerShape(48.dp),
+)
+
+/**
  * The accent choices offered in Settings › Theme color, after "Default" (Faden red, #B4233C) and "Classic" (ARGB):
  * rust, ochre, moss, teal, blue, violet and plum.
  */
@@ -298,6 +323,7 @@ fun FadenTheme(spec: ThemeSpec, content: @Composable () -> Unit) {
         MaterialExpressiveTheme(
             colorScheme = scheme,
             motionScheme = MotionScheme.expressive(),
+            shapes = FadenShapes,
             typography = Typographies.getValue(spec.typeface),
             content = content,
         )

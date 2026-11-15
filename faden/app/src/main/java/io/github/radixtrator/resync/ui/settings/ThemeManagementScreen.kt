@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -406,9 +405,9 @@ private fun PaletteRow(name: String, color: Color) {
         Box(
             Modifier
                 .size(36.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(MaterialTheme.shapes.small)
                 .background(color)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(8.dp)),
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.small),
         )
         Column {
             Text(name, style = MaterialTheme.typography.bodyMedium)
@@ -515,15 +514,15 @@ private fun MiniPhone(scheme: ColorScheme, label: String, modifier: Modifier = M
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.55f)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(MaterialTheme.shapes.medium)
                 .background(scheme.background)
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp)),
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.medium),
         ) {
             Column(Modifier.fillMaxSize().padding(8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Bar(scheme.onBackground, widthFraction = 0.5f, height = 8.dp)
                 repeat(2) {
                     Column(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(6.dp)).background(scheme.surfaceContainerLow).padding(6.dp),
+                        Modifier.fillMaxWidth().clip(MaterialTheme.shapes.extraSmall).background(scheme.surfaceContainerLow).padding(6.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         Bar(scheme.primary, widthFraction = 0.4f)
@@ -537,7 +536,7 @@ private fun MiniPhone(scheme: ColorScheme, label: String, modifier: Modifier = M
                     .align(Alignment.BottomEnd)
                     .padding(end = 8.dp, bottom = 32.dp)
                     .size(18.dp)
-                    .clip(RoundedCornerShape(6.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(scheme.primaryContainer),
             )
             Row(
