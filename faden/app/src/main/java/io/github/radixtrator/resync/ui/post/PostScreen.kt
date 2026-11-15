@@ -102,6 +102,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -1095,14 +1097,15 @@ private fun CommentSearchSheet(rows: List<VisibleNode>, onDismiss: () -> Unit, o
             Icon(Icons.Outlined.Search, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.width(16.dp))
             Box(Modifier.weight(1f)) {
-                if (query.isEmpty()) Text(t("Search comments"), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
+                val hint = t("Search comments")
+                if (query.isEmpty()) Text(hint, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyLarge)
                 BasicTextField(
                     value = query,
                     onValueChange = { query = it },
                     singleLine = true,
                     textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus).semantics { contentDescription = hint },
                 )
             }
         }
