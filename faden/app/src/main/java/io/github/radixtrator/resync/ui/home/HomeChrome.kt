@@ -240,7 +240,8 @@ fun ShellScaffold(
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.background,
+                    // Tints only while the toolbar is shown over scrolled content (overlappedFraction); at the top it blends in.
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
                 navigationIcon = {
                     if (home) {
