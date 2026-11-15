@@ -242,14 +242,24 @@ class AppContainer(context: Context) {
         _username.value = null
     }
 
-    suspend fun refreshInboxCount() {
-        if (_username.value == null) {
+    /** When (and for whom) [refreshInboxCount] last succeeded, so opening feeds doesn't hit /api/v1/me every time. */
+    @Volatile private var inboxRefreshedAt = 0L
+    @Volatile private var inboxRefreshedFor: String? = null
+
+    /** Refreshes the badge and avatar; skipped within a minute of the last success for the same account unless [force]. */
+    suspend fun refreshInboxCount(force: Boolean = false) {
+        val user = _username.value
+        if (user == null) {
             _avatar.value = null
             return
         }
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (!force && inboxRefreshedFor == user && now - inboxRefreshedAt < 60_000) return
         runCatching { api.me() }.onSuccess {
             _inboxCount.value = it.inboxCount
             _avatar.value = it.iconUrl
+            inboxRefreshedAt = now
+            inboxRefreshedFor = user
         }
     }
 
