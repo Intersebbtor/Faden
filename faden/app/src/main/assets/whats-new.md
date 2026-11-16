@@ -6,6 +6,14 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.9.0
+- Tap a post's flair to see the community's posts with that flair
+- Below the last comment, the page shows the background color instead of looking like one long card
+- Support Faden: a link to donate on Ko-fi, under Settings › Everything else. Faden stays free either way
+- Pictures linked in comments from sites other than Reddit, imgur and Giphy wait for a tap before loading, so those sites can't see who's reading
+- Moving to a new phone no longer copies your Reddit logins; log in again there. Settings and history still come along
+- Undo last restore stays available for 7 days, and goes away when you log out
+
 ## 0.8.1
 - Comment threads are rounded at both ends, so a collapsed comment is a neat rounded panel instead of square at the bottom
 
