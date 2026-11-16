@@ -580,7 +580,7 @@ private fun HomeNavigationBar(
 
 /**
  * Sync's drawer navigation (Settings "Use drawer navigation"): your account, Posts / Inbox / Explore,
- * then your favorites and subscriptions (Explore's lists, same "Duplicate favorites" and hidden-section
+ * then your favorites, the front page / Popular / All and your subscriptions (Explore's lists, same "Duplicate favorites" and hidden-section
  * choices), then Settings. The header opens the account card.
  */
 @Composable
@@ -601,6 +601,7 @@ private fun HomeDrawer(
     val subscriptions by container.subscriptions.collectAsStateWithLifecycle()
     val icons by container.subredditIcons.collectAsStateWithLifecycle()
     val favorites = if (ExploreSection.FAVORITES in explore.hidden) emptyList() else explore.favorites
+    val feeds = if (ExploreSection.FEEDS in explore.hidden) emptyList() else EXPLORE_FEEDS
     val subscribed = if (ExploreSection.SUBSCRIPTIONS in explore.hidden) {
         emptyList()
     } else {
@@ -658,6 +659,7 @@ private fun HomeDrawer(
                 )
             }
             drawerFeeds(ExploreSection.FAVORITES.header, favorites, icons, itemPadding, onOpenFeed)
+            drawerFeeds(ExploreSection.FEEDS.header, feeds, icons, itemPadding, onOpenFeed)
             drawerFeeds(ExploreSection.SUBSCRIPTIONS.header, subscribed, icons, itemPadding, onOpenFeed)
             item(key = "settings") { Column {
                 HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)

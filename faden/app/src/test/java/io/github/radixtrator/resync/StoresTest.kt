@@ -99,13 +99,26 @@ class StoresTest {
         val reloaded = ExploreStore(prefs).state.value
         assertTrue(reloaded.isFavorite("PICS"))
         assertTrue(reloaded.isDefault("pics"))
-        assertEquals(setOf(ExploreSection.FEEDS, ExploreSection.MOST_VISITED), reloaded.hidden)
+        assertEquals(setOf(ExploreSection.MOST_VISITED), reloaded.hidden)
 
         store.setDefault("")
         assertNull(store.state.value.defaultFeed)
         assertTrue(store.state.value.isDefault(""))
         store.toggleFavorite("Pics")
         assertTrue(store.state.value.favorites.isEmpty())
+    }
+
+    @Test
+    fun `explore shows Feeds once for states saved with it hidden, then remembers hiding it`() {
+        val prefs = FakePrefs()
+        prefs.values["explore.v1"] = """{"hidden":["FEEDS","MODERATED"],"favorites":["pics"]}"""
+        val store = ExploreStore(prefs)
+        assertEquals(setOf(ExploreSection.MODERATED), store.state.value.hidden)
+        assertEquals(listOf("pics"), store.state.value.favorites)
+
+        store.setVisible(ExploreSection.FEEDS, false)
+        assertEquals(setOf(ExploreSection.FEEDS, ExploreSection.MODERATED), ExploreStore(prefs).state.value.hidden)
+        assertTrue(ExploreSection.FEEDS !in ExploreStore(FakePrefs()).state.value.hidden)
     }
 
     @Test
