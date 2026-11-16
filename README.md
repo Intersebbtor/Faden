@@ -24,6 +24,15 @@ repeat this by hand for each update.
 On first launch Faden asks for a Reddit client ID, since Reddit no longer issues new API keys. See
 [Reddit API access](faden/README.md#reddit-api-access) for what to enter.
 
+## Privacy
+
+Faden has no server, analytics or ads. [PRIVACY.md](PRIVACY.md) lists what it stores and every site it connects to.
+
+## Support
+
+Faden is free. If you'd like to chip in, you can [donate on Ko-fi](https://ko-fi.com/radixtrator); the same link is
+in the app under Settings › Everything else › Support Faden.
+
 ## Development
 
 The Android project lives in [`faden/`](faden/). Its [README](faden/README.md) covers building, the

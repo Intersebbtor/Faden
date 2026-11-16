@@ -1,8 +1,7 @@
 # Faden
 
 A from-scratch Reddit client for Android, modeled on the behavior and feel of Sync for Reddit
-(discontinued June 2023). No Sync code or assets are used. The decompiled app served only as a reference
-for which endpoints it called and how it behaved (see `../NOTES.md`).
+(discontinued June 2023). No Sync code or assets are used; Sync was only a reference for how it behaved.
 
 Kotlin, Jetpack Compose (Material 3), Navigation 3, OkHttp, Coil 3, kotlinx.serialization.
 
@@ -23,6 +22,11 @@ approach Boost for Reddit takes:
   authorize RedReader once (paste the whole line).
 - **Redirect URI**: defaults to `redreader://rr_oauth_redir`. It must match the app the ID belongs to.
 - **User agent**: defaults to `org.quantumbadger.redreader/1.25.1`.
+
+The redirect URI defaults to RedReader's because it has to match RedReader's client ID, which is what most people
+enter, and the user agent defaults to RedReader's as well. Reddit's API rules ask apps not to fake their user agent,
+so Reddit could block this setup at any time. All three values can be changed under Settings › Everything else ›
+Reddit API.
 
 Logged out, Faden uses app-only tokens (`installed_client` grant). Logging in uses Reddit's OAuth
 page in a WebView and intercepts the redirect, so no intent filter is needed for any redirect scheme.
