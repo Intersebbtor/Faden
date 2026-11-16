@@ -1,12 +1,15 @@
 package io.github.radixtrator.resync
 
 import io.github.radixtrator.resync.data.CommentGif
+import io.github.radixtrator.resync.ui.common.autoLoads
 import io.github.radixtrator.resync.ui.common.gifBody
 import io.github.radixtrator.resync.ui.common.gifUrl
 import io.github.radixtrator.resync.ui.common.imageUrl
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class CommentGifsTest {
     @Test
@@ -55,5 +58,32 @@ class CommentGifsTest {
         val split = gifBody("""<p><a href="https://i.redd.it/b.jpg">https://i.redd.it/b.jpg</a></p>""", emptyList())
         assertEquals("", split.html)
         assertEquals(listOf("https://i.redd.it/b.jpg"), split.gifs.map { it.url })
+    }
+
+    @Test
+    fun `only known image hosts load without a tap`() {
+        assertTrue(autoLoads("https://i.redd.it/b.jpg"))
+        assertTrue(autoLoads("https://preview.redd.it/x.jpeg?width=640&format=pjpg"))
+        assertTrue(autoLoads("https://external-preview.redd.it/x.gif?s=1"))
+        assertTrue(autoLoads("https://i.imgur.com/a.png"))
+        assertTrue(autoLoads("https://i.giphy.com/abc123.gif"))
+        assertTrue(autoLoads("https://I.REDD.IT/b.jpg"))
+        assertFalse(autoLoads("https://example.com/a.png"))
+        assertFalse(autoLoads("http://i.imgur.com/a.png"))
+        assertFalse(autoLoads("https://i.redd.it.example.com/a.png"))
+        assertFalse(autoLoads("https://i.redd.it@example.com/a.png"))
+        assertFalse(autoLoads("https://example.com/i.redd.it/a.png"))
+        assertFalse(autoLoads("not a url"))
+    }
+
+    @Test
+    fun `images on other sites stay links`() {
+        val html = """<p><a href="https://example.com/a.png">https://example.com/a.png</a> <a href="https://example.com/b.gif">gif</a></p>"""
+        val split = gifBody(html, emptyList())
+        assertEquals(html, split.html)
+        assertTrue(split.gifs.isEmpty())
+        // Giphy page links still become previews: they turn into i.giphy.com addresses.
+        val giphy = gifBody("""<p><a href="https://giphy.com/gifs/funny-cat-abc123">https://giphy.com/gifs/funny-cat-abc123</a></p>""", emptyList())
+        assertEquals(listOf("https://i.giphy.com/abc123.gif"), giphy.gifs.map { it.url })
     }
 }

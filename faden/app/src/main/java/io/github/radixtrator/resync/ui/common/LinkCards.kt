@@ -54,7 +54,8 @@ fun LinkCards(links: List<String>, modifier: Modifier = Modifier) {
             ) {
                 Box(Modifier.size(56.dp).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
                     Icon(AppIcons.Link, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                    if (isImageLink(url)) {
+                    // Other sites' images wait for a tap (see autoLoads), so the glyph stays for them.
+                    if (isImageLink(url) && autoLoads(url)) {
                         AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.matchParentSize())
                     }
                 }

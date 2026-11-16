@@ -21,6 +21,7 @@ import coil3.compose.AsyncImage
 import io.github.radixtrator.resync.data.CommentGif
 import io.github.radixtrator.resync.data.HTML_TAG
 import io.github.radixtrator.resync.i18n.t
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 
 /** A comment body with its GIFs and pictures taken out of the text, and the ones to show under it. */
 data class GifBody(val html: String, val gifs: List<CommentGif>)
@@ -33,7 +34,7 @@ private val EMPTY_PARAGRAPH = Regex("""<p>\s*</p>""")
  * Splits [html] into text and picture previews. The comment's own GIFs and images ([gifs], from media_metadata)
  * come out of the text entirely, since Reddit only leaves a link (usually to preview.redd.it) or an image tag
  * there. A bare link to a GIF or image (the link's text is its URL) is swapped for a preview as well; one with
- * words of its own keeps them and also gets a preview.
+ * words of its own keeps them and also gets a preview. Only links that [autoLoads] allows get one: others stay links.
  */
 fun gifBody(html: String, gifs: List<CommentGif>): GifBody {
     val previews = gifs.toMutableList()
@@ -43,7 +44,7 @@ fun gifBody(html: String, gifs: List<CommentGif>): GifBody {
         val label = inner.replace(HTML_TAG, "").replace("&amp;", "&").trim()
         val own = gifs.any { g -> href == g.page || href == g.url || g.id in href || g.id == label }
         if (own) return@replace ""
-        val gif = gifUrl(href) ?: imageUrl(href) ?: return@replace m.value
+        val gif = (gifUrl(href) ?: imageUrl(href))?.takeIf(::autoLoads) ?: return@replace m.value
         if (previews.none { it.url == gif }) previews += CommentGif(id = gif, url = gif)
         if (label == href || label.isEmpty()) "" else m.value
     }
@@ -80,6 +81,20 @@ fun gifUrl(link: String): String? {
         else -> null
     }
 }
+
+/**
+ * The image hosts a picture may load from just by scrolling past it: Reddit's own, imgur's and Giphy's. A link to
+ * any other site stays a link and loads only when tapped, so a commenter can't learn readers' IP addresses by linking
+ * an image on a server they run.
+ */
+private val AUTO_LOAD_HOSTS = setOf(
+    "i.redd.it", "preview.redd.it", "external-preview.redd.it",
+    "i.imgur.com",
+    "i.giphy.com", "media.giphy.com",
+)
+
+/** Whether [url] is an https address on one of [AUTO_LOAD_HOSTS] (parsed, so "i.redd.it@other.site" doesn't count). */
+fun autoLoads(url: String): Boolean = url.toHttpUrlOrNull()?.takeIf { it.isHttps }?.host in AUTO_LOAD_HOSTS
 
 private val IMAGE_EXTENSION = Regex("""\.(?:jpe?g|png|webp)$""", RegexOption.IGNORE_CASE)
 
