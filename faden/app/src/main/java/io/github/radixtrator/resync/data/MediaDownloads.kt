@@ -200,7 +200,9 @@ fun dashTracks(manifest: String): DashTracks? {
 
 /** The URL's file name, with an extension that matches [mime] when it has none. */
 fun fileName(url: String, mime: String): String {
-    val last = url.substringBefore('?').substringBefore('#').trimEnd('/').substringAfterLast('/').ifEmpty { "faden" }
+    // "." or ".." would name a folder, not a file, on Android 9 and older (which save by path).
+    val last = url.substringBefore('?').substringBefore('#').trimEnd('/').substringAfterLast('/')
+        .takeUnless { it.isEmpty() || it.all { c -> c == '.' } } ?: "faden"
     if ('.' in last) return last
     val ext = when (mime) {
         "image/png" -> "png"

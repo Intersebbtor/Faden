@@ -83,6 +83,7 @@ import io.github.radixtrator.resync.ui.navigation.LocalVisited
 import io.github.radixtrator.resync.ui.navigation.LoginRoute
 import io.github.radixtrator.resync.ui.navigation.Navigator
 import io.github.radixtrator.resync.ui.navigation.PostRoute
+import io.github.radixtrator.resync.ui.navigation.RedditLinks
 import io.github.radixtrator.resync.ui.navigation.SearchRoute
 import io.github.radixtrator.resync.ui.navigation.SettingsRoute
 import io.github.radixtrator.resync.ui.navigation.ThemeManagementRoute
@@ -184,7 +185,12 @@ class MainActivity : ComponentActivity() {
         linkFrom(intent)?.let { openLink = it }
     }
 
-    private fun linkFrom(intent: Intent): String? = intent.takeIf { it.action == Intent.ACTION_VIEW }?.dataString
+    /**
+     * Only http(s) reddit.com / redd.it links. The intent filter already limits what the system routes here, but an
+     * app can name this activity directly with any URI, which would otherwise be passed on to another app as ours.
+     */
+    private fun linkFrom(intent: Intent): String? =
+        intent.takeIf { it.action == Intent.ACTION_VIEW }?.dataString?.takeIf(RedditLinks::isRedditPage)
 }
 
 @Composable

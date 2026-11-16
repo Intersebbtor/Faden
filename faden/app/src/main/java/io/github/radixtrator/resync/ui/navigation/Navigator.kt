@@ -103,6 +103,13 @@ class Navigator(
     }
 
     fun openExternal(uri: String) {
+        // Links come from posts, comments and wikis: only pass on the schemes Reddit itself links, never file:,
+        // content: or intent: ones (a file: URI would also crash the app on Android 7+).
+        val scheme = uri.substringBefore(':', "").lowercase()
+        if (scheme !in EXTERNAL_SCHEMES) {
+            Toast.makeText(context, t("No app can open {0}", uri), Toast.LENGTH_SHORT).show()
+            return
+        }
         // Faden opens reddit.com links itself, so ones it has no page for go to a browser by name, not back here.
         val browser = if (RedditLinks.isRedditPage(uri)) browserPackage() else null
         try {
@@ -117,6 +124,8 @@ class Navigator(
                 )
             }
         } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, t("No app can open {0}", uri), Toast.LENGTH_SHORT).show()
+        } catch (_: SecurityException) {
             Toast.makeText(context, t("No app can open {0}", uri), Toast.LENGTH_SHORT).show()
         }
     }
@@ -206,3 +215,8 @@ val LocalUserTagColors = compositionLocalOf<Map<String, Int>> { emptyMap() }
 
 /** Active account name, or null when logged out. */
 val LocalAccount = compositionLocalOf<String?> { null }
+
+/** The link schemes Reddit's markdown allows, and so the only ones [Navigator.openExternal] hands to other apps. */
+private val EXTERNAL_SCHEMES = setOf(
+    "http", "https", "mailto", "ftp", "steam", "irc", "ircs", "news", "mumble", "ssh", "git", "ts3server",
+)

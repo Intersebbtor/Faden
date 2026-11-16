@@ -8,3 +8,13 @@
 # still obfuscated: retrace them with the release's mapping.txt (attached to each GitHub release).
 -keepattributes SourceFile,LineNumberTable
 -renamesourcefileattribute SourceFile
+
+# Release builds don't write to logcat: some warnings carry what the user typed (a community search) or a failing
+# URL. Debug builds keep logging.
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+    public static int w(...);
+    public static int e(...);
+}
