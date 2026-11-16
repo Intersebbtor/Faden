@@ -363,7 +363,13 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                             pendingScroll = null
                         }
                     }
-                    LazyColumn(state = listState, modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 120.dp)) {
+                    // The window color behind the list, so below the last comment card (and in the space kept clear of
+                    // the buttons) it's the gap color between cards, not the card color. The post header paints its own.
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+                        contentPadding = PaddingValues(bottom = 120.dp),
+                    ) {
                         if (!tabbed) {
                             item(key = "post") {
                                 PostHeader(post = post, onVote = vm::votePost, onToggleSave = vm::toggleSavePost, onMore = { postSheet = true })
@@ -544,7 +550,8 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
 private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Unit, onMore: () -> Unit) {
     val nav = LocalNavigator.current
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-    Column {
+    // Its own surface: the comment list behind it is the window color.
+    Column(Modifier.background(MaterialTheme.colorScheme.surfaceContainerLow)) {
         if (post.hasCardPreview()) {
             // Sync's default "Cropped height": a banner over the comments that still opens the media.
             val cropped = LocalSettings.current.postMediaPreview == MediaPreviewSize.CROPPED
