@@ -87,9 +87,10 @@ class BackupPasswordException : Exception(t("Wrong password, or the backup is da
  *
  * The stores cache in memory, so the app must restart after [restore].
  *
- * Data lives in two preference files (the main one, and [HistoryPrefs]' for the high-churn stores), but a backup
- * always holds one flat map, so files from before the split restore into the right file. Functions that read or
- * write preferences take the main file plus an optional `history` file, which defaults to the main one.
+ * Data lives in three preference files (the main one, [HistoryPrefs]' for the high-churn stores, and [AuthPrefs]'
+ * for the accounts), but a backup or snapshot always holds one flat map, so files from before a split restore into
+ * the right file. Functions that read or write preferences take the main file plus optional `history` and `auth`
+ * files, which default to the main one.
  */
 object Backup {
     // Kept from the app's old name, Resync, so backups and restores work across versions.
@@ -99,7 +100,9 @@ object Backup {
     // ApiConfigStore's keys.
     const val API_CLIENT_ID = "api.client_id"
     private const val API_DEMO = "api.demo"
-    private val API_KEYS = listOf(API_CLIENT_ID, "api.redirect_uri", "api.user_agent")
+    private const val API_REDIRECT_URI = "api.redirect_uri"
+    private const val API_USER_AGENT = "api.user_agent"
+    private val API_KEYS = listOf(API_CLIENT_ID, API_REDIRECT_URI, API_USER_AGENT)
 
     /**
      * The local data every version-1 backup carries; a restore resets those it lacks to their defaults.
@@ -161,12 +164,12 @@ object Backup {
         },
     )
 
-    /** The signed-in accounts in [prefs], or null when there are none (or only demo mode's). */
-    fun accountsIn(prefs: SharedPreferences): AccountsBackup? {
+    /** The signed-in accounts in [auth] (issued to [prefs]' client ID), or null when there are none (or only demo mode's). */
+    fun accountsIn(prefs: SharedPreferences, auth: SharedPreferences = prefs): AccountsBackup? {
         if (prefs.getBoolean(API_DEMO, false)) return null
         val clientId = prefs.getString(API_CLIENT_ID, null) ?: return null
-        val accounts = readAccounts(prefs).takeIf { it.isNotEmpty() } ?: return null
-        return AccountsBackup(clientId, accounts, prefs.getString(AUTH_ACTIVE, null))
+        val accounts = readAccounts(auth).takeIf { it.isNotEmpty() } ?: return null
+        return AccountsBackup(clientId, accounts, auth.getString(AUTH_ACTIVE, null))
     }
 
     /** Backup now: [prefs]' backed-up keys, plus its accounts encrypted with [accountsPassword] if one is given. */
@@ -175,11 +178,26 @@ object Backup {
         createdMillis: Long = System.currentTimeMillis(),
         accountsPassword: CharArray? = null,
         history: SharedPreferences = prefs,
-    ): String = encode(filter(allOf(prefs, history)), createdMillis, accountsPassword?.let { accountsIn(prefs) }, accountsPassword)
+        auth: SharedPreferences = prefs,
+    ): String = encode(filter(allOf(prefs, history)), createdMillis, accountsPassword?.let { accountsIn(prefs, auth) }, accountsPassword)
 
-    /** Both files' entries as one map (the history file's keys win; the two never share a key once migrated). */
-    private fun allOf(prefs: SharedPreferences, history: SharedPreferences): Map<String, *> =
-        if (history === prefs) prefs.all else prefs.all + history.all
+    /** The files' entries as one map (later files' keys win; they never share a key once migrated). */
+    private fun allOf(prefs: SharedPreferences, history: SharedPreferences, auth: SharedPreferences = prefs): Map<String, *> =
+        listOf(prefs, history, auth).distinctBy { System.identityHashCode(it) }.fold(emptyMap<String, Any?>()) { all, file -> all + file.all }
+
+    /**
+     * [values] without API setup Setup wouldn't save, since a backup file can come from anyone: a client ID that isn't
+     * one drops the whole API setup (so none is offered or restored), and a bad redirect URI or user agent is dropped
+     * so the default takes its place.
+     */
+    fun checkApiConfig(values: Map<String, String>): Map<String, String> {
+        val clientId = values[API_CLIENT_ID]
+        if (clientId != null && !ApiConfig.isValidClientId(clientId)) return values - API_KEYS.toSet()
+        return values.filterNot { (key, value) ->
+            (key == API_REDIRECT_URI && !ApiConfig.isValidRedirectUri(value)) ||
+                (key == API_USER_AGENT && !ApiConfig.isValidUserAgent(value))
+        }
+    }
 
     /** Parses and checks a backup file; throws [BackupFormatException] with a message for the user. */
     fun decode(text: String): BackupDocument {
@@ -193,7 +211,7 @@ object Backup {
         val values = prefs.keys.mapNotNull { key -> prefs.string(key)?.let { key to it } }.toMap()
         // Only a well-formed encrypted section counts; anything else (say, hand-planted plain tokens) is dropped.
         val accounts = root.obj("accounts")?.takeIf { s -> listOf("salt", "iv", "data").all { s.string(it) != null } }
-        return BackupDocument(version, root.string("created"), filter(values), accounts)
+        return BackupDocument(version, root.string("created"), checkApiConfig(filter(values)), accounts)
     }
 
     /** Opens [doc]'s accounts section with [password]; throws [BackupPasswordException] if it can't. */
@@ -230,15 +248,17 @@ object Backup {
         parts: Set<BackupPart> = BackupPart.entries.toSet(),
         accounts: AccountsBackup? = null,
         history: SharedPreferences = prefs,
+        auth: SharedPreferences = prefs,
     ): RestoreResult {
-        val values = filter(doc.prefs)
+        val values = checkApiConfig(filter(doc.prefs))
         // What's on the device now, read before any edit is queued.
         val wasDemo = prefs.getBoolean(API_DEMO, false)
         val currentClientId = prefs.getString(API_CLIENT_ID, null)
-        val currentAccounts = readAccounts(prefs)
-        val currentActive = prefs.getString(AUTH_ACTIVE, null)
+        val currentAccounts = readAccounts(auth)
+        val currentActive = auth.getString(AUTH_ACTIVE, null)
         val editor = prefs.edit()
         val historyEditor = if (history === prefs) editor else history.edit()
+        val authEditor = if (auth === prefs) editor else auth.edit()
         parts.flatMap { it.keys }.forEach { key ->
             val value = values[key]
             val target = if (HistoryPrefs.isHistoryKey(key)) historyEditor else editor
@@ -250,7 +270,7 @@ object Backup {
         var signedOut = false
         if ((includeApiConfig || restoreAccounts != null) && clientId != null) {
             if (wasDemo || currentClientId != clientId) {
-                SIGN_OUT_KEYS.forEach { editor.remove(it) }
+                SIGN_OUT_KEYS.forEach { authEditor.remove(it) }
                 signedOut = currentAccounts.isNotEmpty()
             }
             editor.putBoolean(API_DEMO, false)
@@ -264,15 +284,16 @@ object Backup {
             val kept = if (wasDemo || currentClientId != clientId) emptyList() else currentAccounts
             val incoming = restoreAccounts.accounts.distinctBy { it.username.lowercase() }
             val merged = kept.filterNot { old -> incoming.any { it.username.equals(old.username, ignoreCase = true) } } + incoming
-            editor.putString(AUTH_ACCOUNTS, compact.encodeToString(accountList, merged))
+            authEditor.putString(AUTH_ACCOUNTS, compact.encodeToString(accountList, merged))
             val active = restoreAccounts.active?.takeIf { name -> merged.any { it.username == name } }
                 ?: currentActive?.takeIf { name -> merged.any { it.username == name } }
-            if (active != null) editor.putString(AUTH_ACTIVE, active) else editor.remove(AUTH_ACTIVE)
+            if (active != null) authEditor.putString(AUTH_ACTIVE, active) else authEditor.remove(AUTH_ACTIVE)
             // The cached access token may belong to another account now; a fresh one is fetched on first use.
-            SESSION_KEYS.forEach { editor.remove(it) }
+            SESSION_KEYS.forEach { authEditor.remove(it) }
         }
-        // History first: if the second commit fails, the first is the less important data.
+        // History first: if a later commit fails, the earlier ones are the less important data.
         if (historyEditor !== editor && !historyEditor.commit()) throw IllegalStateException(t("couldn't write the restored data"))
+        if (authEditor !== editor && !authEditor.commit()) throw IllegalStateException(t("couldn't write the restored data"))
         if (!editor.commit()) throw IllegalStateException(t("couldn't write the restored data"))
         return RestoreResult(signedOut, restoreAccounts?.accounts?.size ?: 0)
     }
@@ -281,7 +302,12 @@ object Backup {
      * Everything in [prefs], accounts included, for the automatic copy taken before a restore. It never leaves the
      * app's private storage, so it's no less safe than the preferences file itself.
      */
-    fun snapshot(prefs: SharedPreferences, createdMillis: Long = System.currentTimeMillis(), history: SharedPreferences = prefs): String = json.encodeToString(
+    fun snapshot(
+        prefs: SharedPreferences,
+        createdMillis: Long = System.currentTimeMillis(),
+        history: SharedPreferences = prefs,
+        auth: SharedPreferences = prefs,
+    ): String = json.encodeToString(
         JsonObject.serializer(),
         buildJsonObject {
             put("format", "$FORMAT-snapshot")
@@ -289,7 +315,7 @@ object Backup {
             put(
                 "prefs",
                 JsonObject(
-                    allOf(prefs, history).entries.sortedBy { it.key }.mapNotNull { (key, value) ->
+                    allOf(prefs, history, auth).entries.sortedBy { it.key }.mapNotNull { (key, value) ->
                         when (value) {
                             is String -> key to JsonPrimitive(value)
                             is Boolean -> key to JsonPrimitive(value)
@@ -308,17 +334,25 @@ object Backup {
             ?.takeIf { it.string("format") == "$FORMAT-snapshot" }
             ?.let { it.string("created") ?: "" }
 
-    /** Puts [prefs] back exactly as [snapshot] [text] had it. Throws [BackupFormatException] if it isn't one. */
-    fun restoreSnapshot(prefs: SharedPreferences, text: String, history: SharedPreferences = prefs) {
+    /**
+     * Puts [prefs] (and [history], [auth]) back exactly as [snapshot] [text] had them. Throws [BackupFormatException]
+     * if it isn't one. Each key goes to the file it lives in now, so a snapshot from before a file split lands right.
+     */
+    fun restoreSnapshot(prefs: SharedPreferences, text: String, history: SharedPreferences = prefs, auth: SharedPreferences = prefs) {
         val root = runCatching { Json.parseToJsonElement(text) as JsonObject }.getOrNull()
             ?.takeIf { it.string("format") == "$FORMAT-snapshot" }
             ?: throw BackupFormatException(t("The saved copy is damaged"))
         val values = root.obj("prefs") ?: throw BackupFormatException(t("The saved copy is damaged"))
         val mainEditor = prefs.edit().clear()
         val historyEditor = if (history === prefs) mainEditor else history.edit().clear()
+        val authEditor = if (auth === prefs) mainEditor else auth.edit().clear()
         values.forEach { (key, value: JsonElement) ->
             val p = value as? JsonPrimitive ?: return@forEach
-            val editor = if (HistoryPrefs.isHistoryKey(key)) historyEditor else mainEditor
+            val editor = when {
+                HistoryPrefs.isHistoryKey(key) -> historyEditor
+                AuthPrefs.isAuthKey(key) -> authEditor
+                else -> mainEditor
+            }
             when {
                 p.isString -> editor.putString(key, p.content)
                 p.booleanOrNull != null -> editor.putBoolean(key, p.booleanOrNull!!)
@@ -326,6 +360,7 @@ object Backup {
             }
         }
         if (historyEditor !== mainEditor && !historyEditor.commit()) throw IllegalStateException(t("couldn't write the saved copy"))
+        if (authEditor !== mainEditor && !authEditor.commit()) throw IllegalStateException(t("couldn't write the saved copy"))
         if (!mainEditor.commit()) throw IllegalStateException(t("couldn't write the saved copy"))
     }
 

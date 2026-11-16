@@ -5,6 +5,7 @@ import io.github.radixtrator.resync.data.Account
 import io.github.radixtrator.resync.data.AccountStore
 import io.github.radixtrator.resync.data.ApiConfig
 import io.github.radixtrator.resync.data.ApiConfigStore
+import io.github.radixtrator.resync.data.AuthPrefs
 import io.github.radixtrator.resync.data.Backup
 import io.github.radixtrator.resync.data.AccountsBackup
 import io.github.radixtrator.resync.data.BackupPart
@@ -356,7 +357,7 @@ class BackupTest {
 
     @Test
     fun `encode and decode round-trip`() {
-        val values = mapOf("visited.v1" to "p1,p2", "settings.v1" to """{"hideRead":true}""", "api.client_id" to "abc")
+        val values = mapOf("visited.v1" to "p1,p2", "settings.v1" to """{"hideRead":true}""", "api.client_id" to "abc_client_1")
         val text = Backup.encode(values, createdMillis = 86_400_000L)
         val root = RedditClient.JSON.parseToJsonElement(text).jsonObject
         assertEquals("\"resync-backup\"", root["format"].toString())
@@ -434,6 +435,32 @@ class BackupTest {
         assertTrue(AccountStore(target).accounts.isEmpty())
         assertNull(AccountStore(target).activeUsername)
         assertNull(AccountStore(target).accessToken)
+    }
+
+    @Test
+    fun `a backup's API setup is checked like Setup's`() {
+        assertTrue(ApiConfig.isValidRedirectUri(ApiConfig.DEFAULT_REDIRECT_URI))
+        assertTrue(ApiConfig.isValidUserAgent(ApiConfig.DEFAULT_USER_AGENT))
+        assertTrue(!ApiConfig.isValidRedirectUri("no scheme"))
+        assertTrue(!ApiConfig.isValidUserAgent("agent\n/1.0"))
+        assertTrue(!ApiConfig.isValidUserAgent("agent ✓"))
+
+        fun doc(id: String, redirect: String, agent: String) = Backup.decode(
+            """{"format":"resync-backup","version":1,"prefs":{"api.client_id":"$id","api.redirect_uri":"$redirect","api.user_agent":"$agent"}}""",
+        )
+        // Not a bare client ID: no API setup is offered or restored, so nobody is signed out.
+        val bad = doc("App ID: client_id_two", "app://redirect", "agent/1.0")
+        assertTrue(!bad.hasApiConfig)
+        val target = filledPrefs(clientId = "client_id_one")
+        assertTrue(!Backup.restore(target, bad, includeApiConfig = true).signedOut)
+        assertEquals(ApiConfig("client_id_one", "app://redirect", "agent/1.0"), ApiConfigStore(target).load())
+        assertEquals("me", AccountStore(target).active?.username)
+
+        // A good ID with a bad redirect URI and user agent: the ID is restored, the others fall back to the defaults.
+        val odd = doc("client_id_two", "javascript alert(1)", "agent\\u0001/1.0")
+        assertTrue(odd.hasApiConfig)
+        Backup.restore(target, odd, includeApiConfig = true)
+        assertEquals(ApiConfig("client_id_two", ApiConfig.DEFAULT_REDIRECT_URI, ApiConfig.DEFAULT_USER_AGENT), ApiConfigStore(target).load())
     }
 
     @Test
@@ -559,6 +586,84 @@ class BackupTest {
         val theme = search("theme")
         assertTrue(theme.indexOf("Theme color") in 0 until theme.indexOf("Material You colors"))
         assertTrue(search("zzzz").isEmpty())
+    }
+
+    /** [filledPrefs] split the way the app keeps it: main, history and auth files. */
+    private fun splitPrefs(clientId: String = "client_id_one"): Triple<FakePrefs, FakePrefs, FakePrefs> {
+        val main = filledPrefs(clientId)
+        val history = FakePrefs()
+        val auth = FakePrefs()
+        HistoryPrefs.migrate(main, history)
+        AuthPrefs.migrate(main, auth)
+        return Triple(main, history, auth)
+    }
+
+    @Test
+    fun `auth migration moves every login key, keeps their types and leaves none behind`() {
+        val old = filledPrefs()
+        AccountStore(old).deviceId // written on first read
+        val before = HashMap(old.values)
+        val auth = FakePrefs().apply { values["auth.active"] = "newer" }
+        AuthPrefs.migrate(old, auth)
+
+        assertTrue(old.values.keys.none(AuthPrefs::isAuthKey), "a login key was left in the file that transfers")
+        assertEquals(before.filterKeys { !AuthPrefs.isAuthKey(it) }, old.values)
+        assertEquals("newer", auth.values["auth.active"], "an existing value was overwritten")
+        assertEquals(12345L, auth.values["auth.access_expires_at"])
+        assertEquals(before["auth.device_id"], auth.values["auth.device_id"])
+        assertEquals(listOf(Account("me", "SECRET_REFRESH_TOKEN")), AccountStore(auth).accounts)
+
+        val oldAfter = HashMap(old.values)
+        val authAfter = HashMap(auth.values)
+        AuthPrefs.migrate(old, auth)
+        assertEquals(oldAfter, old.values)
+        assertEquals(authAfter, auth.values)
+        val fresh = FakePrefs()
+        AuthPrefs.migrate(FakePrefs(), fresh)
+        assertTrue(fresh.values.isEmpty())
+    }
+
+    @Test
+    fun `backup and restore keep accounts in the auth file`() {
+        val (main, history, auth) = splitPrefs()
+        assertNull(Backup.accountsIn(main), "accounts aren't in the main file any more")
+        assertEquals("me", Backup.accountsIn(main, auth)?.active)
+        val password = "pw".toCharArray()
+        val doc = Backup.decode(Backup.export(main, accountsPassword = password.copyOf(), history = history, auth = auth))
+        val accounts = Backup.decryptAccounts(doc, password.copyOf())
+        assertEquals(listOf(Account("me", "SECRET_REFRESH_TOKEN")), accounts.accounts)
+
+        // Onto an install with another client ID: its accounts are signed out and the backup's land in its auth file.
+        val (tMain, tHistory, tAuth) = splitPrefs(clientId = "client_id_two")
+        AccountStore(tAuth).upsert(Account("other", "OTHER_TOKEN"))
+        val result = Backup.restore(tMain, doc, includeApiConfig = false, accounts = accounts, history = tHistory, auth = tAuth)
+        assertEquals(1, result.accountsRestored)
+        assertEquals(listOf(Account("me", "SECRET_REFRESH_TOKEN")), AccountStore(tAuth).accounts)
+        assertEquals("me", tAuth.values["auth.active"])
+        assertNull(tAuth.values["auth.access_token"])
+        assertTrue(tMain.values.keys.none(AuthPrefs::isAuthKey))
+        assertEquals("client_id_one", tMain.values[Backup.API_CLIENT_ID])
+    }
+
+    @Test
+    fun `a snapshot puts all three files back, and an old one lands logins in the auth file`() {
+        val (main, history, auth) = splitPrefs()
+        val before = listOf(HashMap(main.values), HashMap(history.values), HashMap(auth.values))
+        val snapshot = Backup.snapshot(main, createdMillis = 0, history = history, auth = auth)
+        AccountStore(auth).removeAll()
+        history.values.clear()
+        main.values["junk"] = "x"
+        Backup.restoreSnapshot(main, snapshot, history, auth)
+        assertEquals(before, listOf(main.values, history.values, auth.values))
+
+        // A snapshot saved by a version that kept everything in one file.
+        val old = filledPrefs()
+        val oldSnapshot = Backup.snapshot(old, createdMillis = 0)
+        val (m, h, a) = Triple(FakePrefs(), FakePrefs(), FakePrefs())
+        Backup.restoreSnapshot(m, oldSnapshot, h, a)
+        assertTrue(m.values.keys.none(AuthPrefs::isAuthKey))
+        assertEquals(old.values.filterKeys(AuthPrefs::isAuthKey), a.values)
+        assertEquals(old.values.filterKeys(HistoryPrefs::isHistoryKey), h.values)
     }
 }
 

@@ -19,6 +19,20 @@ data class ApiConfig(
         /** Accepts the bare ID or the whole "App ID: xxxx" line from Reddit's email. */
         fun parseClientId(raw: String): String? =
             raw.trim().split(Regex("\\s+")).lastOrNull()?.takeIf { CLIENT_ID.matches(it) }
+
+        private val REDIRECT_URI = Regex("""[A-Za-z][A-Za-z0-9+.-]*:[^\s\p{Cntrl}]+""")
+
+        /** A bare client ID, as Setup saves it (no "App ID:" prefix, nothing around it). */
+        fun isValidClientId(value: String): Boolean = CLIENT_ID.matches(value)
+
+        /** A URI with a scheme and no spaces or control characters. */
+        fun isValidRedirectUri(value: String): Boolean = value.length <= MAX_LENGTH && REDIRECT_URI.matches(value)
+
+        /** Printable ASCII only: OkHttp refuses anything else in a header, which would fail every request. */
+        fun isValidUserAgent(value: String): Boolean =
+            value.isNotBlank() && value.length <= MAX_LENGTH && value.all { it in ' '..'~' }
+
+        private const val MAX_LENGTH = 256
     }
 }
 

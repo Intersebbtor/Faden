@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Android 12+ backup rules. Cloud backup stays off entirely, as allowBackup="false" says (excluded here too, so it
+    doesn't hinge on how a device reads that flag once these rules exist). Phone-to-phone transfers, which some
+    manufacturers run even with allowBackup="false", carry settings and history but not logins: faden_auth holds the
+    accounts' refresh tokens and the logged-out device ID (see data/AuthPrefs.kt).
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="faden_auth.xml" />
+    </device-transfer>
+</data-extraction-rules>

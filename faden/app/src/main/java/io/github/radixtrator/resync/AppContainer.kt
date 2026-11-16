@@ -6,6 +6,7 @@ import io.github.radixtrator.resync.data.Account
 import io.github.radixtrator.resync.data.AccountStore
 import io.github.radixtrator.resync.data.ApiConfig
 import io.github.radixtrator.resync.data.ApiConfigStore
+import io.github.radixtrator.resync.data.AuthPrefs
 import io.github.radixtrator.resync.data.AvatarCache
 import io.github.radixtrator.resync.data.Backup
 import io.github.radixtrator.resync.data.AccountsBackup
@@ -94,7 +95,10 @@ class AppContainer(context: Context) {
     val drafts by lazy { DraftStore(prefs) }
     val readAloud by lazy { ReadAloud(appContext) }
     private val appContext = context.applicationContext
-    private val accountStore = AccountStore(prefs)
+    // Logins have their own file, left out of phone-to-phone transfers; moved here from "resync" on the first launch
+    // of the version that split them, before AccountStore reads it.
+    private val auth = context.getSharedPreferences(AuthPrefs.FILE, Context.MODE_PRIVATE).also { AuthPrefs.migrate(prefs, it) }
+    private val accountStore = AccountStore(auth)
     val client = RedditClient(configStore, accountStore, context.assets)
     val api = RedditApi(client)
     val avatars by lazy { AvatarCache(api) }
@@ -169,17 +173,37 @@ class AppContainer(context: Context) {
     }
 
     /** Settings › Backup now: the backed-up preferences, plus the accounts encrypted with [accountsPassword] if given. */
-    fun exportBackup(accountsPassword: CharArray? = null): String = Backup.export(prefs, accountsPassword = accountsPassword, history = history)
+    fun exportBackup(accountsPassword: CharArray? = null): String = Backup.export(prefs, accountsPassword = accountsPassword, history = history, auth = auth)
 
     /** Whether there are signed-in accounts Backup now could include. */
-    val hasBackupAccounts: Boolean get() = Backup.accountsIn(prefs) != null
+    val hasBackupAccounts: Boolean get() = Backup.accountsIn(prefs, auth) != null
 
     /** Where the copy taken before the last restore lives: private storage, excluded from any cloud backup. */
     private val preRestoreFile get() = java.io.File(appContext.noBackupFilesDir, "pre-restore-snapshot.json")
 
+    init {
+        dropUndoCopyIfOld()
+    }
+
     /** When the copy taken before the last restore was made, or null if there's none to go back to. */
-    fun preRestoreSnapshotCreated(): String? =
-        preRestoreFile.takeIf { it.exists() }?.let { runCatching { Backup.snapshotCreated(it.readText()) }.getOrNull() }
+    fun preRestoreSnapshotCreated(): String? {
+        dropUndoCopyIfOld()
+        return preRestoreFile.takeIf { it.exists() }?.let { runCatching { Backup.snapshotCreated(it.readText()) }.getOrNull() }
+    }
+
+    /**
+     * The pre-restore copy holds every account's login, so it isn't kept for good: Undo last restore lasts
+     * [UNDO_KEEP_MS] (checked at launch and when Backup opens), and logging out drops it at once.
+     */
+    private fun dropUndoCopyIfOld() {
+        val file = preRestoreFile
+        if (file.exists() && System.currentTimeMillis() - file.lastModified() > UNDO_KEEP_MS) dropUndoCopy()
+    }
+
+    private fun dropUndoCopy() {
+        preRestoreFile.delete()
+        java.io.File(preRestoreFile.parentFile, preRestoreFile.name + ".tmp").delete() // left by an interrupted write
+    }
 
     /**
      * Settings › Restore from backup. First saves everything as it is now (accounts included) so the restore can be
@@ -192,15 +216,15 @@ class AppContainer(context: Context) {
         accounts: AccountsBackup?,
     ): RestoreResult {
         historyWrites.flush() // so the saved copy has what's in memory
-        writeAtomically(preRestoreFile, Backup.snapshot(prefs, history = history))
-        val result = Backup.restore(prefs, doc, includeApiConfig, parts, accounts, history)
+        writeAtomically(preRestoreFile, Backup.snapshot(prefs, history = history, auth = auth))
+        val result = Backup.restore(prefs, doc, includeApiConfig, parts, accounts, history, auth)
         historyWrites.cancel() // the stores still hold the old data; it mustn't overwrite what was just restored
         return result
     }
 
     /** Puts everything back as it was before the last restore. The caller must restart the app straight away. */
     fun undoRestore() {
-        Backup.restoreSnapshot(prefs, preRestoreFile.readText(), history)
+        Backup.restoreSnapshot(prefs, preRestoreFile.readText(), history, auth)
         historyWrites.cancel()
         preRestoreFile.delete()
     }
@@ -237,6 +261,7 @@ class AppContainer(context: Context) {
     fun logout() {
         _username.value?.let(accountStore::remove)
         accountStore.clearSession()
+        dropUndoCopy()
         _accounts.value = accountStore.accounts.map { it.username }
         clearAccountState()
         _username.value = null
@@ -319,8 +344,12 @@ class AppContainer(context: Context) {
 
     private fun forgetAllAccounts() {
         accountStore.removeAll()
+        dropUndoCopy()
         _accounts.value = emptyList()
         clearAccountState()
         _username.value = null
     }
 }
+
+/** How long Settings › Backup › Undo last restore stays available (the copy it needs holds every login). */
+private const val UNDO_KEEP_MS = 7 * 24 * 60 * 60 * 1000L
