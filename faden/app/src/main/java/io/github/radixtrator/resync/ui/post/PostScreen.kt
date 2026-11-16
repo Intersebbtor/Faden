@@ -132,6 +132,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
     val scope = rememberCoroutineScope()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     val visible = remember(state.comments, state.collapsed) { CommentTree.visible(state.comments, state.collapsed) }
+    val continues = remember(visible) { threadContinuations(visible.map { it.node.depth }) }
     var postSheet by remember { mutableStateOf(false) }
     var sortOpen by rememberSaveable { mutableStateOf(false) }
     var actionsOpen by rememberSaveable { mutableStateOf(false) }
@@ -404,6 +405,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                     isNew = newSince != null && node.createdUtc > newSince && !node.author.equals(account, ignoreCase = true),
                                     separated = separated,
                                     endsThread = endsThread,
+                                    continues = continues.getOrElse(index) { 0 },
                                     selected = selected == node.id,
                                     onToggle = {
                                         selected = null
@@ -421,6 +423,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                                     more = node,
                                     separated = separated,
                                     endsThread = endsThread,
+                                    continues = continues.getOrElse(index) { 0 },
                                     loading = node.id in state.loadingMore,
                                     onClick = {
                                         if (node.children.isNotEmpty()) {
