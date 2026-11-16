@@ -62,6 +62,10 @@ data class UserRoute(val name: String, val tab: UserWhere = UserWhere.OVERVIEW) 
 @Serializable
 data class SearchRoute(val query: String = "", val subreddit: String? = null, val communities: Boolean = false) : NavKey
 
+/** [subreddit]'s posts with [flair]: Reddit filters by flair through a flair_name search in the community. */
+fun flairSearch(subreddit: String, flair: String): SearchRoute =
+    SearchRoute("flair_name:\"${flair.replace("\"", "")}\"", subreddit = subreddit)
+
 /** Sync's Swipe mode over [subreddit]'s feed (null = front page). */
 @Serializable
 data class SwipeModeRoute(val subreddit: String? = null) : NavKey

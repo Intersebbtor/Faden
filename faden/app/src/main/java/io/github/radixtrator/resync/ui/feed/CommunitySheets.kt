@@ -70,7 +70,7 @@ import io.github.radixtrator.resync.ui.navigation.ComposeRoute
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
 import io.github.radixtrator.resync.ui.navigation.ModRoute
 import io.github.radixtrator.resync.ui.navigation.Navigator
-import io.github.radixtrator.resync.ui.navigation.SearchRoute
+import io.github.radixtrator.resync.ui.navigation.flairSearch
 import io.github.radixtrator.resync.ui.navigation.UserRoute
 import kotlin.coroutines.cancellation.CancellationException
 import io.github.radixtrator.resync.i18n.t
@@ -87,7 +87,7 @@ fun CommunityActionSheet(container: AppContainer, community: String, action: Abo
     }
     when (action) {
         AboutAction.WIKI -> WikiSheet(container, community, onDismiss)
-        AboutAction.FLAIRS -> FlairsSheet(container, community, onPick = { leave(SearchRoute("flair_name:\"${it.text}\"", subreddit = community)) }, onDismiss)
+        AboutAction.FLAIRS -> FlairsSheet(container, community, onPick = { leave(flairSearch(community, it.text)) }, onDismiss)
         AboutAction.RULES -> RulesSheet(container, community, onDismiss)
         AboutAction.ADD_TO_MULTI -> AddToMultiSheet(container, community, onDismiss)
         AboutAction.MOD_TOOLS -> leave(ModRoute(community))

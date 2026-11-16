@@ -86,7 +86,14 @@ internal fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, o
                     )
                 }
                 post.shownFlair()?.let {
-                    Text(it, style = if (flushThumbnail) RowMeta else RowTitle, color = muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        it,
+                        style = if (flushThumbnail) RowMeta else RowTitle,
+                        color = muted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.flairLink(post.subreddit, it),
+                    )
                 }
             }
         }

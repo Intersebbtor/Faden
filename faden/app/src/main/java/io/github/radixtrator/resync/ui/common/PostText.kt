@@ -1,6 +1,7 @@
 package io.github.radixtrator.resync.ui.common
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -30,6 +31,8 @@ import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.ViewOptions
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.navigation.LocalAccount
+import io.github.radixtrator.resync.ui.navigation.LocalNavigator
+import io.github.radixtrator.resync.ui.navigation.flairSearch
 import io.github.radixtrator.resync.ui.navigation.LocalUserTagColors
 import io.github.radixtrator.resync.ui.navigation.LocalUserTags
 import io.github.radixtrator.resync.ui.navigation.rememberVisited
@@ -204,10 +207,19 @@ internal val feedAuthors: Boolean
 @Composable
 internal fun Post.shownFlair(): String? = flair?.takeIf { LocalFeedDisplay.current.showPostFlair }
 
-/** A rounded flair chip, tinted with the subreddit's flair color when it has one. */
+/** A rounded flair chip, tinted with the subreddit's flair color when it has one. Tapping it lists the community's posts with that flair. */
 @Composable
 fun FlairChip(post: Post, modifier: Modifier = Modifier) {
-    FlairChip(post.flair ?: return, post.flairColor, modifier)
+    val flair = post.flair ?: return
+    FlairChip(flair, post.flairColor, modifier.flairLink(post.subreddit, flair))
+}
+
+/** Makes a post's flair open [subreddit]'s posts with [flair]. */
+@Composable
+internal fun Modifier.flairLink(subreddit: String, flair: String): Modifier {
+    val nav = LocalNavigator.current
+    return clip(MaterialTheme.shapes.extraSmall)
+        .clickable(onClickLabel = t("Show posts with this flair")) { nav.push(flairSearch(subreddit, flair)) }
 }
 
 /** A flair chip for [text], tinted with [color] (ARGB) when the community set one. */

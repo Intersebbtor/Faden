@@ -201,6 +201,7 @@ internal fun germanFeed(): Map<String, String> = mapOf(
     "Edit current" to "Suche bearbeiten",
     "Change" to "Ändern",
     "No app can open {0}" to "Keine App kann {0} öffnen",
+    "Show posts with this flair" to "Pfosten mit diesem Gespür zeigen",
     "Couldn't find a random community" to "Konnte kein zufälliges Unterlases finden",
     "Nothing here yet" to "Hier ist noch nichts",
     "You've reached the end" to "Du bist am Ende angekommen",
