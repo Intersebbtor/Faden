@@ -149,6 +149,9 @@ enum class SettingsCategory(private val enGroup: String, private val enTitle: St
         if (this == VIEW_TYPE) CustomizeViewRoute(currentLayout) else SettingsRoute(this)
 }
 
+/** Everything else › Support Faden. */
+private const val DONATE_URL = "https://ko-fi.com/radixtrator"
+
 /** The glyph beside each category on the root screen. */
 private val SettingsCategory.icon: ImageVector
     get() = when (this) {
@@ -472,6 +475,10 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                 supportingContent = { Text(t("What changed in each version")) },
             ) { Text(t("What's new")) }
             Toggle(t("Check for updates"), t("Say when a new version is out on GitHub"), settings.checkForUpdates) { v -> update { it.copy(checkForUpdates = v) } }
+            ListItem(
+                onClick = { nav.openExternal(DONATE_URL) },
+                supportingContent = { Text(t("Donate on Ko-fi. Faden stays free either way")) },
+            ) { Text(t("Support Faden")) }
             if (notesOpen) WhatsNewDialog(t("What's new"), container.whatsNew, onDismiss = { notesOpen = false })
         }
     }

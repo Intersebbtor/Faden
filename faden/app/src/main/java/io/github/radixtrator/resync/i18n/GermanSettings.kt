@@ -110,6 +110,8 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     "What changed in each version" to "Was sich in jeder Version geändert hat",
     "Check for updates" to "Nach Aufdaten suchen",
     "Say when a new version is out on GitHub" to "Melden, wenn eine neue Version auf GitHub da ist",
+    "Support Faden" to "Faden unterstützen",
+    "Donate on Ko-fi. Faden stays free either way" to "Auf Ko-fi spenden. Faden bleibt so oder so kostenlos",
     "Allow notifications to hear about new messages" to "Erlaube Benachrichtigungen, um von neuen Nachrichten zu erfahren",
     "Periodically check for new messages" to "Regelmäßig nach neuen Nachrichten suchen",
     "Check now" to "Jetzt prüfen",

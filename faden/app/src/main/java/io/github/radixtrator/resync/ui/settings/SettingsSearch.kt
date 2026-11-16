@@ -128,6 +128,7 @@ object SettingsIndex {
                 row(SettingsCategory.OTHER, t("Version"), keywords = "about über info"),
                 row(SettingsCategory.OTHER, t("What's new"), t("What changed in each version"), "changelog release notes update änderungen neuigkeiten aufdatum"),
                 row(SettingsCategory.OTHER, t("Check for updates"), t("Say when a new version is out on GitHub"), "release version aufdatum aktualisierung"),
+                row(SettingsCategory.OTHER, t("Support Faden"), t("Donate on Ko-fi. Faden stays free either way"), "donate donation tip kofi ko-fi coffee spende spenden kaffee unterstützen"),
             ) +
                 FilterType.entries.map { type -> SettingsEntry(type.title, type.summary, SettingsCategory.FILTERS.title, { FilterEditorRoute(type) }, "hide block ausblenden blockieren") } +
                 ViewOption.entries.distinctBy { it.title }.map { view(it.title, it.summary) } +
