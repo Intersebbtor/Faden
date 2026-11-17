@@ -355,25 +355,6 @@ object Parser {
         return PostWithComments(post, out)
     }
 
-    /** /api/morechildren returns a flat list; reorder it so every parent precedes its replies. */
-    fun moreChildren(root: JsonElement): List<CommentNode> {
-        val things = root.jsonObject.obj("json")?.obj("data")?.arr("things").orEmpty()
-        val nodes = things.mapNotNull { thing -> (thing as? JsonObject)?.let { node(it, depth = 0) } }
-        return treeOrder(nodes)
-    }
-
-    internal fun treeOrder(nodes: List<CommentNode>): List<CommentNode> {
-        val ids = nodes.mapTo(HashSet()) { "t1_${it.id}" }
-        val byParent = nodes.groupBy { it.parentId }
-        val out = ArrayList<CommentNode>(nodes.size)
-        fun visit(node: CommentNode) {
-            out += node
-            byParent["t1_${node.id}"]?.forEach(::visit)
-        }
-        nodes.filter { it.parentId !in ids }.forEach(::visit)
-        return out
-    }
-
     private fun flatten(children: JsonArray?, depth: Int, out: MutableList<CommentNode>) {
         children?.forEach { child ->
             val thing = child as? JsonObject ?: return@forEach

@@ -1,7 +1,13 @@
 package io.github.radixtrator.resync.data
 
 import io.github.radixtrator.resync.i18n.t
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -31,6 +37,10 @@ fun multiModel(displayName: String? = null, subreddits: List<String>? = null, vi
     subreddits?.let { subs -> putJsonArray("subreddits") { subs.forEach { name -> add(buildJsonObject { put("name", name) }) } } }
     visibility?.let { put("visibility", it) }
 }.toString()
+
+/** How many of a "more" row's comments one tap loads, and how many of their pages are fetched at once. */
+private const val MORE_PER_LOAD = 20
+private const val MORE_PARALLEL = 5
 
 /** The endpoints the app uses, on top of [RedditClient]. */
 class RedditApi(private val client: RedditClient) {
@@ -88,18 +98,29 @@ class RedditApi(private val client: RedditClient) {
         return parsed { Parser.comments(json) }
     }
 
-    suspend fun moreChildren(postFullname: String, children: List<String>, sort: CommentSort): List<CommentNode> {
-        val json = client.get(
-            "/api/morechildren",
-            mapOf(
-                "api_type" to "json",
-                "link_id" to postFullname,
-                // The endpoint caps a single request at 100 IDs.
-                "children" to children.take(100).joinToString(","),
-                "sort" to sort.param,
-            ),
-        )
-        return parsed { Parser.moreChildren(json) }
+    /**
+     * Loads up to [MORE_PER_LOAD] of a "more" row's [children]. Reddit answers /api/morechildren with a 403
+     * ("blocked by network security") for this kind of client, so each one is read from its own comment page
+     * instead, a few at a time. Fails only if none loaded; failed ones stay in [CommentTree.MoreLoaded.remaining].
+     */
+    suspend fun moreChildren(postId: String, children: List<String>, sort: CommentSort): CommentTree.MoreLoaded = coroutineScope {
+        val batch = children.take(MORE_PER_LOAD)
+        val gate = Semaphore(MORE_PARALLEL)
+        val results = batch.map { id ->
+            async {
+                gate.withPermit {
+                    try {
+                        Result.success(CommentTree.subtree(comments(postId, sort, focusCommentId = id).comments, id))
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        Result.failure(e)
+                    }
+                }
+            }
+        }.awaitAll()
+        if (results.isNotEmpty() && results.all { it.isFailure }) throw results.first().exceptionOrNull()!!
+        CommentTree.mergeThreads(batch.zip(results.map { it.getOrNull() }), rest = children.drop(batch.size))
     }
 
     suspend fun me(): Me = client.get("/api/v1/me").let { json -> parsed { Parser.me(json) } }
