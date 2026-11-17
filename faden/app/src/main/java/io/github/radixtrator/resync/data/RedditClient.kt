@@ -151,7 +151,8 @@ class RedditClient(
             // Parsed off the main thread as well: a big comment thread is megabytes of JSON.
             val (code, json) = withContext(Dispatchers.IO) {
                 http.newCall(request).execute().use { response ->
-                    val ok = response.code in 200..299
+                    // 202 and 204 carry no JSON: /api/read_all_messages answers 202 with an HTML "Accepted" page.
+                    val ok = response.code in 200..299 && response.code != 202 && response.code != 204
                     response.code to if (ok) decodeBody(response) else null
                 }
             }
