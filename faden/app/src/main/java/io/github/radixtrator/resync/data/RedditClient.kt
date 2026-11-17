@@ -94,17 +94,22 @@ class RedditClient(
 
     suspend fun get(path: String, params: Map<String, String?> = emptyMap()): JsonElement {
         if (configStore.demoMode) return demoResponse(path, isNextPage = params["after"] != null)
-        val url = "$API_BASE$path".toHttpUrl().newBuilder().apply {
-            addQueryParameter("raw_json", "1")
+        val url = apiUrl(path).newBuilder().apply {
             params.forEach { (k, v) -> if (v != null) addQueryParameter(k, v) }
         }.build()
         return execute(Request.Builder().url(url).get())
     }
 
+    /**
+     * [path] on the API with raw_json=1, on every method: without it Reddit HTML-escapes <, > and & in every string it
+     * returns, so the comment /api/comment and /api/editusertext send back would show its body_html as literal tags.
+     */
+    private fun apiUrl(path: String) = "$API_BASE$path".toHttpUrl().newBuilder().addQueryParameter("raw_json", "1").build()
+
     suspend fun post(path: String, form: Map<String, String>): JsonElement {
         if (configStore.demoMode) return DemoWrites.respond(path, form)
         val body = FormBody.Builder().apply { form.forEach { (k, v) -> add(k, v) } }.build()
-        return execute(Request.Builder().url("$API_BASE$path").post(body))
+        return execute(Request.Builder().url(apiUrl(path)).post(body))
     }
 
     /**
@@ -133,12 +138,12 @@ class RedditClient(
     suspend fun put(path: String, form: Map<String, String>): JsonElement {
         if (configStore.demoMode) return JsonObject(emptyMap())
         val body = FormBody.Builder().apply { form.forEach { (k, v) -> add(k, v) } }.build()
-        return execute(Request.Builder().url("$API_BASE$path").put(body))
+        return execute(Request.Builder().url(apiUrl(path)).put(body))
     }
 
     suspend fun delete(path: String): JsonElement {
         if (configStore.demoMode) return JsonObject(emptyMap())
-        return execute(Request.Builder().url("$API_BASE$path").delete())
+        return execute(Request.Builder().url(apiUrl(path)).delete())
     }
 
     private suspend fun execute(builder: Request.Builder): JsonElement {
