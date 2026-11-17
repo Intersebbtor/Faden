@@ -95,7 +95,7 @@ import kotlin.math.absoluteValue
 
 /** Indent per depth; rails sit at each multiple of it. Deeper replies stop indenting at [MAX_DEPTH]. */
 private val INDENT = 16.dp
-private const val MAX_DEPTH = 10
+internal const val MAX_DEPTH = 10
 
 /**
  * Selftext and comment bodies (measured from sync-reference 23 and 55). The font's own line spacing, like
@@ -107,12 +107,30 @@ internal val CommentBody: TextStyle
 private fun railColor(level: Int) = FadenColors.Depth[(level - 1) % FadenColors.Depth.size]
 
 /**
- * Draws a thread for every ancestor level 1..[depth] as a straight line. With [branchY] (the header's vertical centre), the
- * comment's own level also loops into the content: the thread leaves the vertical in a quarter-circle elbow at that height and
- * ends in a round cap just before the avatar. Verticals run butt-capped edge to edge so threads stay continuous across rows;
- * the strokes, path and radii are built once per size.
+ * For each row of a comment list at these [depths], which thread levels carry on below it, as bits (bit L = level L): level L
+ * continues while a later row sits at depth L before any row shallower than L. A reply that is its parent's last one has its
+ * own level's bit clear, and so do the rows under it for that level, so threads stop at the last reply instead of running on.
  */
-private fun Modifier.rails(depth: Int, branchY: Dp? = null) = if (depth < 1) this else drawWithCache {
+internal fun threadContinuations(depths: List<Int>): IntArray {
+    val capped = depths.map { it.coerceIn(0, MAX_DEPTH) }
+    val out = IntArray(capped.size)
+    var seen = 0 // levels with a row further down, not yet cut off by a shallower one
+    for (i in capped.indices.reversed()) {
+        val d = capped[i]
+        out[i] = seen and ((1 shl (d + 1)) - 2) // levels 1..d
+        seen = (seen and ((1 shl (d + 1)) - 1)) or (1 shl d) // a row at d ends every deeper level and starts its own
+    }
+    return out
+}
+
+/**
+ * Draws a thread for every ancestor level 1..[depth] that [continues] down past this row, as a straight line. With [branchY]
+ * (the header's vertical centre), the comment's own level also loops into the content: the thread leaves the vertical in a
+ * quarter-circle elbow at that height and ends in a round cap just before the avatar; below the elbow it carries on only if a
+ * sibling follows, so the last reply's thread ends at its avatar. Verticals run butt-capped edge to edge so threads stay
+ * continuous across rows; the strokes, path and radii are built once per size.
+ */
+private fun Modifier.rails(depth: Int, continues: Int, branchY: Dp? = null) = if (depth < 1) this else drawWithCache {
     val width = 2.5.dp.toPx()
     val butt = Stroke(width)
     val round = Stroke(width, cap = StrokeCap.Round)
@@ -127,12 +145,17 @@ private fun Modifier.rails(depth: Int, branchY: Dp? = null) = if (depth < 1) thi
             lineTo(end.coerceAtLeast(r), cy)
         }
     }
+    val elbowTop = branchY?.let { it.toPx() - r }
     onDrawBehind {
         for (level in 1..depth) {
             val x = (INDENT * level).toPx() + width / 2
-            drawLine(railColor(level), Offset(x, 0f), Offset(x, size.height), strokeWidth = width)
+            val onward = (continues and (1 shl level)) != 0
             if (level == depth && branch != null) {
+                // Down into the elbow always; past it only to a following sibling.
+                drawLine(railColor(level), Offset(x, 0f), Offset(x, if (onward) size.height else elbowTop!!), strokeWidth = width)
                 translate(left = x) { drawPath(branch, railColor(level), style = round) }
+            } else if (onward) {
+                drawLine(railColor(level), Offset(x, 0f), Offset(x, size.height), strokeWidth = width)
             }
         }
     }
@@ -157,6 +180,8 @@ internal fun CommentRow(
     isNew: Boolean,
     separated: Boolean,
     endsThread: Boolean,
+    /** [threadContinuations] for this row. */
+    continues: Int,
     selected: Boolean,
     onToggle: () -> Unit,
     onSelect: () -> Unit,
@@ -205,7 +230,7 @@ internal fun CommentRow(
                         onClick = if (display.tapToCollapse) onToggle else onSelect,
                         onLongClick = if (display.tapToCollapse) onSelect else onToggle,
                     )
-                    .rails(depth, headerY)
+                    .rails(depth, continues, headerY)
                     .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
             ) {
                 CommentHeader(comment, avatarUrl, collapsed, hiddenCount, isNew)
@@ -233,6 +258,7 @@ internal fun CommentRow(
             CommentActionBar(
                 comment = comment,
                 depth = depth,
+                continues = continues,
                 onVote = onVote,
                 onToggleSave = onToggleSave,
                 onReply = onReply,
@@ -374,6 +400,7 @@ private fun commentMarks(): Map<String, InlineTextContent> {
 private fun CommentActionBar(
     comment: Comment,
     depth: Int,
+    continues: Int,
     onVote: (Int) -> Unit,
     onToggleSave: () -> Unit,
     onReply: () -> Unit,
@@ -387,7 +414,7 @@ private fun CommentActionBar(
         Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .rails(depth)
+            .rails(depth, continues)
             .padding(start = contentStart(depth), end = 12.dp, top = 2.dp, bottom = 8.dp),
     ) {
     Row(
@@ -435,7 +462,7 @@ private fun androidx.compose.foundation.layout.RowScope.BarToggle(
 }
 
 @Composable
-internal fun MoreRow(more: MoreComments, separated: Boolean, endsThread: Boolean, loading: Boolean, onClick: () -> Unit) {
+internal fun MoreRow(more: MoreComments, separated: Boolean, endsThread: Boolean, continues: Int, loading: Boolean, onClick: () -> Unit) {
     val depth = more.depth.coerceAtMost(MAX_DEPTH)
     val lineY = headerCentre(MaterialTheme.typography.bodyMedium.lineHeight, minHeight = 20.dp)
     // Part of its thread's panel like a comment row: rounded where it starts or ends the thread.
@@ -448,7 +475,7 @@ internal fun MoreRow(more: MoreComments, separated: Boolean, endsThread: Boolean
                 .then(if (panel) Modifier.clip(threadPanelShape(top = separated, bottom = endsThread)) else Modifier)
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .combinedClickable(onClick = onClick)
-                .rails(depth, lineY)
+                .rails(depth, continues, lineY)
                 .padding(start = contentStart(depth), end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

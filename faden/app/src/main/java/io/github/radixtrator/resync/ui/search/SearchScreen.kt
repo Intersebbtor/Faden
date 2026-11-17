@@ -7,6 +7,8 @@ import io.github.radixtrator.resync.ui.common.Avatar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,6 +76,7 @@ import coil3.compose.AsyncImage
 import io.github.radixtrator.resync.AppContainer
 import io.github.radixtrator.resync.data.Listing
 import io.github.radixtrator.resync.data.Post
+import io.github.radixtrator.resync.data.Recent
 import io.github.radixtrator.resync.data.SearchSort
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -96,7 +99,9 @@ import io.github.radixtrator.resync.ui.common.SheetHandle
 import io.github.radixtrator.resync.ui.common.SheetTitle
 import io.github.radixtrator.resync.ui.common.postCallbacks
 import io.github.radixtrator.resync.ui.common.visiblePosts
+import io.github.radixtrator.resync.ui.home.RecentRow
 import io.github.radixtrator.resync.ui.navigation.FeedRoute
+import io.github.radixtrator.resync.ui.navigation.SearchRoute
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.UserRoute
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -200,6 +205,8 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
     val target by posts.target.collectAsStateWithLifecycle()
     val sort by posts.sort.collectAsStateWithLifecycle()
     val searched by posts.query.collectAsStateWithLifecycle()
+    val explore by container.explore.state.collectAsStateWithLifecycle()
+    val icons by container.subredditIcons.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf(initialQuery) }
     var tab by rememberSaveable { mutableIntStateOf(if (communitiesTab) 1 else 0) }
     var optionsOpen by rememberSaveable { mutableStateOf(false) }
@@ -263,8 +270,19 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                 Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text(t("Posts")) })
                 Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text(t("Communities")) })
             }
+            // Before the first search: the feeds opened and searches run lately (Explore's list), narrowed as you type.
+            val recents = if (searched.isNotBlank()) emptyList() else explore.recents.filter { it.matches(query.trim()) }
             Box(Modifier.fillMaxSize()) {
-                if (tab == 0) {
+                if (recents.isNotEmpty()) {
+                    RecentSearches(recents, icons, onClear = container.explore::clearRecents) { recent ->
+                        // In place of this empty search, so back returns to where it was opened from.
+                        if (recent.query != null) {
+                            nav.replaceTop(SearchRoute(recent.query, recent.subreddit))
+                        } else {
+                            nav.replaceTop(FeedRoute(recent.subreddit?.ifEmpty { null }))
+                        }
+                    }
+                } else if (tab == 0) {
                     PagedList(
                         state = postState.copy(items = postState.items.visiblePosts { it }),
                         key = { it.fullname },
@@ -326,6 +344,31 @@ fun SearchScreen(initialQuery: String, subreddit: String?, container: AppContain
                 }
             },
         )
+    }
+}
+
+private fun Recent.matches(text: String): Boolean =
+    text.isEmpty() || query?.contains(text, ignoreCase = true) == true ||
+        (query == null && Format.feedName(subreddit.orEmpty()).contains(text, ignoreCase = true))
+
+/** "Recently searched & visited", with Clear, then a row per entry. */
+@Composable
+private fun RecentSearches(recents: List<Recent>, icons: Map<String, String>, onClear: () -> Unit, onPick: (Recent) -> Unit) {
+    LazyColumn(Modifier.fillMaxSize().navigationBarsPadding()) {
+        item(key = "header") {
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    t("Recently searched & visited"),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onClear) { Text(t("Clear")) }
+            }
+        }
+        items(recents, key = { "recent:${it.subreddit}:${it.query}" }) { recent ->
+            RecentRow(recent, recent.subreddit?.let { icons[it.lowercase()] }) { onPick(recent) }
+        }
     }
 }
 

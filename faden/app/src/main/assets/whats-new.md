@@ -6,6 +6,11 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.10.0
+- Searching shows your recently visited communities and recent searches: tap Explore's search field, or open Search before typing
+- Explore and the navigation drawer have a Feeds section with Frontpage, Popular and All. Hide it from Explore's ⋮ menu if you don't want it
+- Comment threads end at the last reply instead of running on to the bottom of the card
+
 ## 0.9.0
 - Tap a post's flair to see the community's posts with that flair
 - Below the last comment, the page shows the background color instead of looking like one long card

@@ -42,10 +42,12 @@ data class ExploreState(
     val recents: List<Recent> = emptyList(),
     /** Opened at launch instead of the front page; null = front page. */
     val defaultFeed: String? = null,
-    /** Sync starts with Feeds off: the front page shows up under Top, and r/all and r/popular are a search away. */
-    val hidden: Set<ExploreSection> = setOf(ExploreSection.FEEDS),
+    /** Feeds (front page, Popular, All) shows by default, so they're one tap away instead of a search. */
+    val hidden: Set<ExploreSection> = emptySet(),
     /** Also list favorites in Subscriptions (Sync's "Duplicate favs"). */
     val duplicateFavorites: Boolean = false,
+    /** Which of [ExploreStore]'s one-time upgrades this state has had. */
+    val revision: Int = 0,
 ) {
     fun isFavorite(name: String) = favorites.any { it.equals(name, ignoreCase = true) }
 
@@ -115,12 +117,19 @@ class ExploreStore(private val prefs: SharedPreferences, private val writes: Def
         if (!deferred) writes.flush()
     }
 
-    private fun load(): ExploreState = prefs.getString(KEY, null)
-        ?.let { runCatching { json.decodeFromString(ExploreState.serializer(), it) }.getOrNull() }
-        ?: ExploreState()
+    private fun load(): ExploreState = (
+        prefs.getString(KEY, null)
+            ?.let { runCatching { json.decodeFromString(ExploreState.serializer(), it) }.getOrNull() }
+            ?: ExploreState()
+        ).upgraded()
+
+    /** Revision 1: Feeds used to start hidden (Sync's default); show it once for everyone, after which hiding it sticks. */
+    private fun ExploreState.upgraded(): ExploreState =
+        if (revision >= REVISION) this else copy(hidden = hidden - ExploreSection.FEEDS, revision = REVISION)
 
     private companion object {
         const val KEY = "explore.v1"
         const val MAX_RECENTS = 25
+        const val REVISION = 1
     }
 }

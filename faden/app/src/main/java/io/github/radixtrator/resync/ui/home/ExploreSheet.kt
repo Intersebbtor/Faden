@@ -103,7 +103,10 @@ import kotlinx.coroutines.launch
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.I18n
 
-/** BROWSE opens on the feed lists (Explore tab); SEARCH focuses the field and shows recents (search button, FAB long-press). */
+/**
+ * BROWSE opens on the feed lists (Explore tab); SEARCH focuses the field and shows recents (search button, FAB long-press).
+ * Tapping the field in BROWSE switches to the recents too.
+ */
 enum class ExploreMode { BROWSE, SEARCH }
 
 // Sync's measurements (sync-reference dumps 36–40): 42dp rows with 14sp names, 51dp section headers.
@@ -112,9 +115,12 @@ private val HEADER_HEIGHT = 51.dp
 private val FrontpageOrange = Color(0xFFFF4500)
 private const val TAG = "FadenExplore"
 
+/** Explore's (and the drawer's) Feeds section: the front page (""), Popular and All. */
+internal val EXPLORE_FEEDS = listOf("", "popular", "all")
+
 /**
  * Sync's Explore: a sheet to jump between feeds (sync-reference/SYNC_PARITY_LOG.md §3.11).
- * Empty query shows Favorites, Subscriptions, Moderated and Top (Feeds is opt-in), or, from search,
+ * Empty query shows Favorites, Feeds, Subscriptions, Moderated and Top, or, while searching,
  * "Recently searched & visited"; typing filters subscriptions, suggests communities and offers
  * Open u/…, Open r/… and a full search. Each row's ⋮ favorites it, makes it the default, and so on.
  */
@@ -139,6 +145,8 @@ fun ExploreSheet(
     var suggestions by remember { mutableStateOf<List<Subreddit>>(emptyList()) }
     var aboutFor by remember { mutableStateOf<String?>(null) }
     val focus = remember { FocusRequester() }
+    var fieldFocused by remember { mutableStateOf(false) }
+    val searching = mode == ExploreMode.SEARCH || fieldFocused
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = mode == ExploreMode.SEARCH)
     val q = query.trim().removePrefix("/").removePrefix("r/")
 
@@ -237,7 +245,10 @@ fun ExploreSheet(
             modifier = Modifier
                 .padding(horizontal = 16.dp)
                 .focusRequester(focus)
-                .onFocusChanged { if (it.hasFocus) expandForSearch() },
+                .onFocusChanged {
+                    fieldFocused = it.hasFocus
+                    if (it.hasFocus) expandForSearch()
+                },
         )
         HorizontalDivider(Modifier.padding(top = 16.dp))
         // Always full height, so the sheet doesn't jump as results come and go while typing.
@@ -253,7 +264,7 @@ fun ExploreSheet(
                     onSearchCommunities = { close { nav.push(SearchRoute(query = q, communities = true)) } },
                     onOpenUser = { close { nav.push(UserRoute(q)) } },
                 )
-                mode == ExploreMode.SEARCH && explore.recents.isNotEmpty() -> group(t("Recently searched & visited"), folds) {
+                searching && explore.recents.isNotEmpty() -> group(t("Recently searched & visited"), folds) {
                     items(explore.recents, key = { "recent:${it.subreddit}:${it.query}" }) { recent ->
                         val name = recent.subreddit.orEmpty()
                         if (recent.query == null) {
@@ -267,7 +278,7 @@ fun ExploreSheet(
                 }
                 else -> {
                     section(ExploreSection.FAVORITES, explore.favorites)
-                    section(ExploreSection.FEEDS, listOf("", "popular", "all"))
+                    section(ExploreSection.FEEDS, EXPLORE_FEEDS)
                     if (ExploreSection.CUSTOM_FEEDS !in explore.hidden && (customFeeds.isNotEmpty() || me != null)) {
                         group(ExploreSection.CUSTOM_FEEDS.header, folds) {
                             items(customFeeds, key = { "${ExploreSection.CUSTOM_FEEDS.name}:${it.path}" }) { multi ->
@@ -605,6 +616,27 @@ private fun emphasize(label: String, match: String?): AnnotatedString = buildAnn
 private fun RowMenuButton(description: String, onClick: () -> Unit) {
     IconButton(onClick = onClick, modifier = Modifier.size(ROW_HEIGHT)) {
         Icon(Symbols.MoreVert, description, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+    }
+}
+
+/**
+ * A "Recently searched & visited" entry without Explore's ⋮: a feed opened, or a past search.
+ * Used by the search page before anything is typed (SearchScreen.kt).
+ */
+@Composable
+internal fun RecentRow(recent: Recent, iconUrl: String?, onClick: () -> Unit) {
+    if (recent.query != null) {
+        QueryRow(recent, iconUrl, onClick)
+    } else {
+        val name = recent.subreddit.orEmpty()
+        Row(
+            Modifier.fillMaxWidth().height(ROW_HEIGHT).clickable(onClick = onClick).padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FeedIcon(name, iconUrl)
+            Spacer(Modifier.width(16.dp))
+            Text(Format.feedName(name), style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
     }
 }
 
