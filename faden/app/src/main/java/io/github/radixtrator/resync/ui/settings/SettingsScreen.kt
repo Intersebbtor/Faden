@@ -405,9 +405,17 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
         SettingsCategory.MESSAGING -> MessagingRows(container, settings)
         SettingsCategory.MEDIA -> {
             Choice(t("Close images by"), listOf(true, false), settings.tapToClose, { if (it) t("Single tap") else t("Swiping up or down") }) { v -> update { it.copy(tapToClose = v) } }
+            // Default first, unlike images: videos close by swiping unless you pick a tap.
+            Choice(t("Close videos by"), listOf(false, true), settings.tapToCloseVideos, { if (it) t("Single tap") else t("Swiping up or down") }) { v -> update { it.copy(tapToCloseVideos = v) } }
+            // Images that close by swiping always do; the toggle covers the ones that close by a tap, and videos.
             Toggle(
                 t("Swipe to close"),
-                if (settings.tapToClose) t("Fling videos up or down, and images down, to close them") else t("Fling videos up or down to close them"),
+                when {
+                    settings.tapToClose && settings.tapToCloseVideos -> t("Fling images and videos down to close them")
+                    settings.tapToClose -> t("Fling videos up or down, and images down, to close them")
+                    settings.tapToCloseVideos -> t("Fling videos down to close them")
+                    else -> t("Fling videos up or down to close them")
+                },
                 settings.swipeToClose,
             ) { v -> update { it.copy(swipeToClose = v) } }
             Toggle(t("Hold to preview"), t("Hold a picture in a feed to see it full screen until you let go"), settings.holdToPreview) { v -> update { it.copy(holdToPreview = v) } }

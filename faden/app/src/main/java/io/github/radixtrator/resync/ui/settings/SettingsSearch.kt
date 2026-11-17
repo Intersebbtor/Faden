@@ -103,6 +103,7 @@ object SettingsIndex {
                 row(SettingsCategory.MESSAGING, t("Watched posts"), t("New comments are checked every hour"), "notifications benachrichtigungen"),
 
                 row(SettingsCategory.MEDIA, t("Close images by"), t("Single tap, or swiping up or down"), "viewer betrachter bildansicht"),
+                row(SettingsCategory.MEDIA, t("Close videos by"), t("Swiping up or down, or a single tap"), "player video tap tippen schließen"),
                 row(SettingsCategory.MEDIA, t("Swipe to close"), t("Fling videos and images to close them"), "viewer betrachter bildansicht"),
                 row(SettingsCategory.MEDIA, t("Hold to preview"), t("Hold a picture in a feed to see it full screen until you let go"), "peek vorschau"),
                 row(SettingsCategory.MEDIA, t("Unblur NSFW previews"), t("With Hold to preview on: holding a blurred NSFW picture shows it unblurred"), "peek vorschau"),

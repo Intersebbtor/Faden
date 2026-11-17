@@ -287,11 +287,15 @@ private fun VideoPlayer(
     }
     BackHandler(enabled = panelOpen) { panelOpen = false }
 
+    // Media › "Close videos by": by default a fling up or down closes, a tap shows and hides the controls, and ⋮ opens
+    // the panel. With "Single tap", a tap closes, a swipe up shows and hides the controls instead (as the image viewer's
+    // swipe up brings its bar), and a downward fling still closes with "Swipe to close".
+    val tapCloses = settings.tapToCloseVideos
     DismissibleMedia(
         onDismiss = onClose,
         enabled = !panelOpen && !zoomed,
-        // No swipe-up panel (that's the image viewer's info bar): a fling up or down closes, and ⋮ opens the panel.
         dismissOnDrag = settings.swipeToClose,
+        onSwipeUp = if (tapCloses) ({ controls = !controls }) else null,
     ) {
         Box(Modifier.fillMaxSize()) {
             // A TextureView rather than PlayerView's default SurfaceView: a SurfaceView ignores Compose's
@@ -316,7 +320,13 @@ private fun VideoPlayer(
             Box(
                 Modifier
                     .fillMaxSize()
-                    .zoomGestures(zoom, onTap = { if (panelOpen) panelOpen = false else controls = !controls }),
+                    .zoomGestures(zoom, onTap = {
+                        when {
+                            panelOpen -> panelOpen = false
+                            tapCloses -> onClose()
+                            else -> controls = !controls
+                        }
+                    }),
             )
             error?.let { message ->
                 Column(

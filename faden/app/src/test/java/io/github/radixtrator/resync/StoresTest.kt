@@ -601,6 +601,16 @@ class BackupTest {
         assertTrue(search("zzzz").isEmpty())
     }
 
+    @Test
+    fun `closing videos by a tap starts off, survives a reload and shows up in settings search`() {
+        // Settings saved before the option existed keep closing videos by swiping.
+        val prefs = FakePrefs().apply { values["settings.v1"] = """{"tapToClose":true}""" }
+        assertTrue(!SettingsStore(prefs).settings.value.tapToCloseVideos)
+        SettingsStore(prefs).update { it.copy(tapToCloseVideos = true) }
+        assertTrue(SettingsStore(prefs).settings.value.tapToCloseVideos)
+        assertTrue("Close videos by" in SettingsIndex.search("close videos").map { it.title })
+    }
+
     /** [filledPrefs] split the way the app keeps it: main, history and auth files. */
     private fun splitPrefs(clientId: String = "client_id_one"): Triple<FakePrefs, FakePrefs, FakePrefs> {
         val main = filledPrefs(clientId)
