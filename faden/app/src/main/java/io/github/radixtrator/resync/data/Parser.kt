@@ -480,7 +480,7 @@ object Parser {
             d.bool("is_self") -> PostMedia.None
             url.endsWith(".gifv", ignoreCase = true) -> PostMedia.Video(preview, url.dropLast(5) + ".mp4", loop = true)
             d.string("post_hint") == "image" || IMAGE_URL.matches(url) ->
-                PostMedia.Image(preview, url, isGif = url.contains(".gif", ignoreCase = true) && gifMp4 == null)
+                PostMedia.Image(preview, url, isGif = url.contains(".gif", ignoreCase = true) && gifMp4 == null, mp4 = gifMp4)
             gifMp4 != null -> PostMedia.Video(preview, gifMp4, loop = true)
             else -> {
                 val thumb = preview ?: d.string("thumbnail")?.takeIf { it.startsWith("http") }

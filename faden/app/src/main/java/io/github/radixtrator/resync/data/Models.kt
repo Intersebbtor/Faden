@@ -15,7 +15,8 @@ data class ImageSource(val url: String, val width: Int, val height: Int, val sma
 
 sealed interface PostMedia {
     data object None : PostMedia
-    data class Image(val preview: ImageSource?, val url: String, val isGif: Boolean) : PostMedia
+    /** [mp4]: Reddit's mp4 of an animated GIF, which feed previews autoplay (Data options › "Autoplay"). */
+    data class Image(val preview: ImageSource?, val url: String, val isGif: Boolean, val mp4: String? = null) : PostMedia
     data class Gallery(val preview: ImageSource?, val images: List<ImageSource>) : PostMedia
     /**
      * [loop]: GIF-like clip (no audio, repeats) rather than a real video. [url] can be a RedGifs page, which the

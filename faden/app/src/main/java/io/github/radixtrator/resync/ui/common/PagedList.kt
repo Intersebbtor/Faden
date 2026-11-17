@@ -33,7 +33,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
@@ -137,6 +140,8 @@ fun <T> PagedGrid(
     bottomPadding: Dp = 0.dp,
     emptyText: String = t("Nothing here yet"),
     preloadsOf: ((T) -> List<ImagePreload>)? = null,
+    /** Which items have a preview that "Autoplay" may play; null for none. Only the one nearest the middle plays. */
+    autoplayOf: ((T) -> Boolean)? = null,
     header: @Composable () -> Unit,
     item: @Composable (T) -> Unit,
 ) {
@@ -158,7 +163,19 @@ fun <T> PagedGrid(
         )
     }
 
-    CompositionLocalProvider(LocalFeedColumns provides columns) {
+    val autoplay = autoplayOf?.takeIf { LocalFeedDisplay.current.autoplayActive }
+    val autoplayCandidate by rememberAutoplayKey(gridState, state.items, key, playable = { autoplay?.invoke(it) == true })
+    // A preview starts once it has stayed in the middle for a moment, so flinging past videos doesn't start each one;
+    // a change stops the one playing at once.
+    var autoplayKey by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(autoplayCandidate) {
+        autoplayKey = null
+        val next = autoplayCandidate ?: return@LaunchedEffect
+        delay(AUTOPLAY_SETTLE_MS)
+        autoplayKey = next
+    }
+
+    CompositionLocalProvider(LocalFeedColumns provides columns, LocalAutoplayKey provides autoplayKey) {
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(columns),
             state = gridState,
@@ -187,6 +204,9 @@ fun <T> PagedGrid(
         }
     }
 }
+
+/** How long a preview has to stay the one nearest the middle before "Autoplay" starts it. */
+private const val AUTOPLAY_SETTLE_MS = 250L
 
 /** How many rows past the screen [PagedGrid] decodes into memory, and how many more it only downloads. */
 private const val PRELOAD_DECODE_ROWS = 4

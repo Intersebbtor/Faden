@@ -16,6 +16,7 @@ import kotlinx.coroutines.delay
 import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
+import io.github.radixtrator.resync.data.Autoplay
 import io.github.radixtrator.resync.data.DataSaving
 import io.github.radixtrator.resync.data.NsfwMode
 import io.github.radixtrator.resync.data.PostLayout
@@ -41,6 +42,7 @@ data class FeedDisplay(
     val blurSpoilers: Boolean = true,
     val blurNsfwOnlyFrontpageAndAll: Boolean = false,
     val dataSaving: DataSaving = DataSaving.NEVER,
+    val autoplay: Autoplay = Autoplay.NEVER,
     val shortScores: Boolean = true,
     val showPostAuthor: Boolean = true,
     val showPostFlair: Boolean = true,
@@ -68,6 +70,14 @@ data class FeedDisplay(
             DataSaving.MOBILE -> metered
         }
 
+    /** Whether feed previews play their videos right now: "Autoplay" allows it on this connection and data saving is off. */
+    val autoplayActive: Boolean
+        get() = !dataSavingActive && when (autoplay) {
+            Autoplay.ALWAYS -> true
+            Autoplay.WIFI -> !metered
+            Autoplay.NEVER -> false
+        }
+
     companion object {
         fun of(settings: Settings, metered: Boolean, moderated: Set<String>) = FeedDisplay(
             layout = settings.layout,
@@ -75,6 +85,7 @@ data class FeedDisplay(
             blurSpoilers = settings.blurSpoilers,
             blurNsfwOnlyFrontpageAndAll = settings.blurNsfwOnlyFrontpageAndAll,
             dataSaving = settings.dataSaving,
+            autoplay = settings.autoplay,
             shortScores = settings.shortScores,
             showPostAuthor = settings.showPostAuthor,
             showPostFlair = settings.showPostFlair,

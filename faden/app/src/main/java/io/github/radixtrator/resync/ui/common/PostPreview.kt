@@ -17,7 +17,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -107,6 +109,9 @@ fun CardPreview(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, 
     val image = post.media.cardImage() ?: return
     val blur = post.shouldBlur()
     val saving = dataSavingActive()
+    // Data options › "Autoplay": the feed picks one preview at a time ([LocalAutoplayKey]); blurred ones never play.
+    val autoplay = post.autoplayStream()?.takeIf { !blur && !saving && LocalAutoplayKey.current == post.fullname }
+    var autoplaying by remember(autoplay) { mutableStateOf(false) }
     val ratio = image.aspectRatio.coerceIn(0.5f, 2.2f)
     // About a column's width: a three-column grid of cards needn't fetch 1080px previews.
     val columnWidth = LocalWindowInfo.current.containerSize.width / LocalFeedColumns.current
@@ -139,9 +144,11 @@ fun CardPreview(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, 
                 modifier = Modifier.matchParentSize(),
             )
         }
+        if (autoplay != null) AutoplayVideo(autoplay, onFirstFrame = { autoplaying = true }, modifier = Modifier.matchParentSize())
         when (post.media) {
             is PostMedia.Gallery -> CenterBadge(AppIcons.Gallery, t("Gallery"), Modifier.align(Alignment.Center))
-            is PostMedia.Video -> CenterBadge(AppIcons.PlayCircle, t("Video"), Modifier.align(Alignment.Center))
+            // The play badge steps aside once the clip itself is playing.
+            is PostMedia.Video -> if (!autoplaying) CenterBadge(AppIcons.PlayCircle, t("Video"), Modifier.align(Alignment.Center))
             else -> if (saving && !blur) {
                 Icon(typeIcon(post), null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.Center).size(32.dp))
             }

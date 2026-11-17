@@ -86,6 +86,9 @@ import io.github.radixtrator.resync.ui.common.MessageEffect
 import io.github.radixtrator.resync.ui.common.OptionRow
 import io.github.radixtrator.resync.ui.common.PagedGrid
 import io.github.radixtrator.resync.ui.common.rememberPostPreloads
+import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
+import io.github.radixtrator.resync.ui.common.autoplayStream
+import io.github.radixtrator.resync.ui.common.shouldBlur
 import io.github.radixtrator.resync.ui.common.PostListItem
 import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.SheetHandle
@@ -146,6 +149,16 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
     // Customize view's Columns choice for this layout, else as many as the width fits.
     val columns = layout.feedColumns(settings.viewOptionsFor(layout))
     val postPreloads = rememberPostPreloads(layout, columns)
+    // Data options › "Autoplay": the layouts with big previews (Cards, and Slides showing image previews) play the
+    // video nearest the middle; blurred NSFW and spoiler previews don't.
+    val feedDisplay = LocalFeedDisplay.current
+    val frontpageOrAll = LocalFrontpageOrAllFeed.current
+    val bigPreviews = layout == PostLayout.CARD || (layout == PostLayout.SLIDES && settings.viewOptionsFor(layout).imagePreviews)
+    val autoplayOf: ((ProfileItem) -> Boolean)? = if (bigPreviews) {
+        { item -> (item as? ProfileItem.PostItem)?.post?.let { it.autoplayStream() != null && !it.shouldBlur(feedDisplay, frontpageOrAll) } == true }
+    } else {
+        null
+    }
     val scope = rememberCoroutineScope()
     var sortOpen by rememberSaveable { mutableStateOf(false) }
     var viewOpen by rememberSaveable { mutableStateOf(false) }
@@ -239,6 +252,7 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
                     gridState = gridState,
                     bottomPadding = padding.calculateBottomPadding(),
                     preloadsOf = { (it as? ProfileItem.PostItem)?.post?.let(postPreloads).orEmpty() },
+                    autoplayOf = autoplayOf,
                     emptyText = if (sort.kind == SortKind.COMMENTS) t("No comments here") else t("No posts here"),
                     header = {
                         // Collected here, so a change in who's watched redraws the header and not the whole page.

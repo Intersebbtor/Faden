@@ -97,6 +97,7 @@ import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.SwipeAction
 import io.github.radixtrator.resync.data.ThemeMode
 import io.github.radixtrator.resync.data.VideoQuality
+import io.github.radixtrator.resync.data.Autoplay
 import io.github.radixtrator.resync.notify.InboxWorker
 import io.github.radixtrator.resync.notify.Notifications
 import io.github.radixtrator.resync.ui.common.SwipeBack
@@ -448,6 +449,13 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
             Choice(t("HD Reddit video quality"), VideoQuality.entries, settings.hdVideo, VideoQuality::label) { v -> update { it.copy(hdVideo = v) } }
+            Choice(t("Autoplay"), Autoplay.entries, settings.autoplay, Autoplay::label) { v -> update { it.copy(autoplay = v) } }
+            Text(
+                t("Videos and GIFs play muted in Cards and Slides, one at a time, unless data saving is on"),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
         }
         SettingsCategory.FILTERS -> {
             // Sync's Post filters: a row per list, each opening its editor. Post ⋮ → Filter… adds to them too.
