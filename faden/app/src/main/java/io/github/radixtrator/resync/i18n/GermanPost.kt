@@ -94,6 +94,8 @@ internal fun germanPost(): Map<String, String> = mapOf(
     "Allow notifications to watch posts" to "Erlaube Benachrichtigungen, um Pfosten zu beobachten",
     "Include title" to "Titel mitschicken",
     "Post preview" to "Pfosten-Vorschau",
+    "Image file" to "Bilddatei",
+    "Video file" to "Videodatei",
     "Post comments" to "Pfosten-Kommentare",
     "Link" to "Verknüpfung",
     "Copy title" to "Titel kopieren",

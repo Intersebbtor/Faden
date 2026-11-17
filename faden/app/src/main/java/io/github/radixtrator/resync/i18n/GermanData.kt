@@ -67,6 +67,8 @@ internal fun germanData(): Map<String, String> = mapOf(
     "Downloading…" to "Wird herabgeladen…",
     "Saved to {0}" to "Gespeichert in {0}",
     "Download failed: {0}" to "Herablad fehlgeschlagen: {0}",
+    "Getting the file ready…" to "Datei wird vorbereitet…",
+    "Couldn't share the file: {0}" to "Konnte die Datei nicht teilen: {0}",
     "no video in the DASH playlist" to "kein Video in der DASH-Playlist",
     "couldn't create the file" to "konnte die Datei nicht anlegen",
     "couldn't open the file" to "konnte die Datei nicht öffnen",
