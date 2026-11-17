@@ -6,6 +6,7 @@ import io.github.radixtrator.resync.data.Parser
 import io.github.radixtrator.resync.data.RedditClient
 import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.ui.common.FeedDisplay
+import io.github.radixtrator.resync.ui.common.PlaybackHandoff
 import io.github.radixtrator.resync.ui.common.autoplayStream
 import io.github.radixtrator.resync.ui.settings.SettingsIndex
 import kotlinx.serialization.json.jsonObject
@@ -67,6 +68,32 @@ class FeedAutoplayTest {
 
         assertNull(post("""{"id":"i1","title":"t","url":"https://i.redd.it/pic.jpg","post_hint":"image"}""").autoplayStream())
         assertNull(post("""{"id":"s1","title":"t","is_self":true,"selftext":"hi"}""").autoplayStream())
+    }
+
+    @Test
+    fun `a clip carries on between the feed preview and the full-screen player`() {
+        val stream = "https://v.redd.it/handoff/HLSPlaylist.m3u8"
+        assertEquals(0L, PlaybackHandoff.position(stream))
+
+        // The preview plays; the full-screen player opening over it starts where the preview is.
+        val preview = Any()
+        var previewAt = 12_000L
+        PlaybackHandoff.attach(stream, preview) { previewAt }
+        assertEquals(12_000L, PlaybackHandoff.position(stream))
+
+        // Both play while the page slides in; the newer one owns the stream, so the preview leaving doesn't count.
+        val full = Any()
+        var fullAt = 12_000L
+        PlaybackHandoff.attach(stream, full) { fullAt }
+        previewAt = 12_400L
+        PlaybackHandoff.detach(stream, preview)
+        fullAt = 30_000L
+        assertEquals(30_000L, PlaybackHandoff.position(stream))
+
+        // Closed, its position stays behind for the preview to pick up.
+        PlaybackHandoff.detach(stream, full)
+        fullAt = 99_000L
+        assertEquals(30_000L, PlaybackHandoff.position(stream))
     }
 
     @Test

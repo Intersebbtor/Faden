@@ -99,6 +99,43 @@ fun <T> rememberAutoplayKey(
 private const val MIN_VISIBLE = 0.6f
 
 /**
+ * Where a clip has got to, so it carries on instead of starting over as it moves between its autoplaying feed preview
+ * and the full-screen player, either way. The two overlap while a page slides in or out, so a player that's still
+ * playing is asked first ([attach]); one that's gone leaves its position behind ([detach]). Keyed by stream, main
+ * thread only. The full-screen player takes part only while "Autoplay" is active, so without it nothing changes there.
+ */
+internal object PlaybackHandoff {
+    private class Live(val owner: Any, val position: () -> Long)
+
+    private val live = HashMap<String, Live>()
+    private val saved = object : LinkedHashMap<String, Long>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Long>?) = size > SAVED_POSITIONS
+    }
+
+    /** Where [stream] should start: a playing player's position, else the last one left behind, else the start. */
+    fun position(stream: String): Long = live[stream]?.position?.invoke() ?: saved[stream] ?: 0L
+
+    /** [player] now plays [stream]; it's the one [position] asks until another attaches or it [detach]es. */
+    fun attach(stream: String, player: Player) = attach(stream, player) { player.currentPosition }
+
+    /** [player] is about to be released: its position stays behind, unless a newer player has taken [stream] over. */
+    fun detach(stream: String, player: Player) = detach(stream, owner = player)
+
+    /** [attach] for anything that has a [position]: the players, and tests. */
+    fun attach(stream: String, owner: Any, position: () -> Long) {
+        live[stream] = Live(owner, position)
+    }
+
+    fun detach(stream: String, owner: Any) {
+        val current = live[stream]?.takeIf { it.owner === owner } ?: return
+        live.remove(stream)
+        saved[stream] = current.position()
+    }
+
+    private const val SAVED_POSITIONS = 30
+}
+
+/**
  * A muted, looping clip filling its box, cropped to cover it as the preview image is ([androidx.compose.ui.layout.ContentScale.Crop]).
  * It stays invisible until its first frame is drawn ([onFirstFrame]), so the still preview underneath shows meanwhile,
  * and pauses while the app is in the background. SD only, through the player's on-disk cache; it doesn't take audio
@@ -121,6 +158,8 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
                         .build(),
                 )
                 trackSelectionParameters = trackSelectionParameters.buildUpon().setMaxVideoSizeSd().build()
+                // Carries on where the clip was, in the full-screen player or the last time it played here.
+                PlaybackHandoff.position(stream).takeIf { it > 0 }?.let(::seekTo)
                 repeatMode = Player.REPEAT_MODE_ONE
                 volume = 0f
                 playWhenReady = true
@@ -142,7 +181,9 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
             }
         }
         player.addListener(listener)
+        PlaybackHandoff.attach(stream, player)
         onDispose {
+            PlaybackHandoff.detach(stream, player)
             player.removeListener(listener)
             player.release()
         }
