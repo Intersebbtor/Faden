@@ -71,6 +71,7 @@ object SettingsIndex {
 
                 view(t("Default post layout"), keywords = "card list compact slides karte liste kompakt folien"),
                 view(t("Post media preview size"), keywords = "image cropped bild zugeschnitten"),
+                view(t("Autoplay"), t("Per view: Cards, Slides and Swipe mode"), keywords = "video gif play abspielen swipe fingerfeger wifi wlan"),
 
                 row(SettingsCategory.COMMENTS, t("Show user flair")),
                 row(SettingsCategory.COMMENTS, t("Show profile pictures"), t("Authors' avatars in comment headers"), "avatar profilbild"),
@@ -121,7 +122,7 @@ object SettingsIndex {
 
                 row(SettingsCategory.DATA, t("Data saving mode"), keywords = "mobile metered mobil getaktet datensparen"),
                 row(SettingsCategory.DATA, t("HD Reddit video quality"), keywords = "wifi wlan"),
-                row(SettingsCategory.DATA, t("Autoplay"), t("Videos and GIFs play muted in Cards and Slides, one at a time, unless data saving is on"), "wifi wlan feed futter play abspielen gif video"),
+                row(SettingsCategory.DATA, t("Autoplay"), t("Videos and GIFs play muted in Cards, Slides and Swipe mode, one at a time, unless data saving is on. Customize view can override it per view"), "wifi wlan feed futter play abspielen gif video"),
 
                 row(SettingsCategory.BACKUP, t("Backup now"), t("Save a backup file wherever you choose"), "export exportieren rückhoch sicherung"),
                 row(SettingsCategory.BACKUP, t("Restore from backup"), t("Replace this device's data with a backup file"), "import importieren rückhoch wiederherstellen"),

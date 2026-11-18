@@ -140,7 +140,10 @@ fun <T> PagedGrid(
     bottomPadding: Dp = 0.dp,
     emptyText: String = t("Nothing here yet"),
     preloadsOf: ((T) -> List<ImagePreload>)? = null,
-    /** Which items have a preview that "Autoplay" may play; null for none. Only the one nearest the middle plays. */
+    /**
+     * Which items have a preview that "Autoplay" may play; null for none, as when the layout's "Autoplay" doesn't apply
+     * right now. Only the one nearest the middle plays.
+     */
     autoplayOf: ((T) -> Boolean)? = null,
     header: @Composable () -> Unit,
     item: @Composable (T) -> Unit,
@@ -163,8 +166,7 @@ fun <T> PagedGrid(
         )
     }
 
-    val autoplay = autoplayOf?.takeIf { LocalFeedDisplay.current.autoplayActive }
-    val autoplayCandidate by rememberAutoplayKey(gridState, state.items, key, playable = { autoplay?.invoke(it) == true })
+    val autoplayCandidate by rememberAutoplayKey(gridState, state.items, key, playable = { autoplayOf?.invoke(it) == true })
     // A preview starts once it has stayed in the middle for a moment, so flinging past videos doesn't start each one;
     // a change stops the one playing at once.
     var autoplayKey by remember { mutableStateOf<String?>(null) }

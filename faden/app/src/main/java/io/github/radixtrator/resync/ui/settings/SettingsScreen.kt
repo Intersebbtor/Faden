@@ -459,7 +459,7 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
             Choice(t("HD Reddit video quality"), VideoQuality.entries, settings.hdVideo, VideoQuality::label) { v -> update { it.copy(hdVideo = v) } }
             Choice(t("Autoplay"), Autoplay.entries, settings.autoplay, Autoplay::label) { v -> update { it.copy(autoplay = v) } }
             Text(
-                t("Videos and GIFs play muted in Cards and Slides, one at a time, unless data saving is on"),
+                t("Videos and GIFs play muted in Cards, Slides and Swipe mode, one at a time, unless data saving is on. Customize view can override it per view"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),

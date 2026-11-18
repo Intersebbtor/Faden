@@ -27,6 +27,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,6 +52,8 @@ import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostMedia
 import io.github.radixtrator.resync.ui.common.StateToggle
 import io.github.radixtrator.resync.ui.common.AppIcons
+import io.github.radixtrator.resync.ui.common.AutoplayVideo
+import io.github.radixtrator.resync.ui.common.autoplayStream
 import io.github.radixtrator.resync.ui.common.CARD_BLUR_WIDTH
 import io.github.radixtrator.resync.ui.common.Format
 import io.github.radixtrator.resync.ui.common.PostTitle
@@ -68,14 +74,22 @@ import io.github.radixtrator.resync.i18n.t
 /**
  * One Swipe mode page: sub icon, `r/sub` (accent), author • age • domain • flair (accent), points • comments and
  * the title, then the media centered in the remaining space. Tapping the header opens the post; tapping the
- * media opens it in the viewer ([onMedia]); text posts show their selftext, scrollable, instead.
+ * media opens it in the viewer ([onMedia]); text posts show their selftext, scrollable, instead. With [autoplay] (the
+ * page on screen, while Swipe mode's "Autoplay" applies), a video or GIF plays muted in place of its picture.
  */
 @Composable
-internal fun SwipePage(post: Post, iconUrl: String?, onOpen: () -> Unit, onMedia: () -> Unit, onMore: () -> Unit) {
+internal fun SwipePage(
+    post: Post,
+    iconUrl: String?,
+    autoplay: Boolean,
+    onOpen: () -> Unit,
+    onMedia: () -> Unit,
+    onMore: () -> Unit,
+) {
     Column(Modifier.fillMaxSize()) {
         SwipeHeader(post, iconUrl, Modifier.combinedClickable(onClick = onOpen, onLongClick = onMore))
         Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-            if (post.media == PostMedia.None) SwipeSelfText(post) else SwipeMedia(post, onMedia)
+            if (post.media == PostMedia.None) SwipeSelfText(post) else SwipeMedia(post, autoplay, onMedia)
         }
     }
 }
@@ -160,13 +174,16 @@ private fun SwipeSelfText(post: Post) {
 /**
  * The post's media fit to the page and centered: the image itself, a video's or gallery's preview, or a link's
  * preview, with a badge in the middle for galleries, videos and links. Blurred NSFW and spoiler posts follow the
- * feed's rules ([shouldBlur]); data saving leaves the image unloaded, as in feeds.
+ * feed's rules ([shouldBlur]); data saving leaves the image unloaded, as in feeds. With [autoplay], the clip plays
+ * over the picture, fit the same way, once its first frame is in; blurred posts and data saving keep it still.
  */
 @Composable
-private fun SwipeMedia(post: Post, onMedia: () -> Unit) {
+private fun SwipeMedia(post: Post, autoplay: Boolean, onMedia: () -> Unit) {
     val blur = post.shouldBlur()
     val saving = dataSavingActive()
     val image = post.media.swipeImage()?.takeUnless { saving }
+    val stream = post.autoplayStream()?.takeIf { autoplay && !blur && !saving }
+    var autoplaying by remember(stream) { mutableStateOf(false) }
     Box(Modifier.fillMaxSize().clickable(onClick = onMedia), contentAlignment = Alignment.Center) {
         if (image != null) {
             AsyncImage(
@@ -176,9 +193,11 @@ private fun SwipeMedia(post: Post, onMedia: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        if (stream != null) AutoplayVideo(stream, onFirstFrame = { autoplaying = true }, modifier = Modifier.matchParentSize(), fit = true)
         val badge: Pair<ImageVector, String>? = when (post.media) {
             is PostMedia.Gallery -> AppIcons.Gallery to t("Gallery")
-            is PostMedia.Video -> AppIcons.PlayCircle to t("Play video")
+            // The play badge steps aside once the clip itself is playing.
+            is PostMedia.Video -> if (autoplaying) null else AppIcons.PlayCircle to t("Play video")
             is PostMedia.Link -> AppIcons.OpenExternal to t("Open link")
             // A plain image needs no badge unless its picture is missing (data saving).
             is PostMedia.Image -> if (image == null) AppIcons.Image to t("Image") else null

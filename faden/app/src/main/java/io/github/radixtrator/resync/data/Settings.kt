@@ -158,6 +158,11 @@ data class ViewOptions(
     val descriptionSize: TitleSize = TitleSize.NORMAL,
     /** Slides and Cards: the size half of Sync's "Selftext font" (`slide_selftext`, `card_selftext`), the text preview. */
     val selftextSize: TitleSize = TitleSize.NORMAL,
+    /**
+     * Slides and Cards: this layout's own "Autoplay", overriding Data options › "Autoplay" (which [ViewAutoplay.DEFAULT]
+     * follows). Not one of Sync's options.
+     */
+    val autoplay: ViewAutoplay = ViewAutoplay.DEFAULT,
 ) {
     companion object {
         /** The options of a layout nobody has customized, shared so reading them allocates nothing. */
@@ -237,6 +242,22 @@ enum class VideoQuality(private val en: String) {
  */
 enum class Autoplay(private val en: String) {
     ALWAYS("Always"), WIFI("WiFi only"), NEVER("Never");
+
+    val label: String get() = t(en)
+}
+
+/**
+ * One view's own "Autoplay" (Customize view for Cards and Slides, and Swipe mode): [DEFAULT] follows Data options ›
+ * "Autoplay", the rest override it there, so autoplay can be on in one view only. Data saving still stops it.
+ */
+enum class ViewAutoplay(private val en: String, private val fixed: Autoplay?) {
+    DEFAULT("As in Data options", null),
+    ALWAYS("Always", Autoplay.ALWAYS),
+    WIFI("WiFi only", Autoplay.WIFI),
+    NEVER("Never", Autoplay.NEVER);
+
+    /** What applies in this view, given Data options › "Autoplay". */
+    fun resolve(global: Autoplay): Autoplay = fixed ?: global
 
     val label: String get() = t(en)
 }
@@ -433,6 +454,8 @@ data class Settings(
     val dataSaving: DataSaving = DataSaving.NEVER,
     /** Data options › "Autoplay". Never is how Faden always behaved (Sync's default is WiFi only). */
     val autoplay: Autoplay = Autoplay.NEVER,
+    /** Customize view › Swipe mode "Autoplay": Swipe mode's own override of [autoplay]. */
+    val swipeAutoplay: ViewAutoplay = ViewAutoplay.DEFAULT,
     /** Per-feed overrides of [layout], keyed by [feedKey], like Sync's per-subreddit view. */
     val feedLayouts: Map<String, PostLayout> = emptyMap(),
     /** Sync's Customize view choices, per layout; a layout missing here uses the [ViewOptions] defaults. */

@@ -204,8 +204,8 @@ private fun VideoPlayer(
     // fail to start), so a decoding failure gets one retry with software decoders first.
     var softwareFirst by remember { mutableStateOf(false) }
     val playingUrl = if (twoFiles && hd) hdStream!! else stream
-    // With "Autoplay" on, the clip carries on from its feed preview, and the preview from here when this closes.
-    val handoff = LocalFeedDisplay.current.autoplayActive
+    // With "Autoplay" on in any view, the clip carries on from its preview, and the preview from here when this closes.
+    val handoff = LocalFeedDisplay.current.anyAutoplayActive
     // Where to pick up when the player is rebuilt (switching SD/HD files, or retrying with software decoders).
     val resumeAt = remember { longArrayOf(if (handoff) PlaybackHandoff.position(stream) else 0L) }
     val player = remember(playingUrl, softwareFirst) {

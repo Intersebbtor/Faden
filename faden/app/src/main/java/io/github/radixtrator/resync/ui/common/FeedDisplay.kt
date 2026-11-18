@@ -22,6 +22,7 @@ import io.github.radixtrator.resync.data.NsfwMode
 import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.data.SwipeAction
+import io.github.radixtrator.resync.data.ViewAutoplay
 import io.github.radixtrator.resync.data.ViewOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
@@ -43,6 +44,7 @@ data class FeedDisplay(
     val blurNsfwOnlyFrontpageAndAll: Boolean = false,
     val dataSaving: DataSaving = DataSaving.NEVER,
     val autoplay: Autoplay = Autoplay.NEVER,
+    val swipeAutoplay: ViewAutoplay = ViewAutoplay.DEFAULT,
     val shortScores: Boolean = true,
     val showPostAuthor: Boolean = true,
     val showPostFlair: Boolean = true,
@@ -70,15 +72,30 @@ data class FeedDisplay(
             DataSaving.MOBILE -> metered
         }
 
-    /** Whether feed previews play their videos right now: "Autoplay" allows it on this connection and data saving is off. */
-    val autoplayActive: Boolean
-        get() = !dataSavingActive && when (autoplay) {
-            Autoplay.ALWAYS -> true
-            Autoplay.WIFI -> !metered
-            Autoplay.NEVER -> false
-        }
+    /**
+     * Whether previews in [layout] play their videos right now: its "Autoplay" (its own, else Data options') allows it
+     * on this connection and data saving is off. Only Cards and Slides autoplay at all; the caller checks the layout.
+     */
+    fun autoplayActive(layout: PostLayout): Boolean = active(viewOptionsFor(layout).autoplay)
+
+    /** The same for Swipe mode's pages, by its own "Autoplay" override. */
+    val swipeAutoplayActive: Boolean
+        get() = active(swipeAutoplay)
+
+    /** Whether any view may autoplay right now, so the full-screen player hands its position back and forth. */
+    val anyAutoplayActive: Boolean
+        get() = swipeAutoplayActive || AUTOPLAY_LAYOUTS.any(::autoplayActive)
+
+    private fun active(override: ViewAutoplay): Boolean = !dataSavingActive && when (override.resolve(autoplay)) {
+        Autoplay.ALWAYS -> true
+        Autoplay.WIFI -> !metered
+        Autoplay.NEVER -> false
+    }
 
     companion object {
+        /** The layouts whose previews can autoplay: the ones with big previews. */
+        val AUTOPLAY_LAYOUTS = listOf(PostLayout.CARD, PostLayout.SLIDES)
+
         fun of(settings: Settings, metered: Boolean, moderated: Set<String>) = FeedDisplay(
             layout = settings.layout,
             nsfw = settings.nsfw,
@@ -86,6 +103,7 @@ data class FeedDisplay(
             blurNsfwOnlyFrontpageAndAll = settings.blurNsfwOnlyFrontpageAndAll,
             dataSaving = settings.dataSaving,
             autoplay = settings.autoplay,
+            swipeAutoplay = settings.swipeAutoplay,
             shortScores = settings.shortScores,
             showPostAuthor = settings.showPostAuthor,
             showPostFlair = settings.showPostFlair,

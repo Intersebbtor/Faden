@@ -38,6 +38,7 @@ import io.github.radixtrator.resync.data.isCoverScreen
 import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.PostMedia
 import io.github.radixtrator.resync.data.TitleSize
+import io.github.radixtrator.resync.data.ViewAutoplay
 import io.github.radixtrator.resync.data.ViewOptions
 import io.github.radixtrator.resync.ui.common.HeaderFilterChip
 import io.github.radixtrator.resync.ui.common.LargeHeader
@@ -55,8 +56,8 @@ import io.github.radixtrator.resync.i18n.t
  * Customize view, the one page for every view setting (Settings > View type opens it, as does the Change view
  * sheet's "Customize view" button): a large "View type" title, a chip per layout in Sync's order (Slides … List), a
  * live preview of example posts in the chosen layout, the settings shared by all layouts (default layout, media
- * preview size), then the chosen layout's options. Changes apply to every feed using the layout at once; the toolbar's
- * reset icon puts the chosen layout back to its defaults. Of Sync's font pickers (Title, Description, Selftext) only
+ * preview size) and Swipe mode's Autoplay, then the chosen layout's options. Changes apply to every feed using the
+ * layout at once; the toolbar's reset icon puts the chosen layout back to its defaults. Of Sync's font pickers (Title, Description, Selftext) only
  * the size half is here, as Small / Normal / Large.
  */
 @Composable
@@ -125,6 +126,11 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
                         Choice(t("Post media preview size"), MediaPreviewSize.entries, settings.postMediaPreview, MediaPreviewSize::label) { v ->
                             container.settings.update { it.copy(postMediaPreview = v) }
                         }
+                        // Swipe mode isn't a layout, so its one view option sits with the shared ones.
+                        Section(t("Swipe mode"))
+                        Choice(t("Autoplay"), ViewAutoplay.entries, settings.swipeAutoplay, ViewAutoplay::label) { v ->
+                            container.settings.update { it.copy(swipeAutoplay = v) }
+                        }
                         sectionsFor(layout).forEach { (title, rows) ->
                             Section(title)
                             rows.forEach { row ->
@@ -144,6 +150,9 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer) {
                                     }
                                     is ViewRow.FontSize -> Choice(row.size.title, TitleSize.entries, row.size.read(options), TitleSize::label) { v ->
                                         change { row.size.write(it, v) }
+                                    }
+                                    ViewRow.Autoplay -> Choice(t("Autoplay"), ViewAutoplay.entries, options.autoplay, ViewAutoplay::label) { v ->
+                                        change { it.copy(autoplay = v) }
                                     }
                                 }
                             }
@@ -208,7 +217,7 @@ internal enum class ViewFontSize(
     val title: String get() = t(enTitle)
 }
 
-/** A row on a View type screen: a [ViewOption] switch, a [ViewFontSize] choice, or Columns. */
+/** A row on a View type screen: a [ViewOption] switch, a [ViewFontSize] choice, Columns, or Autoplay. */
 private sealed interface ViewRow {
     class Switch(val option: ViewOption) : ViewRow
 
@@ -216,6 +225,9 @@ private sealed interface ViewRow {
 
     /** [ViewOptions.columns] and [ViewOptions.coverColumns]: main and cover screen. */
     object Columns : ViewRow
+
+    /** [ViewOptions.autoplay]: this layout's override of Data options › "Autoplay". */
+    object Autoplay : ViewRow
 }
 
 private fun switches(vararg options: ViewOption): List<ViewRow> = options.map { ViewRow.Switch(it) }
@@ -228,7 +240,7 @@ private fun fontSizes(vararg sizes: ViewFontSize): List<ViewRow> = sizes.map { V
  */
 private fun sectionsFor(layout: PostLayout): List<Pair<String, List<ViewRow>>> = when (layout) {
     PostLayout.SLIDES -> listOf(
-        t("Preview options") to switches(ViewOption.IMAGE_PREVIEWS, ViewOption.SELFTEXT_PREVIEWS, ViewOption.SUBREDDIT_ICONS),
+        t("Preview options") to switches(ViewOption.IMAGE_PREVIEWS, ViewOption.SELFTEXT_PREVIEWS, ViewOption.SUBREDDIT_ICONS) + ViewRow.Autoplay,
         t("Image options") to switches(ViewOption.SLIDE_FULL_HEIGHT, ViewOption.SLIDE_FULL_WIDTH, ViewOption.SLIDE_IMAGE_TOP),
         t("Fonts and sizing") to fontSizes(ViewFontSize.TITLE, ViewFontSize.DESCRIPTION, ViewFontSize.SELFTEXT),
         t("Buttons") to switches(
@@ -242,7 +254,7 @@ private fun sectionsFor(layout: PostLayout): List<Pair<String, List<ViewRow>>> =
         t("Experimental options") to switches(ViewOption.THICK_DIVIDER, ViewOption.SELFTEXT_BORDER),
     )
     PostLayout.CARD -> listOf(
-        t("Image options") to switches(ViewOption.IMAGE_ABOVE_TITLE, ViewOption.CARD_FULL_HEIGHT),
+        t("Image options") to switches(ViewOption.IMAGE_ABOVE_TITLE, ViewOption.CARD_FULL_HEIGHT) + ViewRow.Autoplay,
         t("Selftext options") to switches(ViewOption.SELFTEXT_PREVIEWS),
         t("Card options") to listOf(ViewRow.Switch(ViewOption.CARD_FULL_WIDTH), ViewRow.Columns),
         t("Fonts and sizing") to fontSizes(ViewFontSize.TITLE, ViewFontSize.DESCRIPTION, ViewFontSize.SELFTEXT),
