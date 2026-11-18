@@ -6,7 +6,9 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
-## 0.10.1
+## 0.11.0
+- Autoplay: videos and GIFs can play muted in Cards and Slides as you scroll, one at a time. Turn it on in Settings › Data options › Autoplay
+- Videos can close with a single tap, like images: Settings › Media › Close videos by
 - A comment you've just posted or edited shows its text instead of raw HTML
 
 ## 0.10.0
