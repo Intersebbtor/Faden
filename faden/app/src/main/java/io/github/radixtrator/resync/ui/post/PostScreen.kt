@@ -577,6 +577,10 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
                 Spacer(Modifier.height(8.dp))
                 FlairChip(post)
             }
+            post.crosspostOf?.let {
+                Spacer(Modifier.height(10.dp))
+                CrosspostRow(it)
+            }
             if (post.media is PostMedia.Link && !post.hasCardPreview()) {
                 Spacer(Modifier.height(10.dp))
                 LinkRow(post, onClick = { nav.openMedia(post) })
@@ -586,6 +590,10 @@ private fun PostHeader(post: Post, onVote: (Int) -> Unit, onToggleSave: () -> Un
                 Spacer(Modifier.height(10.dp))
                 RedditBodyText(body.text, CommentBody)
                 LinkCards(body.links, Modifier.padding(top = 12.dp))
+            }
+            post.poll?.let {
+                Spacer(Modifier.height(12.dp))
+                PollCard(post, it)
             }
         }
         Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {

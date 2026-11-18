@@ -162,9 +162,46 @@ internal fun germanPost(): Map<String, String> = mapOf(
     "Tag added: {0}" to "Markierung hinzugefügt: {0}",
     "Tag removed" to "Markierung entfernt",
     "Remove tag" to "Markierung entfernen",
+    // Crossposts
+    "crossposted from r/{0}" to "kreuzpfostiert aus r/{0}",
+    "Crossposted from r/{0}" to "Kreuzpfostiert aus r/{0}",
+    "by u/{0} · see the original comments" to "von u/{0} · zu den Original-Kommentaren",
+    "Open the original post" to "Originalpfosten öffnen",
+    // Polls
+    "Poll" to "Umfrage",
+    "Voting closed" to "Abstimmung beendet",
+    "Voting ends in {0}" to "Abstimmung endet in {0}",
+    "Vote on reddit.com" to "Auf reddit.com abstimmen",
+    "Your vote" to "Deine Stimme",
+    // Reminders
+    "Remind me" to "Erinnere mich",
+    "Remind me..." to "Erinnere mich …",
+    "Reminder" to "Erinnerung",
+    "Reminders" to "Erinnerungen",
+    "Posts you asked to be reminded of" to "Pfosten, an die du erinnert werden wolltest",
+    "Cancel reminder" to "Erinnerung abbrechen",
+    "Reminder canceled" to "Erinnerung abgebrochen",
+    "Reminder in {0}" to "Erinnerung in {0}",
+    "Reminder set: {0}" to "Erinnerung gesetzt: {0}",
+    "In 1 hour" to "In 1 Stunde",
+    "In 3 hours" to "In 3 Stunden",
+    "Tomorrow" to "Morgen",
+    "In 3 days" to "In 3 Tagen",
+    "In a week" to "In einer Woche",
+    // Labels on saved posts and comments
+    "Labels" to "Etiketten",
+    "Labels..." to "Etiketten …",
+    "Labels sort your saved posts and comments, like folders. They stay on this phone." to "Etiketten sortieren deine gespeicherten Pfosten und Kommentare wie Ordner. Sie bleiben auf diesem Telefon.",
+    "New label" to "Neues Etikett",
+    "Add label" to "Etikett hinzufügen",
+    "All labels" to "Alle Etiketten",
+    "Nothing saved with this label" to "Nichts mit diesem Etikett gespeichert",
+    // Launcher shortcuts
+    "New post" to "Neuer Pfosten",
 )
 
 internal fun germanPostPlurals(): Map<String, Pair<String, String>> = mapOf(
     "{0} points" to ("{0} Punkt" to "{0} Punkte"),
     "{0} comments" to ("{0} Kommentar" to "{0} Kommentare"),
+    "{0} votes" to ("{0} Stimme" to "{0} Stimmen"),
 )

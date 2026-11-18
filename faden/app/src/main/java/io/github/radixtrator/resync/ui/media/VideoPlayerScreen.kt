@@ -78,8 +78,8 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import io.github.radixtrator.resync.data.MediaDownloads
-import io.github.radixtrator.resync.data.Redgifs
-import io.github.radixtrator.resync.data.RedgifsVideo
+import io.github.radixtrator.resync.data.ClipHosts
+import io.github.radixtrator.resync.data.HostedClip
 import io.github.radixtrator.resync.data.VideoQuality
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
@@ -101,37 +101,37 @@ private val SoftwareFirst = MediaCodecSelector { mimeType, secure, tunneling ->
 private val SPEEDS = listOf(0.25f, 0.5f, 0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f)
 
 /**
- * Full-screen Media3 player for v.redd.it (HLS), mp4 clips and RedGifs pages, with Sync's controls: seek bar,
+ * Full-screen Media3 player for v.redd.it (HLS), mp4 clips and RedGifs and Streamable pages, with Sync's controls: seek bar,
  * then HD, restart, play/pause, mute, time, download and ⋮. The ⋮ adds playback speed, link info
  * and the Comments / Open in browser / Copy / Share bar. [loop] is for GIF-style clips: they repeat
- * silently and hide the controls until tapped. A RedGifs [url] is first looked up for its mp4s ([Redgifs]);
- * if RedGifs can't be reached, [fallback] (Reddit's own copy) plays instead, when there is one.
+ * silently and hide the controls until tapped. A RedGifs or Streamable [url] is first looked up for its mp4s
+ * ([ClipHosts]); if the site can't be reached, [fallback] (Reddit's own copy) plays instead, when there is one.
  */
 @Composable
 fun VideoPlayerScreen(url: String, loop: Boolean, postId: String?, downloads: MediaDownloads, onClose: () -> Unit, fallback: String? = null) {
-    val redgifsId = remember(url) { Redgifs.id(url) }
-    if (redgifsId == null) {
+    val hosted = remember(url) { ClipHosts.isHosted(url) }
+    if (!hosted) {
         VideoPlayer(url, stream = url, hdStream = null, loop = loop, repeat = loop, postId = postId, downloads = downloads, onClose = onClose)
         return
     }
     var attempt by remember { mutableIntStateOf(0) }
-    var resolved by remember { mutableStateOf<RedgifsVideo?>(null) }
+    var resolved by remember { mutableStateOf<HostedClip?>(null) }
     var failure by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(redgifsId, attempt) {
+    LaunchedEffect(url, attempt) {
         failure = null
-        runCatching { Redgifs.resolve(redgifsId) }
+        runCatching { ClipHosts.resolve(url) }
             .onSuccess { resolved = it }
-            .onFailure { failure = it.message ?: t("Couldn't reach RedGifs") }
+            .onFailure { failure = it.message ?: t("Couldn't reach {0}", ClipHosts.name(url)) }
     }
     val video = resolved
     when {
-        // Clips with sound play like videos (controls up, sound per "Mute videos"); silent ones like GIFs. Both repeat.
+        // Clips with sound play like videos (controls up, sound per "Mute videos"); silent ones like GIFs.
         video != null -> VideoPlayer(
-            url, stream = video.sd, hdStream = video.hd, loop = !video.hasAudio, repeat = true,
-            postId = postId, downloads = downloads, onClose = onClose, userAgent = Redgifs.USER_AGENT,
+            url, stream = video.sd, hdStream = video.hd.takeIf { it != video.sd }, loop = !video.hasAudio, repeat = video.repeats || loop,
+            postId = postId, downloads = downloads, onClose = onClose, userAgent = video.userAgent,
         )
         failure != null && fallback != null ->
-            VideoPlayer(url, stream = fallback, hdStream = null, loop = true, repeat = true, postId = postId, downloads = downloads, onClose = onClose)
+            VideoPlayer(url, stream = fallback, hdStream = null, loop = loop, repeat = loop, postId = postId, downloads = downloads, onClose = onClose)
         else -> DismissibleMedia(onDismiss = onClose, dismissOnDrag = LocalSettings.current.swipeToClose) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 val message = failure
@@ -204,8 +204,8 @@ private fun VideoPlayer(
     // fail to start), so a decoding failure gets one retry with software decoders first.
     var softwareFirst by remember { mutableStateOf(false) }
     val playingUrl = if (twoFiles && hd) hdStream!! else stream
-    // With "Autoplay" on, the clip carries on from its feed preview, and the preview from here when this closes.
-    val handoff = LocalFeedDisplay.current.autoplayActive
+    // With "Autoplay" on in any view, the clip carries on from its preview, and the preview from here when this closes.
+    val handoff = LocalFeedDisplay.current.anyAutoplayActive
     // Where to pick up when the player is rebuilt (switching SD/HD files, or retrying with software decoders).
     val resumeAt = remember { longArrayOf(if (handoff) PlaybackHandoff.position(stream) else 0L) }
     val player = remember(playingUrl, softwareFirst) {

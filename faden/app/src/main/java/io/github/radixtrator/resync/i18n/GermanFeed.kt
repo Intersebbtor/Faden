@@ -104,6 +104,7 @@ internal fun germanFeed(): Map<String, String> = mapOf(
     "Profile" to "Profil",
     "Hide read" to "Gelesene ausblenden",
     "Submit" to "Pfostieren",
+    "YouTube video" to "YouTube-Video",
     "Dark mode" to "Dunkelmodus",
     "Swipe mode" to "Fingerfeger-Modus",
     "Refresh" to "Aktualisieren",

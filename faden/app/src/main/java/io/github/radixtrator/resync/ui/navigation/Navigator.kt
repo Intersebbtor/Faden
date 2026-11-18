@@ -99,7 +99,21 @@ class Navigator(
             }
             return
         }
-        RedditLinks.route(uri)?.let(::push) ?: openExternal(uri)
+        RedditLinks.route(uri)?.let(::push) ?: if (YouTube.isVideo(uri)) openApp(uri) else openExternal(uri)
+    }
+
+    /**
+     * Hands [uri] to whichever app opens it, skipping the in-app browser, so a YouTube link plays in the YouTube app
+     * (or a browser when there's none).
+     */
+    private fun openApp(uri: String) {
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, uri.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: ActivityNotFoundException) {
+            openExternal(uri)
+        } catch (_: SecurityException) {
+            openExternal(uri)
+        }
     }
 
     fun openExternal(uri: String) {

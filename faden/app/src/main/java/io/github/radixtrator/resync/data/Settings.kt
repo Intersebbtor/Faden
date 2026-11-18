@@ -158,6 +158,11 @@ data class ViewOptions(
     val descriptionSize: TitleSize = TitleSize.NORMAL,
     /** Slides and Cards: the size half of Sync's "Selftext font" (`slide_selftext`, `card_selftext`), the text preview. */
     val selftextSize: TitleSize = TitleSize.NORMAL,
+    /**
+     * Slides and Cards: this layout's own "Autoplay", overriding Data options › "Autoplay" (which [ViewAutoplay.DEFAULT]
+     * follows). Not one of Sync's options.
+     */
+    val autoplay: ViewAutoplay = ViewAutoplay.DEFAULT,
 ) {
     companion object {
         /** The options of a layout nobody has customized, shared so reading them allocates nothing. */
@@ -242,6 +247,22 @@ enum class Autoplay(private val en: String) {
 }
 
 /**
+ * One view's own "Autoplay" (Customize view for Cards and Slides, and Swipe mode): [DEFAULT] follows Data options ›
+ * "Autoplay", the rest override it there, so autoplay can be on in one view only. Data saving still stops it.
+ */
+enum class ViewAutoplay(private val en: String, private val fixed: Autoplay?) {
+    DEFAULT("As in Data options", null),
+    ALWAYS("Always", Autoplay.ALWAYS),
+    WIFI("WiFi only", Autoplay.WIFI),
+    NEVER("Never", Autoplay.NEVER);
+
+    /** What applies in this view, given Data options › "Autoplay". */
+    fun resolve(global: Autoplay): Autoplay = fixed ?: global
+
+    val label: String get() = t(en)
+}
+
+/**
  * Sync's "Data saving mode" (Data options): while it applies, feeds leave thumbnails and card previews unloaded
  * and Reddit videos open in SD. [MOBILE] is Sync's "Automagic": any metered connection.
  */
@@ -262,11 +283,19 @@ enum class CommentCount(private val en: String, val limit: Int) {
     val label: String get() = t(en)
 }
 
-/** Sync's "Live comments refresh rate" (`live_comments_refresh`): how often sports mode reloads the comments. */
+/**
+ * Sync's "Live comments refresh rate" (`live_comments_refresh`): how often sports mode reloads the comments, with Sync's
+ * nine choices. A reload still loading when the next is due is skipped, so even 2 seconds doesn't pile requests up.
+ */
 enum class LiveRefresh(private val en: String, val seconds: Int) {
+    S2("Every 2 seconds", 2),
+    S5("Every 5 seconds", 5),
     S10("Every 10 seconds", 10),
     S15("Every 15 seconds", 15),
+    S20("Every 20 seconds", 20),
+    S25("Every 25 seconds", 25),
     S30("Every 30 seconds", 30),
+    S45("Every 45 seconds", 45),
     S60("Every 60 seconds", 60);
 
     val label: String get() = t(en)
@@ -438,6 +467,8 @@ data class Settings(
     val dataSaving: DataSaving = DataSaving.NEVER,
     /** Data options › "Autoplay". Never is how Faden always behaved (Sync's default is WiFi only). */
     val autoplay: Autoplay = Autoplay.NEVER,
+    /** Customize view › Swipe mode "Autoplay": Swipe mode's own override of [autoplay]. */
+    val swipeAutoplay: ViewAutoplay = ViewAutoplay.DEFAULT,
     /** Per-feed overrides of [layout], keyed by [feedKey], like Sync's per-subreddit view. */
     val feedLayouts: Map<String, PostLayout> = emptyMap(),
     /** Sync's Customize view choices, per layout; a layout missing here uses the [ViewOptions] defaults. */

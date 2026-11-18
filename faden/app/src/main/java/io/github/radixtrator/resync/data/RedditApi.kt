@@ -3,6 +3,7 @@ package io.github.radixtrator.resync.data
 import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
@@ -450,6 +451,46 @@ class RedditApi(private val client: RedditClient) {
         return null
     }
 
+    /**
+     * A gallery post: uploads each of [images] (2 to 20), then submits them in order with their captions. Gallery
+     * posts answer with the new post's id straight away, unlike single photos.
+     */
+    suspend fun submitGallery(
+        subreddit: String,
+        title: String,
+        images: List<GalleryUpload>,
+        nsfw: Boolean,
+        spoiler: Boolean,
+        sendReplies: Boolean = true,
+        flair: LinkFlair? = null,
+    ): String {
+        val items = images.map { image ->
+            val uploaded = client.uploadMedia(image.filename, image.mime, image.bytes)
+            val assetId = uploaded.assetId ?: throw RedditException(t("Reddit didn't offer an upload"))
+            buildJsonObject {
+                put("media_id", assetId)
+                put("caption", image.caption.take(180))
+                put("outbound_url", "")
+            }
+        }
+        val body = buildJsonObject {
+            put("api_type", "json")
+            put("show_error_list", true)
+            put("sr", subreddit)
+            put("submit_type", "subreddit")
+            put("title", title)
+            put("nsfw", nsfw)
+            put("spoiler", spoiler)
+            put("sendreplies", sendReplies)
+            flair?.id?.let {
+                put("flair_id", it)
+                put("flair_text", flair.text)
+            }
+            put("items", JsonArray(items))
+        }
+        return Parser.galleryId(client.postJson("/api/submit_gallery_post.json", body))
+    }
+
     suspend fun sendMessage(to: String, subject: String, markdown: String) {
         Parser.checkErrors(
             client.post("/api/compose", mapOf("api_type" to "json", "to" to to, "subject" to subject, "text" to markdown)),
@@ -467,3 +508,6 @@ class RedditApi(private val client: RedditClient) {
     /** Listings and comment threads walk hundreds of items, so they're turned into models off the main thread. */
     private suspend fun <T> parsed(parse: () -> T): T = withContext(Dispatchers.Default) { parse() }
 }
+
+/** One picture of a gallery post, read and ready to upload. */
+class GalleryUpload(val filename: String, val mime: String, val bytes: ByteArray, val caption: String = "")

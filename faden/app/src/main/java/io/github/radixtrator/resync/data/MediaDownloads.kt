@@ -61,8 +61,8 @@ class MediaDownloads(context: Context) {
 
     private suspend fun saveNow(url: String): String {
         REDDIT_VIDEO.find(url)?.let { return saveRedditVideo(it.groupValues[1]) }
-        // A RedGifs page: save the clip's HD mp4.
-        Redgifs.id(url)?.let { id -> return saveNow(Redgifs.resolve(id).hd) }
+        // A RedGifs or Streamable page: save the clip's HD mp4.
+        if (ClipHosts.isHosted(url)) return saveNow(ClipHosts.resolve(url).hd)
         return fetch(url).use { response ->
             val type = response.header("Content-Type")?.substringBefore(';')?.trim()
             val video = type?.startsWith("video/") ?: VIDEO_FILE.containsMatchIn(url)

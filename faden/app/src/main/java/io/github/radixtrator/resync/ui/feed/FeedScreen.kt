@@ -149,12 +149,12 @@ private fun FeedScreenContent(route: FeedRoute, container: AppContainer) {
     // Customize view's Columns choice for this layout, else as many as the width fits.
     val columns = layout.feedColumns(settings.viewOptionsFor(layout))
     val postPreloads = rememberPostPreloads(layout, columns)
-    // Data options › "Autoplay": the layouts with big previews (Cards, and Slides showing image previews) play the
-    // video nearest the middle; blurred NSFW and spoiler previews don't.
+    // "Autoplay" (the layout's own in Customize view, else Data options'): the layouts with big previews (Cards, and
+    // Slides showing image previews) play the video nearest the middle; blurred NSFW and spoiler previews don't.
     val feedDisplay = LocalFeedDisplay.current
     val frontpageOrAll = LocalFrontpageOrAllFeed.current
     val bigPreviews = layout == PostLayout.CARD || (layout == PostLayout.SLIDES && settings.viewOptionsFor(layout).imagePreviews)
-    val autoplayOf: ((ProfileItem) -> Boolean)? = if (bigPreviews) {
+    val autoplayOf: ((ProfileItem) -> Boolean)? = if (bigPreviews && feedDisplay.autoplayActive(layout)) {
         { item -> (item as? ProfileItem.PostItem)?.post?.let { it.autoplayStream() != null && !it.shouldBlur(feedDisplay, frontpageOrAll) } == true }
     } else {
         null
@@ -416,7 +416,7 @@ private fun sortIcon(kind: SortKind): ImageVector = when (kind) {
  * color, then the comment itself. Tapping opens it in its thread.
  */
 @Composable
-fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
+fun CommentCard(comment: UserComment, onLongClick: (() -> Unit)? = null, onOpen: () -> Unit) {
     val accent = MaterialTheme.colorScheme.primary
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     val flairBg = MaterialTheme.colorScheme.surfaceVariant
@@ -434,7 +434,7 @@ fun CommentCard(comment: UserComment, onOpen: () -> Unit) {
         append(" ${Format.timeAgo(comment.createdUtc)} • ${comment.subreddit}")
     } }
     Surface(color = MaterialTheme.colorScheme.surfaceContainerLow, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.combinedClickable(onClick = onOpen).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.combinedClickable(onLongClick = onLongClick, onClick = onOpen).padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(comment.postTitle, style = MaterialTheme.typography.bodyMedium, fontStyle = FontStyle.Italic)
             Text(meta, style = MaterialTheme.typography.bodyMedium, color = muted, inlineContent = distinguishedMarks())
             RedditBodyText(rememberRedditText(comment.bodyHtml, footnotes = false).text, MaterialTheme.typography.bodyMedium.copy(lineHeight = TextUnit.Unspecified))

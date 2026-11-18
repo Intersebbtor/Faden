@@ -14,7 +14,7 @@ internal object DemoWrites {
 
     fun respond(path: String, form: Map<String, String>): JsonElement = when (path) {
         "/api/comment", "/api/editusertext" -> comment(form["thing_id"].orEmpty(), form["text"].orEmpty(), isEdit = path.endsWith("editusertext"))
-        "/api/submit" -> buildJsonObject {
+        "/api/submit", "/api/submit_gallery_post.json" -> buildJsonObject {
             putJsonObject("json") {
                 putJsonArray("errors") {}
                 putJsonObject("data") {

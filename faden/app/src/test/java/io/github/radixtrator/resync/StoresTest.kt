@@ -37,6 +37,9 @@ import io.github.radixtrator.resync.data.RecentPostsStore
 import io.github.radixtrator.resync.data.RedditClient
 import io.github.radixtrator.resync.data.SettingsStore
 import io.github.radixtrator.resync.data.UserTags
+import io.github.radixtrator.resync.data.SavedLabels
+import io.github.radixtrator.resync.data.Reminder
+import io.github.radixtrator.resync.data.Reminders
 import io.github.radixtrator.resync.data.ThreadVisits
 import io.github.radixtrator.resync.data.VisitedStore
 import io.github.radixtrator.resync.ui.settings.SettingsIndex
@@ -132,6 +135,34 @@ class StoresTest {
     }
 
     @Test
+    fun `saved labels trim, rename, delete and survive a reload`() {
+        val prefs = FakePrefs()
+        val labels = SavedLabels(prefs)
+        labels.set("t3_a", setOf(" Recipes ", "", "read later"))
+        labels.set("t1_b", setOf("Recipes"))
+        assertEquals(setOf("Recipes", "read later"), SavedLabels(prefs).labelsOf("t3_a"))
+        assertEquals(listOf("read later", "Recipes"), labels.all())
+        labels.rename("Recipes", "Food")
+        assertEquals(setOf("Food"), SavedLabels(prefs).labelsOf("t1_b"))
+        labels.delete("Food")
+        assertEquals(emptySet(), labels.labelsOf("t1_b"))
+        assertEquals(listOf("read later"), SavedLabels(prefs).all())
+        labels.set("t3_a", emptySet())
+        assertTrue(SavedLabels(prefs).labels.value.isEmpty())
+    }
+
+    @Test
+    fun `reminders survive a reload until their time passes`() {
+        val prefs = FakePrefs()
+        val later = System.currentTimeMillis() + 60_000
+        Reminders(prefs).set(Reminder("p1", "Title", "pics", later))
+        Reminders(prefs).set(Reminder("p2", "Old", "pics", 1_000))
+        assertEquals(setOf("p1"), Reminders(prefs).all.value.keys)
+        Reminders(prefs).remove("p1")
+        assertTrue(Reminders(prefs).all.value.isEmpty())
+    }
+
+    @Test
     fun `drafts keep the newest first, drop blanks and survive a reload`() {
         val prefs = FakePrefs()
         var now = 100L
@@ -178,9 +209,10 @@ class StoresTest {
 
     @Test
     fun `filters hide keywords in titles and exact flairs`() {
-        fun post(title: String, flair: String?) = Parser.post(
+        fun post(title: String, flair: String?, userFlair: String? = null) = Parser.post(
             RedditClient.JSON.parseToJsonElement(
-                """{"id":"x","title":"$title","subreddit":"s","author":"a","domain":"d"${flair?.let { ""","link_flair_text":"$it"""" } ?: ""}}""",
+                """{"id":"x","title":"$title","subreddit":"s","author":"a","domain":"d"${flair?.let { ""","link_flair_text":"$it"""" } ?: ""}""" +
+                    """${userFlair?.let { ""","author_flair_text":"$it"""" } ?: ""}}""",
             ).jsonObject,
         )
         val store = FilterStore(FakePrefs())
@@ -190,6 +222,9 @@ class StoresTest {
         assertTrue(filters.hides(post("Big SPOILER ALERT inside", null), feedCommunity = null))
         assertTrue(filters.hides(post("hello", "meme"), feedCommunity = "s"))
         assertTrue(!filters.hides(post("hello", "memes"), feedCommunity = null))
+        // As in Sync, the list covers the author's flair too ("user and link").
+        assertTrue(filters.hides(post("hello", null, userFlair = " MEME "), feedCommunity = null))
+        assertTrue(!filters.hides(post("hello", "News", userFlair = "Memelord"), feedCommunity = null))
         store.filterKeyword("spoiler alert", on = false)
         assertTrue(!store.filters.value.hides(post("spoiler alert", null), feedCommunity = null))
     }
@@ -325,6 +360,7 @@ class BackupTest {
         ExploreStore(prefs).toggleFavorite("pics")
         UserTags(prefs).set("spez", "admin")
         UserTags(prefs).setColor("spez", 0xFF0000)
+        SavedLabels(prefs).set("t3_p1", setOf("Recipes"))
         WatchStore(prefs).watch("pics", since = 100)
         WatchStore(prefs).watchPost(post)
         VisitedStore(prefs).mark("p1")

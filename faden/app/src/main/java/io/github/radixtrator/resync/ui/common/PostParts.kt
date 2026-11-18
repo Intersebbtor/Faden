@@ -94,11 +94,12 @@ fun LinkRow(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier) {
         }
         Column(Modifier.weight(1f)) {
             Text(post.domain, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            // The page's own title (a YouTube video's name) when Reddit has it, else the address.
             Text(
-                link.url,
+                link.title ?: link.url,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+                maxLines = if (link.title != null) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }

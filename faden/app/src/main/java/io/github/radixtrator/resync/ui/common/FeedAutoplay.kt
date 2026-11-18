@@ -34,7 +34,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostMedia
-import io.github.radixtrator.resync.data.Redgifs
+import io.github.radixtrator.resync.data.ClipHosts
 import io.github.radixtrator.resync.ui.media.VideoCache
 import kotlin.math.abs
 import kotlin.math.max
@@ -48,12 +48,12 @@ import kotlin.math.roundToInt
 val LocalAutoplayKey = compositionLocalOf<String?> { null }
 
 /**
- * What a feed preview of this post would autoplay: Reddit's own stream, or Reddit's mp4 of a GIF. A RedGifs page needs a
+ * What a feed preview of this post would autoplay: Reddit's own stream, or Reddit's mp4 of a GIF. A RedGifs or Streamable page needs a
  * lookup first, so it plays Reddit's copy of the clip when there is one, and nothing otherwise. A GIF Reddit hasn't
  * transcoded stays still: playing it would mean loading the whole GIF, possibly from a site that then sees who's reading.
  */
 fun Post.autoplayStream(): String? = when (val m = media) {
-    is PostMedia.Video -> if (Redgifs.id(m.url) != null) m.fallback else m.url
+    is PostMedia.Video -> if (ClipHosts.isHosted(m.url)) m.fallback else m.url
     is PostMedia.Image -> m.mp4
     else -> null
 }
@@ -136,14 +136,15 @@ internal object PlaybackHandoff {
 }
 
 /**
- * A muted, looping clip filling its box, cropped to cover it as the preview image is ([androidx.compose.ui.layout.ContentScale.Crop]).
+ * A muted, looping clip filling its box, cropped to cover it as the preview image is ([androidx.compose.ui.layout.ContentScale.Crop]),
+ * or with [fit] shown whole and centered, as Swipe mode's image is ([androidx.compose.ui.layout.ContentScale.Fit]).
  * It stays invisible until its first frame is drawn ([onFirstFrame]), so the still preview underneath shows meanwhile,
  * and pauses while the app is in the background. SD only, through the player's on-disk cache; it doesn't take audio
  * focus, so music keeps playing.
  */
 @OptIn(UnstableApi::class)
 @Composable
-fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier = Modifier) {
+fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier = Modifier, fit: Boolean = false) {
     val context = LocalContext.current
     var aspect by remember(stream) { mutableFloatStateOf(0f) }
     var shown by remember(stream) { mutableStateOf(false) }
@@ -199,20 +200,20 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
                     player.setVideoTextureView(view)
                 }
             },
-            modifier = Modifier.fillMaxSize().coverCrop(aspect),
+            modifier = Modifier.fillMaxSize().scaleTo(aspect, cover = !fit),
         )
     }
 }
 
-/** Sizes the video to cover the box at its own [aspect], centered; the box clips the overflow. */
-private fun Modifier.coverCrop(aspect: Float) = layout { measurable, constraints ->
+/** Sizes the video at its own [aspect], centered: to [cover] the box (which clips the overflow), else to fit inside it. */
+private fun Modifier.scaleTo(aspect: Float, cover: Boolean) = layout { measurable, constraints ->
     val width = constraints.maxWidth
     val height = constraints.maxHeight
     if (aspect <= 0f || width == 0 || height == 0 || !constraints.hasBoundedWidth || !constraints.hasBoundedHeight) {
         val placeable = measurable.measure(constraints)
         return@layout layout(placeable.width, placeable.height) { placeable.place(0, 0) }
     }
-    val (videoWidth, videoHeight) = if (width.toFloat() / height > aspect) {
+    val (videoWidth, videoHeight) = if ((width.toFloat() / height > aspect) == cover) {
         width to (width / aspect).roundToInt()
     } else {
         (height * aspect).roundToInt() to height
