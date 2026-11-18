@@ -401,7 +401,15 @@ data class Settings(
      * down (false; a tap then shows and hides the bar).
      */
     val tapToClose: Boolean = true,
-    /** Media › "Swipe to close": videos with a fling up or down, and images that close by a tap with a downward one. */
+    /**
+     * Media › "Close videos by": a single tap (true; swiping up then shows and hides the controls, and a downward fling
+     * closes it too, with [swipeToClose]) or swiping up or down (false, the default; a tap shows and hides the controls).
+     */
+    val tapToCloseVideos: Boolean = false,
+    /**
+     * Media › "Swipe to close": videos with a fling up or down, and images that close by a tap with a downward one (so do
+     * videos with [tapToCloseVideos]).
+     */
     val swipeToClose: Boolean = true,
     /** Media › "Hold to preview": holding a post's picture in a feed shows it full screen until the finger lifts. */
     val holdToPreview: Boolean = true,
