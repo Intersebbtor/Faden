@@ -71,6 +71,8 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     "Hold a comment to collapse it; tap it for options" to "Halte einen Kommentar zum Einklappen; tippe ihn für Optionen an",
     "Comment navigation buttons" to "Kommentar-Navigationsknöpfe",
     "Jump between top-level comments" to "Zwischen Kommentaren der obersten Ebene springen",
+    "Volume key navigation" to "Navigation mit Lautstärketasten",
+    "Volume buttons jump between top-level comments" to "Die Lautstärketasten springen zwischen Kommentaren der obersten Ebene",
     "Remember comment position" to "Kommentarposition merken",
     "Reopen posts where you left off, threads folded as you left them" to "Pfosten dort wieder öffnen, wo du warst, Fäden so eingeklappt wie verlassen",
     "Swipe comments" to "Kommentare fingerfegen",

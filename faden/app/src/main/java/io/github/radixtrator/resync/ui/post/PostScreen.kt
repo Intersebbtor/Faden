@@ -99,6 +99,7 @@ import io.github.radixtrator.resync.ui.common.RedditBodyText
 import io.github.radixtrator.resync.ui.common.StateToggle
 import io.github.radixtrator.resync.ui.common.SheetTitle
 import io.github.radixtrator.resync.ui.common.SwipeBack
+import io.github.radixtrator.resync.ui.common.VolumeKeysEffect
 import io.github.radixtrator.resync.ui.common.TopSheet
 import io.github.radixtrator.resync.ui.common.hasCardPreview
 import io.github.radixtrator.resync.ui.common.rememberRedditText
@@ -215,6 +216,22 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
         }
     }
 
+    // The comment navigation buttons and the volume buttons both jump between top-level comments.
+    fun previousComment() {
+        val target = topLevelRows.lastOrNull { it < listState.firstVisibleItemIndex } ?: 0
+        scope.launch { listState.animateScrollToItem(target) }
+    }
+    fun nextComment() {
+        topLevelRows.firstOrNull { it > listState.firstVisibleItemIndex }
+            ?.let { scope.launch { listState.animateScrollToItem(it) } }
+    }
+    // Comment options › "Volume key navigation"; reading aloud keeps the buttons for its volume.
+    VolumeKeysEffect(
+        enabled = settings.volumeKeyNavigation && showComments && topLevelRows.size > 1 && !readerState.active,
+        onNext = ::nextComment,
+        onPrevious = ::previousComment,
+    )
+
     SwipeBack(enabled = LocalSettings.current.swipeBack, onBack = nav::pop) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -284,16 +301,8 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
                 // With a bottom bar showing, the Scaffold already lifts the buttons above it.
                 val inset = if (state.sportsMode || readerState.active) Modifier else Modifier.navigationBarsPadding()
                 val showNavigation = settings.commentNavigation && showComments && topLevelRows.size > 1
-                val previous = {
-                    val target = topLevelRows.lastOrNull { it < listState.firstVisibleItemIndex } ?: 0
-                    scope.launch { listState.animateScrollToItem(target) }
-                    Unit
-                }
-                val next = {
-                    topLevelRows.firstOrNull { it > listState.firstVisibleItemIndex }
-                        ?.let { scope.launch { listState.animateScrollToItem(it) } }
-                    Unit
-                }
+                val previous = ::previousComment
+                val next = ::nextComment
                 val post = state.post
                 if (showNavigation && post != null) {
                     // Previous and next top-level comment, with the reply button docked under them.
