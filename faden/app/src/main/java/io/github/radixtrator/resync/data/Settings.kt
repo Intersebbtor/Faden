@@ -262,11 +262,19 @@ enum class CommentCount(private val en: String, val limit: Int) {
     val label: String get() = t(en)
 }
 
-/** Sync's "Live comments refresh rate" (`live_comments_refresh`): how often sports mode reloads the comments. */
+/**
+ * Sync's "Live comments refresh rate" (`live_comments_refresh`): how often sports mode reloads the comments, with Sync's
+ * nine choices. A reload still loading when the next is due is skipped, so even 2 seconds doesn't pile requests up.
+ */
 enum class LiveRefresh(private val en: String, val seconds: Int) {
+    S2("Every 2 seconds", 2),
+    S5("Every 5 seconds", 5),
     S10("Every 10 seconds", 10),
     S15("Every 15 seconds", 15),
+    S20("Every 20 seconds", 20),
+    S25("Every 25 seconds", 25),
     S30("Every 30 seconds", 30),
+    S45("Every 45 seconds", 45),
     S60("Every 60 seconds", 60);
 
     val label: String get() = t(en)
