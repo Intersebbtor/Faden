@@ -209,9 +209,10 @@ class StoresTest {
 
     @Test
     fun `filters hide keywords in titles and exact flairs`() {
-        fun post(title: String, flair: String?) = Parser.post(
+        fun post(title: String, flair: String?, userFlair: String? = null) = Parser.post(
             RedditClient.JSON.parseToJsonElement(
-                """{"id":"x","title":"$title","subreddit":"s","author":"a","domain":"d"${flair?.let { ""","link_flair_text":"$it"""" } ?: ""}}""",
+                """{"id":"x","title":"$title","subreddit":"s","author":"a","domain":"d"${flair?.let { ""","link_flair_text":"$it"""" } ?: ""}""" +
+                    """${userFlair?.let { ""","author_flair_text":"$it"""" } ?: ""}}""",
             ).jsonObject,
         )
         val store = FilterStore(FakePrefs())
@@ -221,6 +222,9 @@ class StoresTest {
         assertTrue(filters.hides(post("Big SPOILER ALERT inside", null), feedCommunity = null))
         assertTrue(filters.hides(post("hello", "meme"), feedCommunity = "s"))
         assertTrue(!filters.hides(post("hello", "memes"), feedCommunity = null))
+        // As in Sync, the list covers the author's flair too ("user and link").
+        assertTrue(filters.hides(post("hello", null, userFlair = " MEME "), feedCommunity = null))
+        assertTrue(!filters.hides(post("hello", "News", userFlair = "Memelord"), feedCommunity = null))
         store.filterKeyword("spoiler alert", on = false)
         assertTrue(!store.filters.value.hides(post("spoiler alert", null), feedCommunity = null))
     }
