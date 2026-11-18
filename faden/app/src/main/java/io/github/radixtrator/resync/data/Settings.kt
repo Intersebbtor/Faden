@@ -232,6 +232,16 @@ enum class VideoQuality(private val en: String) {
 }
 
 /**
+ * Sync's "Autoplay" (Data options › Autoplay setup): videos and GIFs play, muted and looping, in the feed's card and
+ * slide previews. [WIFI] goes by an unmetered connection; data saving stops it either way.
+ */
+enum class Autoplay(private val en: String) {
+    ALWAYS("Always"), WIFI("WiFi only"), NEVER("Never");
+
+    val label: String get() = t(en)
+}
+
+/**
  * Sync's "Data saving mode" (Data options): while it applies, feeds leave thumbnails and card previews unloaded
  * and Reddit videos open in SD. [MOBILE] is Sync's "Automagic": any metered connection.
  */
@@ -421,6 +431,8 @@ data class Settings(
     val videoSpeedControls: Boolean = true,
     /** Data options › "Data saving mode". Never is how Faden always behaved (Sync's default is Automagic). */
     val dataSaving: DataSaving = DataSaving.NEVER,
+    /** Data options › "Autoplay". Never is how Faden always behaved (Sync's default is WiFi only). */
+    val autoplay: Autoplay = Autoplay.NEVER,
     /** Per-feed overrides of [layout], keyed by [feedKey], like Sync's per-subreddit view. */
     val feedLayouts: Map<String, PostLayout> = emptyMap(),
     /** Sync's Customize view choices, per layout; a layout missing here uses the [ViewOptions] defaults. */

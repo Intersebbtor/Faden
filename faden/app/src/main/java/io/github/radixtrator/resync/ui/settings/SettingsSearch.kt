@@ -121,6 +121,7 @@ object SettingsIndex {
 
                 row(SettingsCategory.DATA, t("Data saving mode"), keywords = "mobile metered mobil getaktet datensparen"),
                 row(SettingsCategory.DATA, t("HD Reddit video quality"), keywords = "wifi wlan"),
+                row(SettingsCategory.DATA, t("Autoplay"), t("Videos and GIFs play muted in Cards and Slides, one at a time, unless data saving is on"), "wifi wlan feed futter play abspielen gif video"),
 
                 row(SettingsCategory.BACKUP, t("Backup now"), t("Save a backup file wherever you choose"), "export exportieren rückhoch sicherung"),
                 row(SettingsCategory.BACKUP, t("Restore from backup"), t("Replace this device's data with a backup file"), "import importieren rückhoch wiederherstellen"),

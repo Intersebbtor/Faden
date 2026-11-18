@@ -84,6 +84,8 @@ import io.github.radixtrator.resync.data.VideoQuality
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.DismissibleMedia
+import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
+import io.github.radixtrator.resync.ui.common.PlaybackHandoff
 import io.github.radixtrator.resync.ui.common.dataSavingActive
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.LocalSettings
@@ -202,8 +204,10 @@ private fun VideoPlayer(
     // fail to start), so a decoding failure gets one retry with software decoders first.
     var softwareFirst by remember { mutableStateOf(false) }
     val playingUrl = if (twoFiles && hd) hdStream!! else stream
+    // With "Autoplay" on, the clip carries on from its feed preview, and the preview from here when this closes.
+    val handoff = LocalFeedDisplay.current.autoplayActive
     // Where to pick up when the player is rebuilt (switching SD/HD files, or retrying with software decoders).
-    val resumeAt = remember { longArrayOf(0L) }
+    val resumeAt = remember { longArrayOf(if (handoff) PlaybackHandoff.position(stream) else 0L) }
     val player = remember(playingUrl, softwareFirst) {
         val renderers = DefaultRenderersFactory(context)
             .setEnableDecoderFallback(true)
@@ -258,7 +262,9 @@ private fun VideoPlayer(
             }
         }
         player.addListener(listener)
+        if (handoff) PlaybackHandoff.attach(stream, player)
         onDispose {
+            if (handoff) PlaybackHandoff.detach(stream, player)
             player.removeListener(listener)
             player.release()
         }

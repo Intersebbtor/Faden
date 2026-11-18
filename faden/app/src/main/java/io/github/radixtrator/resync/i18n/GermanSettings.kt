@@ -108,6 +108,8 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     "Data saving mode" to "Datensparmodus",
     "Data saving leaves feed thumbnails and previews unloaded and opens Reddit videos in SD" to "Datensparen lädt keine Vorschaubilder und Vorschauen im Futter und öffnet Lases-Videos in SD",
     "HD Reddit video quality" to "HD-Qualität für Lases-Videos",
+    "Autoplay" to "Automatisch abspielen",
+    "Videos and GIFs play muted in Cards and Slides, one at a time, unless data saving is on" to "Videos und GIFs laufen stumm in Karten und Folien, eins nach dem anderen, außer beim Datensparen",
     "Client ID, redirect URI, user agent" to "Client-ID, Weiterleitungs-URI, User-Agent",
     "Version" to "Version",
     "What's new" to "Was ist neu",
