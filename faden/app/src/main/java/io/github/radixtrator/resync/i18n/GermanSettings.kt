@@ -368,7 +368,7 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     "Hide posts by users" to "Pfosten nach Nutzern ausblenden",
     "No user filters" to "Keine Nutzerfilter",
     "Flair filters" to "Gespürfilter",
-    "Hide posts by flair" to "Pfosten nach Gespür ausblenden",
+    "Hide posts by flair (user and link)" to "Pfosten nach Gespür ausblenden (Nutzer und Beitrag)",
     "Flair text, exactly" to "Gespür-Text, exakt",
     "No flair filters" to "Keine Gespürfilter",
     // Settings choices (data/Settings.kt enums)

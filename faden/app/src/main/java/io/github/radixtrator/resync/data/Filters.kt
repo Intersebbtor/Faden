@@ -12,7 +12,7 @@ import kotlinx.serialization.json.Json
 
 /**
  * What Sync's "Filter…" hides from feeds: communities, users and link domains, all lowercase, plus
- * [keywords] (matched anywhere in a title) and [flairs] (a post's flair text, exact match).
+ * [keywords] (matched anywhere in a title) and [flairs] (exact flair text, the post's or its author's, as in Sync).
  */
 @Serializable
 data class Filters(
@@ -29,9 +29,12 @@ data class Filters(
         post.author.lowercase() in users ||
             post.domain.lowercase() in domains ||
             (keywords.isNotEmpty() && post.title.lowercase().let { title -> keywords.any { it in title } }) ||
-            (flairs.isNotEmpty() && post.flair?.trim()?.lowercase() in flairs) ||
+            (flairs.isNotEmpty() && (post.flair.flairKey() in flairs || post.authorFlair.flairKey() in flairs)) ||
             (post.subreddit.lowercase() in subreddits && !post.subreddit.equals(feedCommunity, ignoreCase = true))
 }
+
+/** A flair as [Filters.flairs] stores it: trimmed and lowercase. */
+private fun String?.flairKey(): String? = this?.trim()?.lowercase()
 
 /**
  * Sync's five Post filters lists (Settings › Filters), each edited on its own screen. [hint] is the add
@@ -47,7 +50,7 @@ enum class FilterType(
     DOMAINS("Domain filters", "Hide posts by domain", "Domain, like example.com", "No domain filters"),
     SUBREDDITS("Subreddit filters", "Hide posts by subreddit", "Community name", "No subreddit filters"),
     USERS("User filters", "Hide posts by users", "Username", "No user filters"),
-    FLAIRS("Flair filters", "Hide posts by flair", "Flair text, exactly", "No flair filters"),
+    FLAIRS("Flair filters", "Hide posts by flair (user and link)", "Flair text, exactly", "No flair filters"),
     ;
 
     val title: String get() = t(enTitle)
