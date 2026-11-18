@@ -146,6 +146,7 @@ fun PostMeta(
         append(Format.timeAgo(post.createdUtc))
         post.editedUtc?.let { append(t("* (last edited {0})", Format.timeAgo(it))) }
         shortDomain(post)?.let { append(" • $it") }
+        post.crosspostOf?.let { append(" • " + t("crossposted from r/{0}", it.subreddit)) }
         if (post.over18) withStyle(SpanStyle(color = FadenColors.Nsfw, fontWeight = FontWeight.Bold)) { append(" • " + t("NSFW")) }
         if (post.spoiler) withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(" • " + t("Spoiler")) }
         suffix?.let { append(" • $it") }

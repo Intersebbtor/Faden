@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.radixtrator.resync.data.NsfwMode
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostLayout
+import io.github.radixtrator.resync.data.RemindIn
 import io.github.radixtrator.resync.data.SwipeAction
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.notify.Notifications
@@ -155,10 +156,14 @@ fun PostActionsSheet(
     var confirmDelete by remember { mutableStateOf(false) }
     var reporting by remember { mutableStateOf(false) }
     var addingToMulti by remember { mutableStateOf(false) }
+    var reminding by remember { mutableStateOf(false) }
+    var labeling by remember { mutableStateOf(false) }
     val container = LocalContainer.current
     val context = LocalContext.current
     val watchedPosts by container.watch.posts.collectAsStateWithLifecycle()
     val watching = post.id in watchedPosts
+    val reminders by container.reminders.all.collectAsStateWithLifecycle()
+    val reminder = reminders[post.id]?.takeIf { it.atMillis > System.currentTimeMillis() }
     val domain = shortDomain(post)
 
     fun toast(message: String) = Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -169,9 +174,28 @@ fun PostActionsSheet(
         onDismiss()
     }
 
+    // What to do once notifications are allowed: watch, or set the reminder that was picked.
+    var afterPermission by remember { mutableStateOf<(() -> Unit)?>(null) }
     // The sheet stays open while Android asks, so the answer still has somewhere to land.
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) watch() else toast(t("Allow notifications to watch posts"))
+        val next = afterPermission
+        afterPermission = null
+        if (granted) next?.invoke() else toast(t("Allow notifications to watch posts"))
+    }
+
+    fun withNotifications(block: () -> Unit) {
+        if (Notifications.canNotify(context)) {
+            block()
+        } else {
+            afterPermission = block
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    fun remind(choice: RemindIn) {
+        container.remind(post, choice.millis)
+        toast(t("Reminder set: {0}", choice.label))
+        onDismiss()
     }
 
     fun act(block: () -> Unit) {
@@ -194,10 +218,26 @@ fun PostActionsSheet(
         AddToMultiSheet(container, post.subreddit, onDismiss)
         return
     }
+    if (labeling) {
+        SavedLabelsSheet(post.fullname, onDismiss)
+        return
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surfaceContainerLow, dragHandle = { SheetHandle() }) {
         Column(Modifier.navigationBarsPadding().padding(bottom = 8.dp)) {
-            if (sharing) {
+            if (reminding) {
+                SheetTitle(t("Remind me"), topPadding = 0.dp)
+                RemindIn.entries.forEach { choice ->
+                    OptionRow(choice.label, Symbols.Schedule, onClick = { withNotifications { remind(choice) } })
+                }
+                if (reminder != null) {
+                    OptionRow(t("Cancel reminder"), Symbols.Close, onClick = {
+                        container.cancelReminder(post.id)
+                        toast(t("Reminder canceled"))
+                        onDismiss()
+                    })
+                }
+            } else if (sharing) {
                 // Sync's Share ⋮: what to share, optionally with the title in front.
                 SheetTitle(t("Share"), topPadding = 0.dp)
                 fun shareUrl(url: String) = act { nav.share(if (includeTitle) "${post.title}\n$url" else url, post.title) }
@@ -251,10 +291,15 @@ fun PostActionsSheet(
                             toast(t("Stopped watching"))
                             onDismiss()
                         }
-                        Notifications.canNotify(context) -> watch()
-                        else -> notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        else -> withNotifications(::watch)
                     }
                 })
+                OptionRow(
+                    reminder?.let { t("Reminder in {0}", Format.timeAgo(System.currentTimeMillis() / 1000, nowSeconds = it.atMillis / 1000)) } ?: t("Remind me..."),
+                    Symbols.Schedule,
+                    onClick = { reminding = true },
+                )
+                if (post.saved) OptionRow(t("Labels..."), AppIcons.Tag, onClick = { labeling = true })
                 if (!isOwn) OptionRow(t("Report"), AppIcons.Report, onClick = { reporting = true })
                 HorizontalDivider()
                 OptionRow("/u/${post.author}", Symbols.AccountCircle, onClick = { act { nav.push(UserRoute(post.author)) } })

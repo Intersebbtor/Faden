@@ -77,6 +77,9 @@ import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.ChipMenu
+import androidx.compose.runtime.LaunchedEffect
+import io.github.radixtrator.resync.ui.common.SavedLabelsSheet
+import io.github.radixtrator.resync.data.SavedLabels
 import io.github.radixtrator.resync.ui.common.HeaderChip
 import io.github.radixtrator.resync.ui.common.LargeHeader
 import io.github.radixtrator.resync.ui.common.ListingViewModel
@@ -186,7 +189,21 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
     val columns = layout.feedColumns(LocalSettings.current.viewOptionsFor(layout))
     val postPreloads = rememberPostPreloads(layout, columns)
     val callbacks = remember(vm) { vm.postCallbacks(allowHide = false) }
-    val items = state.items.visiblePosts { (it as? ProfileItem.PostItem)?.post }
+    val loaded = state.items.visiblePosts { (it as? ProfileItem.PostItem)?.post }
+    // Your own Saved tab can be narrowed to one of your labels (SavedLabels); they're local, so it filters what's loaded.
+    val labelMap by container.savedLabels.labels.collectAsStateWithLifecycle()
+    val labelNames = remember(labelMap) { SavedLabels.all(labelMap) }
+    var labelFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    val savedTab = isSelf && tab == UserWhere.SAVED
+    val label = labelFilter?.takeIf { savedTab && it in labelNames }
+    val items = remember(loaded, label, labelMap) {
+        if (label == null) loaded else loaded.filter { label in labelMap[it.fullname].orEmpty() }
+    }
+    // Reddit pages the saved list 25 at a time: keep fetching until the label has a screenful, or the list ends.
+    LaunchedEffect(label, items.size, state.items.size, state.loading, state.endReached) {
+        if (label != null && items.size < LABEL_SCREENFUL && !state.loading && !state.endReached && state.error == null) vm.loadMore()
+    }
+    var labelingItem by rememberSaveable { mutableStateOf<String?>(null) }
     // The toolbar shows the name only once the big header has scrolled away.
     val headerGone by remember { derivedStateOf { gridState.firstVisibleItemIndex > 0 } }
     var aboutOpen by rememberSaveable { mutableStateOf(false) }
@@ -235,7 +252,7 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                     gridState = gridState,
                     bottomPadding = padding.calculateBottomPadding(),
                     preloadsOf = { (it as? ProfileItem.PostItem)?.post?.let(postPreloads).orEmpty() },
-                    emptyText = t("Nothing to show"),
+                    emptyText = if (label != null) t("Nothing saved with this label") else t("Nothing to show"),
                     header = {
                         LargeHeader(
                             title = name,
@@ -253,6 +270,9 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                         ) {
                             ChipMenu(tab.label, Symbols.Person, UserWhere.entries.filter { isSelf || !it.ownOnly }, { it.label }, vm::setTab)
                             ChipMenu(sort.label, sortIcon(sort), UserSort.entries, { it.label }, vm::setSort)
+                            if (savedTab && labelNames.isNotEmpty()) {
+                                ChipMenu(label ?: t("All labels"), AppIcons.Tag, listOf<String?>(null) + labelNames, { it ?: t("All labels") }) { labelFilter = it }
+                            }
                             HeaderChip(t("About"), Symbols.Info, { aboutOpen = true })
                             if (canAct) HeaderChip(t("Message"), Symbols.Mail, message)
                             HeaderChip(t("Trophies"), AppIcons.Trophy, { trophiesOpen = true })
@@ -264,7 +284,11 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
                 ) { item ->
                     when (item) {
                         is ProfileItem.PostItem -> PostListItem(item.post, showSubreddit = true, callbacks = callbacks, layout = layout, standalone = false)
-                        is ProfileItem.CommentItem -> CommentCard(item.comment) {
+                        is ProfileItem.CommentItem -> CommentCard(
+                            item.comment,
+                            // Holding a saved comment labels it, as Post options › Labels does for posts.
+                            onLongClick = if (savedTab) ({ labelingItem = item.fullname }) else null,
+                        ) {
                             nav.push(PostRoute(item.comment.postId, item.comment.id, context = 3))
                         }
                     }
@@ -284,6 +308,7 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
         )
     }
     if (trophiesOpen) TrophiesSheet(container, name, onDismiss = { trophiesOpen = false })
+    labelingItem?.let { SavedLabelsSheet(it, onDismiss = { labelingItem = null }) }
     if (tagging) TagUserDialog(name, onDismiss = { tagging = false })
     if (confirmBlock) {
         AlertDialog(
@@ -300,6 +325,9 @@ fun ProfileScreen(name: String, initialTab: UserWhere, container: AppContainer) 
         )
     }
 }
+
+/** How many matches a label filter looks for before it stops fetching more of the saved list. */
+private const val LABEL_SCREENFUL = 10
 
 private fun sortIcon(sort: UserSort): ImageVector = when (sort) {
     UserSort.NEW -> AppIcons.Burst

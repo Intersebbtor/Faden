@@ -131,7 +131,10 @@ class MainActivity : ComponentActivity() {
         applyOverrideConfiguration(Configuration().apply { fontScale = newBase.resources.configuration.fontScale * saved })
     }
 
-    /** A page to open, from a tapped notification (a watched community's post, an inbox message). */
+    /**
+     * A page to open: from a tapped notification (a watched community's post, an inbox message), a launcher
+     * shortcut, or something shared to Faden (a new post).
+     */
     private var openRoute by mutableStateOf<NavKey?>(null)
 
     /** A reddit.com or redd.it link another app handed over, opened as a tap on it inside the app would be. */
@@ -141,10 +144,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) {
-            openRoute = Notifications.routeFrom(intent)
+            openRoute = routeFrom(intent)
             openLink = linkFrom(intent)
         }
         val container = (application as FadenApp).container
+        // Off the main thread: each is a call to the launcher's service.
+        Thread {
+            Shortcuts.publish(applicationContext, container.explore.state.value.favorites, container.username.value != null)
+        }.apply { name = "faden-shortcuts" }.start()
         setContent {
             val settingsState = container.settings.settings.collectAsStateWithLifecycle()
             // Narrow views of the settings, so a write to an unrelated one doesn't recompose the app's root.
@@ -181,9 +188,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        Notifications.routeFrom(intent)?.let { openRoute = it }
+        routeFrom(intent)?.let { openRoute = it }
         linkFrom(intent)?.let { openLink = it }
     }
+
+    private fun routeFrom(intent: Intent): NavKey? =
+        Notifications.routeFrom(intent) ?: Shortcuts.routeFrom(intent) ?: SharedContent.routeFrom(intent)
 
     /**
      * Only http(s) reddit.com / redd.it links. The intent filter already limits what the system routes here, but an
@@ -267,7 +277,7 @@ private fun FadenNavHost(
                 entry<UserRoute> { route -> ProfileScreen(route.name, route.tab, container) }
                 entry<InboxRoute> { route -> InboxScreen(route, container) }
                 entry<SearchRoute> { route -> SearchScreen(route.query, route.subreddit, container, communitiesTab = route.communities) }
-                entry<SubmitRoute> { route -> SubmitScreen(route.subreddit, container) }
+                entry<SubmitRoute> { route -> SubmitScreen(route, container) }
                 entry<ComposeRoute> { route -> ComposeScreen(route, container) }
                 // Sync's settings don't shrink with its base font size.
                 entry<SettingsRoute> { route -> FullSizeText { SettingsScreen(container, route.category) } }

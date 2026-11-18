@@ -112,11 +112,20 @@ class RedditClient(
         return execute(Request.Builder().url(apiUrl(path)).post(body))
     }
 
+    /** A JSON body instead of a form: /api/submit_gallery_post.json takes one. */
+    suspend fun postJson(path: String, body: JsonObject): JsonElement {
+        if (configStore.demoMode) return DemoWrites.respond(path, emptyMap())
+        return execute(Request.Builder().url(apiUrl(path)).post(body.toString().toRequestBody("application/json".toMediaType())))
+    }
+
     /**
      * Uploads an image to Reddit's media storage (lease from /api/media/asset.json, then a multipart POST to the
      * returned S3 form) and returns the hosted URL a "kind=image" submission takes.
      */
-    suspend fun uploadImage(filename: String, mime: String, bytes: ByteArray): String {
+    suspend fun uploadImage(filename: String, mime: String, bytes: ByteArray): String = uploadMedia(filename, mime, bytes).url
+
+    /** [uploadImage], also giving the asset id that a gallery post's items name. */
+    suspend fun uploadMedia(filename: String, mime: String, bytes: ByteArray): UploadedMedia {
         val lease = post("/api/media/asset.json", mapOf("filepath" to filename, "mimetype" to mime)).jsonObject
         val args = lease.obj("args") ?: throw RedditException(t("Reddit didn't offer an upload"))
         val action = args.string("action") ?: throw RedditException(t("Reddit didn't offer an upload"))
@@ -132,7 +141,7 @@ class RedditClient(
             http.newCall(Request.Builder().url(uploadUrl).post(form).build()).execute().use { it.code }
         }
         if (code !in 200..299) throw RedditException(t("Image upload failed ({0})", code), code)
-        return uploadUrl.trimEnd('/') + "/" + key
+        return UploadedMedia(uploadUrl.trimEnd('/') + "/" + key, lease.obj("asset")?.string("asset_id"))
     }
 
     suspend fun put(path: String, form: Map<String, String>): JsonElement {
@@ -272,3 +281,6 @@ class RedditClient(
         val JSON = Json { ignoreUnknownKeys = true }
     }
 }
+
+/** An image uploaded to Reddit: its hosted [url], and the [assetId] a gallery post refers to it by. */
+data class UploadedMedia(val url: String, val assetId: String?)

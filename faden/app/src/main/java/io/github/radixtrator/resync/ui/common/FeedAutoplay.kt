@@ -34,7 +34,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostMedia
-import io.github.radixtrator.resync.data.Redgifs
+import io.github.radixtrator.resync.data.ClipHosts
 import io.github.radixtrator.resync.ui.media.VideoCache
 import kotlin.math.abs
 import kotlin.math.max
@@ -48,12 +48,12 @@ import kotlin.math.roundToInt
 val LocalAutoplayKey = compositionLocalOf<String?> { null }
 
 /**
- * What a feed preview of this post would autoplay: Reddit's own stream, or Reddit's mp4 of a GIF. A RedGifs page needs a
+ * What a feed preview of this post would autoplay: Reddit's own stream, or Reddit's mp4 of a GIF. A RedGifs or Streamable page needs a
  * lookup first, so it plays Reddit's copy of the clip when there is one, and nothing otherwise. A GIF Reddit hasn't
  * transcoded stays still: playing it would mean loading the whole GIF, possibly from a site that then sees who's reading.
  */
 fun Post.autoplayStream(): String? = when (val m = media) {
-    is PostMedia.Video -> if (Redgifs.id(m.url) != null) m.fallback else m.url
+    is PostMedia.Video -> if (ClipHosts.isHosted(m.url)) m.fallback else m.url
     is PostMedia.Image -> m.mp4
     else -> null
 }

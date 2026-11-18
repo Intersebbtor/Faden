@@ -34,6 +34,7 @@ enum class BackupPart(private val en: String, val keys: List<String>) {
     FILTERS("Filters", listOf("filters.v1")),
     EXPLORE("Favorites, defaults and recently visited", listOf("explore.v1")),
     USER_TAGS("User tags", listOf("usertags.v1", "usertagcolors.v1")),
+    SAVED_LABELS("Labels on saved posts", listOf("savedlabels.v1")),
     WATCHED("Watched communities and posts", listOf("watched.v1", "watchedposts.v1")),
     READ_POSTS("Read posts", listOf("visited.v1")),
     COMMENT_POSITIONS("Comment positions", listOf("post_memory.v1")),
