@@ -46,6 +46,7 @@ import io.github.radixtrator.resync.data.ProfileItem
 import io.github.radixtrator.resync.data.SortKind
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.common.Format
+import io.github.radixtrator.resync.ui.common.LocalFeedDisplay
 import io.github.radixtrator.resync.ui.common.PostActionsSheet
 import io.github.radixtrator.resync.ui.common.postCallbacks
 import io.github.radixtrator.resync.ui.common.SwipeBack
@@ -105,6 +106,9 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
     var sheetFor by remember { mutableStateOf<String?>(null) }
     val download = rememberDownloader(container.downloads)
     val current = posts.getOrNull(pager.currentPage)
+    // Swipe mode's "Autoplay" (Customize view), else Data options': the page on screen plays its video or GIF once
+    // the pager has settled on it, so swiping through doesn't start each one.
+    val autoplay = LocalFeedDisplay.current.swipeAutoplayActive
 
     SwipeBack(enabled = false, onBack = nav::pop) {
         Scaffold(
@@ -163,6 +167,7 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
                         SwipePage(
                             post = post,
                             iconUrl = icons[post.subreddit.lowercase()],
+                            autoplay = autoplay && page == pager.settledPage,
                             onOpen = { nav.openPost(post) },
                             onMedia = { nav.openMedia(post) },
                             onMore = { sheetFor = post.fullname },

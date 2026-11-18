@@ -8,6 +8,7 @@
 
 ## 0.11.0
 - Autoplay: videos and GIFs can play muted in Cards and Slides as you scroll, one at a time. Turn it on in Settings › Data options › Autoplay
+- Autoplay can differ per view, for example only in Swipe mode: Customize view has an Autoplay choice for Cards, Slides and Swipe mode
 - Videos can close with a single tap, like images: Settings › Media › Close videos by
 - A comment you've just posted or edited shows its text instead of raw HTML
 

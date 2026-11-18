@@ -3,8 +3,11 @@ package io.github.radixtrator.resync
 import io.github.radixtrator.resync.data.Autoplay
 import io.github.radixtrator.resync.data.DataSaving
 import io.github.radixtrator.resync.data.Parser
+import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.RedditClient
 import io.github.radixtrator.resync.data.Settings
+import io.github.radixtrator.resync.data.ViewAutoplay
+import io.github.radixtrator.resync.data.ViewOptions
 import io.github.radixtrator.resync.ui.common.FeedDisplay
 import io.github.radixtrator.resync.ui.common.PlaybackHandoff
 import io.github.radixtrator.resync.ui.common.autoplayStream
@@ -21,7 +24,7 @@ class FeedAutoplayTest {
     @Test
     fun `autoplay follows the setting, the connection and data saving`() {
         fun active(autoplay: Autoplay, metered: Boolean, saving: DataSaving = DataSaving.NEVER) =
-            FeedDisplay(autoplay = autoplay, metered = metered, dataSaving = saving).autoplayActive
+            FeedDisplay(autoplay = autoplay, metered = metered, dataSaving = saving).autoplayActive(PostLayout.CARD)
 
         assertTrue(active(Autoplay.ALWAYS, metered = true))
         assertTrue(active(Autoplay.WIFI, metered = false))
@@ -33,7 +36,37 @@ class FeedAutoplayTest {
         assertTrue(active(Autoplay.ALWAYS, metered = false, saving = DataSaving.MOBILE))
         // Off unless picked, so feeds behave as before.
         assertEquals(Autoplay.NEVER, Settings().autoplay)
-        assertTrue(!FeedDisplay.of(Settings(), metered = false, moderated = emptySet()).autoplayActive)
+        assertTrue(!FeedDisplay.of(Settings(), metered = false, moderated = emptySet()).anyAutoplayActive)
+    }
+
+    @Test
+    fun `each view can override autoplay, and data saving still wins`() {
+        // Only in Swipe mode: Data options says never, Swipe mode says always.
+        val swipeOnly = Settings(autoplay = Autoplay.NEVER, swipeAutoplay = ViewAutoplay.ALWAYS)
+        val display = FeedDisplay.of(swipeOnly, metered = true, moderated = emptySet())
+        assertTrue(display.swipeAutoplayActive)
+        assertTrue(!display.autoplayActive(PostLayout.CARD))
+        assertTrue(!display.autoplayActive(PostLayout.SLIDES))
+        assertTrue(display.anyAutoplayActive)
+
+        // Everywhere but Cards; Slides on WiFi only.
+        val noCards = Settings(
+            autoplay = Autoplay.ALWAYS,
+            viewOptions = mapOf(
+                PostLayout.CARD to ViewOptions(autoplay = ViewAutoplay.NEVER),
+                PostLayout.SLIDES to ViewOptions(autoplay = ViewAutoplay.WIFI),
+            ),
+        )
+        val metered = FeedDisplay.of(noCards, metered = true, moderated = emptySet())
+        assertTrue(!metered.autoplayActive(PostLayout.CARD))
+        assertTrue(!metered.autoplayActive(PostLayout.SLIDES))
+        assertTrue(metered.swipeAutoplayActive)
+        assertTrue(FeedDisplay.of(noCards, metered = false, moderated = emptySet()).autoplayActive(PostLayout.SLIDES))
+
+        assertTrue(!FeedDisplay.of(swipeOnly.copy(dataSaving = DataSaving.ALWAYS), metered = false, moderated = emptySet()).anyAutoplayActive)
+        // Views follow Data options unless overridden.
+        assertEquals(ViewAutoplay.DEFAULT, Settings().swipeAutoplay)
+        assertEquals(ViewAutoplay.DEFAULT, ViewOptions().autoplay)
     }
 
     @Test
