@@ -396,6 +396,7 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                 settings.tapToCollapse,
             ) { v -> update { it.copy(tapToCollapse = v) } }
             Toggle(t("Comment navigation buttons"), t("Jump between top-level comments"), settings.commentNavigation) { v -> update { it.copy(commentNavigation = v) } }
+            Toggle(t("Volume key navigation"), t("Volume buttons jump between top-level comments"), settings.volumeKeyNavigation) { v -> update { it.copy(volumeKeyNavigation = v) } }
             Toggle(t("Remember comment position"), t("Reopen posts where you left off, threads folded as you left them"), settings.rememberCommentPosition) { v -> update { it.copy(rememberCommentPosition = v) } }
             Section(t("Swipe actions"))
             Toggle(t("Swipe comments"), t("Drag a comment left; drag further for the next action"), settings.commentSwipe) { v -> update { it.copy(commentSwipe = v) } }

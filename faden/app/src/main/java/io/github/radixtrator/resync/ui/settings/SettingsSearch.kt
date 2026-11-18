@@ -93,6 +93,7 @@ object SettingsIndex {
                 row(SettingsCategory.COMMENT_OPTIONS, t("Initial comment count"), keywords = "load laden anzahl"),
                 row(SettingsCategory.COMMENT_OPTIONS, t("Tap to collapse"), t("Tap a comment to collapse it and hold it for options, instead of the other way round"), "hold long press fold halten lang drücken einklappen"),
                 row(SettingsCategory.COMMENT_OPTIONS, t("Comment navigation buttons"), t("Jump between top-level comments"), "next previous nächster vorheriger"),
+                row(SettingsCategory.COMMENT_OPTIONS, t("Volume key navigation"), t("Volume buttons jump between top-level comments"), "volume lautstärke taste button knopf next previous nächster vorheriger"),
                 row(SettingsCategory.COMMENT_OPTIONS, t("Remember comment position"), t("Reopen posts where you left off, threads folded as you left them"), "scroll scrollen position"),
                 row(SettingsCategory.COMMENT_OPTIONS, t("Swipe comments"), t("Drag a comment left; drag further for the next action"), "gesture geste wischen fingerfeger"),
                 row(SettingsCategory.COMMENT_OPTIONS, t("Comment swipe actions"), t("First, second and third swipe action"), "gesture geste wischen fingerfeger"),

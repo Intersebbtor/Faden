@@ -364,6 +364,11 @@ data class Settings(
     val hdVideo: VideoQuality = VideoQuality.NEVER,
     /** Sync's comment navigation bar: previous/next top-level comment buttons. Off by default, as in Sync. */
     val commentNavigation: Boolean = false,
+    /**
+     * Comment options › "Volume key navigation" (Sync's `comments_volume_nav`): on a post page, volume down jumps to the
+     * next top-level comment and volume up to the previous one, instead of changing the volume. Off by default, as in Sync.
+     */
+    val volumeKeyNavigation: Boolean = false,
     /** Reopening a post returns to where you were, with the same threads folded. */
     val rememberCommentPosition: Boolean = true,
     /** Footnote numbers on off-Reddit links, with a card per link under the text. */

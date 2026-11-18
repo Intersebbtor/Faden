@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
+import android.view.KeyEvent
 import android.app.Activity
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -118,6 +119,7 @@ import io.github.radixtrator.resync.ui.theme.LocalBaseFontScale
 import io.github.radixtrator.resync.ui.theme.FullSizeText
 import io.github.radixtrator.resync.ui.theme.Motion
 import io.github.radixtrator.resync.ui.theme.FadenTheme
+import io.github.radixtrator.resync.ui.common.VolumeKeys
 import io.github.radixtrator.resync.ui.theme.ThemeSpec
 import io.github.radixtrator.resync.i18n.t
 
@@ -130,6 +132,9 @@ class MainActivity : ComponentActivity() {
             ?: savedBaseFontScale(newBase.getSharedPreferences("resync", Context.MODE_PRIVATE))
         applyOverrideConfiguration(Configuration().apply { fontScale = newBase.resources.configuration.fontScale * saved })
     }
+
+    // Comment options › "Volume key navigation": a post page that holds the volume buttons gets them first.
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean = VolumeKeys.handle(event) || super.dispatchKeyEvent(event)
 
     /** A page to open, from a tapped notification (a watched community's post, an inbox message). */
     private var openRoute by mutableStateOf<NavKey?>(null)
