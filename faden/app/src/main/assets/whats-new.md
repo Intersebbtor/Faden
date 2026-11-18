@@ -6,9 +6,22 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.12.0
+- Share to Faden: links, text and pictures shared from other apps open Create post, filled in
+- Launcher shortcuts: hold Faden's icon for your first favorite community, Search, Inbox and New post
+- Gallery posts: Create post takes up to 20 photos
+- Polls show their options, and the results once Reddit shares them. Voting opens reddit.com, since Reddit's API can't vote
+- Crossposts show the original post's media and text, with a row that opens the original
+- Streamable clips play in Faden's own player, with sound. YouTube previews show the video's title and open in the YouTube app
+- Remind me: Post options can bring a post back as a notification later
+- Labels on saved posts: give saved posts and comments your own labels, and filter your Saved tab by them
+- Autoplay can differ per view, for example only in Swipe mode: Customize view has an Autoplay choice for Cards, Slides and Swipe mode
+- Volume key navigation: the volume buttons can jump between top-level comments. Turn it on in Settings › Comment options
+- Live comments refresh rate has Sync's nine choices, from every 2 to every 60 seconds
+- Flair filters also hide posts by the author's flair, not only the post's
+
 ## 0.11.0
 - Autoplay: videos and GIFs can play muted in Cards and Slides as you scroll, one at a time. Turn it on in Settings › Data options › Autoplay
-- Autoplay can differ per view, for example only in Swipe mode: Customize view has an Autoplay choice for Cards, Slides and Swipe mode
 - Videos can close with a single tap, like images: Settings › Media › Close videos by
 - A comment you've just posted or edited shows its text instead of raw HTML
 
