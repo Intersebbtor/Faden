@@ -125,6 +125,7 @@ internal fun CommentOptionsSheet(comment: Comment, post: Post, onDismiss: () -> 
     var confirmDelete by remember { mutableStateOf(false) }
     var reporting by remember { mutableStateOf(false) }
     var tagging by remember { mutableStateOf(false) }
+    var labeling by remember { mutableStateOf(false) }
     val readAloud = LocalContainer.current.readAloud
     val speaking by readAloud.speaking.collectAsStateWithLifecycle()
 
@@ -140,6 +141,10 @@ internal fun CommentOptionsSheet(comment: Comment, post: Post, onDismiss: () -> 
     }
     if (tagging) {
         TagUserDialog(comment.author, onDismiss = onDismiss)
+        return
+    }
+    if (labeling) {
+        io.github.radixtrator.resync.ui.common.SavedLabelsSheet(comment.fullname, onDismiss)
         return
     }
 
@@ -158,6 +163,7 @@ internal fun CommentOptionsSheet(comment: Comment, post: Post, onDismiss: () -> 
                 OptionRow(t("Copy..."), AppIcons.Copy, onClick = { copying = true })
                 if (!isOwn) OptionRow(t("Report"), AppIcons.Report, onClick = { reporting = true })
                 OptionRow(t("Tag user"), AppIcons.TagUser, onClick = { tagging = true })
+                if (comment.saved) OptionRow(t("Labels..."), AppIcons.Tag, onClick = { labeling = true })
                 OptionRow(if (speaking) t("Stop reading") else t("Read aloud"), AppIcons.VolumeOn, onClick = {
                     act {
                         if (speaking) {

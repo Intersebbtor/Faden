@@ -4,6 +4,7 @@ import androidx.navigation3.runtime.NavKey
 import io.github.radixtrator.resync.data.FilterType
 import io.github.radixtrator.resync.data.PostLayout
 import io.github.radixtrator.resync.data.Redgifs
+import io.github.radixtrator.resync.data.Streamable
 import io.github.radixtrator.resync.data.UserWhere
 import io.github.radixtrator.resync.ui.settings.SettingsCategory
 import kotlinx.serialization.Serializable
@@ -82,8 +83,18 @@ data class ModMailRoute(val subreddit: String? = null) : NavKey
 @Serializable
 data class ModMailConversationRoute(val id: String) : NavKey
 
+/**
+ * A new post. The rest prefill it, from something shared to Faden: a [title], a link post's [url], a text post's
+ * [text], or the pictures of a photo or gallery post as content: [photos] URIs.
+ */
 @Serializable
-data class SubmitRoute(val subreddit: String? = null) : NavKey
+data class SubmitRoute(
+    val subreddit: String? = null,
+    val title: String = "",
+    val url: String = "",
+    val text: String = "",
+    val photos: List<String> = emptyList(),
+) : NavKey
 
 enum class ComposeMode { REPLY, EDIT, MESSAGE }
 
@@ -100,6 +111,16 @@ data class ComposeRoute(
     val to: String = "",
     val subject: String = "",
 ) : NavKey
+
+/** YouTube video links, which Faden can't play itself: they get a play badge and open in the YouTube app. */
+object YouTube {
+    private val VIDEO = Regex(
+        """^https?://(?:(?:www\.|m\.|music\.)?youtube\.com/(?:watch\?(?:.*&)?v=|shorts/|live/|embed/)|youtu\.be/)[\w-]{6,}""",
+        RegexOption.IGNORE_CASE,
+    )
+
+    fun isVideo(url: String): Boolean = VIDEO.containsMatchIn(url)
+}
 
 /** Maps URLs onto in-app screens, like Sync did for links in posts and comments. */
 object RedditLinks {
@@ -145,6 +166,7 @@ object RedditLinks {
         REDDIT_VIDEO.find(url)?.let { return VideoRoute("https://v.redd.it/${it.groupValues[1]}/HLSPlaylist.m3u8") }
         GIFV.find(url)?.let { return VideoRoute(it.groupValues[1] + ".mp4", loop = true) }
         if (Redgifs.id(url) != null) return VideoRoute(url, loop = true)
+        if (Streamable.id(url) != null) return VideoRoute(url)
         if (MP4.matches(url)) return VideoRoute(url)
         if (IMAGE.matches(url)) return ImageRoute(listOf(url))
         return null

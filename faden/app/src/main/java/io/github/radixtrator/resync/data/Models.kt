@@ -19,11 +19,12 @@ sealed interface PostMedia {
     data class Image(val preview: ImageSource?, val url: String, val isGif: Boolean, val mp4: String? = null) : PostMedia
     data class Gallery(val preview: ImageSource?, val images: List<ImageSource>) : PostMedia
     /**
-     * [loop]: GIF-like clip (no audio, repeats) rather than a real video. [url] can be a RedGifs page, which the
-     * player resolves to its mp4 ([Redgifs]); [fallback] is then Reddit's own copy, played if RedGifs can't be reached.
+     * [loop]: GIF-like clip (no audio, repeats) rather than a real video. [url] can be a RedGifs or Streamable page, which
+     * the player resolves to its mp4 ([ClipHosts]); [fallback] is then Reddit's own copy, played if the site can't be reached.
      */
     data class Video(val preview: ImageSource?, val url: String, val loop: Boolean = false, val fallback: String? = null) : PostMedia
-    data class Link(val thumbnail: ImageSource?, val url: String) : PostMedia
+    /** [title]: the linked page's own title, from Reddit's embed info (a YouTube video's name), when it has one. */
+    data class Link(val thumbnail: ImageSource?, val url: String, val title: String? = null) : PostMedia
 }
 
 data class Post(
@@ -61,7 +62,25 @@ data class Post(
     val editedUtc: Long? = null,
     /** A text post's feed preview (its first paragraph, "…" under it if more follows), made once when parsed; null if it has no text. */
     val previewText: String? = null,
+    /** The post this one crossposts, whose media and text it shows; null for an ordinary post. */
+    val crosspostOf: CrosspostSource? = null,
+    /** A poll post's options and votes; null for other posts. */
+    val poll: Poll? = null,
 )
+
+/** Where a crosspost came from: the original post's [id], community and author. */
+data class CrosspostSource(val id: String, val subreddit: String, val author: String)
+
+/**
+ * A poll post's [options]. Reddit only gives the per-option counts once you've voted or the poll has closed, so
+ * [PollOption.votes] is null before that; [endsAtMillis] is when voting closes, [selected] the option id you voted for.
+ */
+data class Poll(val options: List<PollOption>, val totalVotes: Int, val endsAtMillis: Long?, val selected: String?) {
+    fun isOpen(nowMillis: Long = System.currentTimeMillis()): Boolean = endsAtMillis == null || nowMillis < endsAtMillis
+    val hasResults: Boolean get() = options.any { it.votes != null }
+}
+
+data class PollOption(val id: String, val text: String, val votes: Int?)
 
 sealed interface CommentNode {
     val id: String

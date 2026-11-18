@@ -344,6 +344,7 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     "couldn't write the saved copy" to "konnte die gesicherte Kopie nicht schreiben",
     "Favorites, defaults and recently visited" to "Favoriten, Standards und zuletzt besucht",
     "User tags" to "Nutzermarkierungen",
+    "Labels on saved posts" to "Etiketten an gespeicherten Pfosten",
     "Watched communities and posts" to "Beobachtete Unterlases und Pfosten",
     "Read posts" to "Gelesene Pfosten",
     "Comment positions" to "Kommentarpositionen",

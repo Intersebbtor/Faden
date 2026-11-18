@@ -187,6 +187,14 @@ object Parser {
         return thing?.let { node(it, depth = 0) } as? Comment
     }
 
+    /** Post ID from /api/submit_gallery_post.json, which answers with the fullname ("t3_abc") or only the post's URL. */
+    fun galleryId(root: JsonElement): String {
+        val data = checkErrors(root).jsonObject.obj("json")?.obj("data")
+        data?.string("id")?.removePrefix("t3_")?.takeIf { it.isNotEmpty() }?.let { return it }
+        data?.string("url")?.let { url -> Regex("/comments/([a-z0-9]+)").find(url)?.groupValues?.get(1) }?.let { return it }
+        throw RedditException(t("Reddit didn't return the new post"))
+    }
+
     /** Post ID from /api/submit. */
     fun submittedId(root: JsonElement): String =
         checkErrors(root).jsonObject.obj("json")?.obj("data")?.string("id")
@@ -194,14 +202,18 @@ object Parser {
 
     fun post(d: JsonObject): Post {
         val id = d.string("id").orEmpty()
+        // A crosspost's own JSON is a link to the original; the original rides along with its media and text.
+        val original = d.arr("crosspost_parent_list")?.firstOrNull() as? JsonObject
+        val ownText = d.string("selftext").orEmpty().isNotBlank()
+        val textSource = if (original != null && !ownText) original else d
         return Post(
             id = id,
             fullname = d.string("name") ?: "t3_$id",
             subreddit = d.string("subreddit").orEmpty(),
             author = d.string("author") ?: "[deleted]",
             title = d.string("title").orEmpty(),
-            selfText = d.string("selftext").orEmpty(),
-            selfTextHtml = d.string("selftext_html"),
+            selfText = textSource.string("selftext").orEmpty(),
+            selfTextHtml = textSource.string("selftext_html"),
             url = d.string("url_overridden_by_dest") ?: d.string("url").orEmpty(),
             domain = d.string("domain").orEmpty(),
             permalink = d.string("permalink").orEmpty(),
@@ -215,7 +227,7 @@ object Parser {
             likes = d.boolOrNull("likes"),
             saved = d.bool("saved"),
             flair = flair(d, "link"),
-            media = media(d),
+            media = if (original != null) media(original) else media(d),
             flairColor = flairColor(d.string("link_flair_background_color")),
             locked = d.bool("locked"),
             authorFlair = flair(d, "author"),
@@ -223,8 +235,23 @@ object Parser {
             distinguished = d.string("distinguished"),
             // "edited" is false, or the edit timestamp.
             editedUtc = d.long("edited"),
-            previewText = d.string("selftext_html").let { html -> firstParagraph(if (html != null) htmlToPlainText(html) else d.string("selftext").orEmpty()) },
+            previewText = textSource.string("selftext_html").let { html -> firstParagraph(if (html != null) htmlToPlainText(html) else textSource.string("selftext").orEmpty()) },
+            crosspostOf = original?.let { o ->
+                o.string("id")?.let { CrosspostSource(it, o.string("subreddit").orEmpty(), o.string("author") ?: "[deleted]") }
+            },
+            poll = (d.obj("poll_data") ?: original?.obj("poll_data"))?.let(::poll),
         )
+    }
+
+    /** poll_data: options (with vote_count only once you've voted or it closed), the total, and the end in epoch ms. */
+    private fun poll(p: JsonObject): Poll? {
+        val options = p.arr("options").orEmpty().mapNotNull { element ->
+            val o = element as? JsonObject ?: return@mapNotNull null
+            val text = o.string("text")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            PollOption(o.string("id").orEmpty(), text, o.int("vote_count"))
+        }
+        if (options.isEmpty()) return null
+        return Poll(options, p.int("total_vote_count") ?: 0, p.long("voting_end_timestamp"), p.string("user_selection"))
     }
 
     /**
@@ -469,6 +496,11 @@ object Parser {
             val fallback = transcoded?.let { it.string("hls_url") ?: it.string("fallback_url") }
             return PostMedia.Video(preview, url, loop = true, fallback = fallback)
         }
+        // Streamable: played from Streamable (with sound), Reddit's silent transcode as the fallback.
+        if (!d.bool("is_self") && Streamable.id(url) != null) {
+            val fallback = transcoded?.let { it.string("hls_url") ?: it.string("fallback_url") }
+            return PostMedia.Video(preview, url, loop = false, fallback = fallback)
+        }
         if (!d.bool("is_self") && transcoded != null) {
             (transcoded.string("hls_url") ?: transcoded.string("fallback_url"))
                 ?.let { return PostMedia.Video(preview, it, loop = transcoded.bool("is_gif")) }
@@ -485,7 +517,8 @@ object Parser {
             else -> {
                 val thumb = preview ?: d.string("thumbnail")?.takeIf { it.startsWith("http") }
                     ?.let { ImageSource(it, d.int("thumbnail_width") ?: 0, d.int("thumbnail_height") ?: 0) }
-                PostMedia.Link(thumb, url)
+                val embed = d.obj("secure_media")?.obj("oembed") ?: d.obj("media")?.obj("oembed")
+                PostMedia.Link(thumb, url, title = embed?.string("title")?.let(::htmlToPlainText)?.takeIf { it.isNotBlank() })
             }
         }
     }

@@ -34,6 +34,10 @@ import io.github.radixtrator.resync.data.ReportReason
 import io.github.radixtrator.resync.data.SettingsStore
 import io.github.radixtrator.resync.data.Subreddit
 import io.github.radixtrator.resync.data.UserTags
+import io.github.radixtrator.resync.data.Reminder
+import io.github.radixtrator.resync.data.Reminders
+import io.github.radixtrator.resync.data.SavedLabels
+import io.github.radixtrator.resync.notify.ReminderWorker
 import io.github.radixtrator.resync.data.VisitedStore
 import io.github.radixtrator.resync.data.WatchStore
 import io.github.radixtrator.resync.i18n.t
@@ -90,6 +94,8 @@ class AppContainer(context: Context) {
     val watch = WatchStore(prefs)
     val notifiedMessages by lazy { NotifiedMessages(prefs) }
     val tags = UserTags(prefs)
+    val reminders by lazy { Reminders(prefs) }
+    val savedLabels by lazy { SavedLabels(prefs) }
     val filters = FilterStore(prefs)
     val recentPosts by lazy { RecentPostsStore(history, historyWrites) }
     val drafts by lazy { DraftStore(prefs) }
@@ -165,6 +171,18 @@ class AppContainer(context: Context) {
     fun setWatchingPost(post: Post, on: Boolean) {
         if (on) watch.watchPost(post) else watch.unwatchPost(post.id)
         WatchWorker.schedule(appContext, !watch.isEmpty)
+    }
+
+    /** Post options › Remind me: a notification about [post] in [millis]; replaces any reminder it already has. */
+    fun remind(post: Post, millis: Long) {
+        val reminder = Reminder(post.id, post.title, post.subreddit, System.currentTimeMillis() + millis)
+        reminders.set(reminder)
+        ReminderWorker.schedule(appContext, reminder)
+    }
+
+    fun cancelReminder(postId: String) {
+        reminders.remove(postId)
+        ReminderWorker.cancel(appContext, postId)
     }
 
     fun unwatchPost(id: String) {

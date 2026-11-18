@@ -38,6 +38,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
@@ -47,12 +53,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.radixtrator.resync.AppContainer
+import io.github.radixtrator.resync.data.GalleryUpload
 import io.github.radixtrator.resync.data.LinkFlair
+import io.github.radixtrator.resync.SharedContent
 import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.i18n.tc
 import io.github.radixtrator.resync.ui.feed.RulesSheet
 import io.github.radixtrator.resync.ui.navigation.LocalNavigator
 import io.github.radixtrator.resync.ui.navigation.PostRoute
+import io.github.radixtrator.resync.ui.navigation.SubmitRoute
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -86,9 +95,12 @@ class SubmitViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    /** A photo post from the picked image at [uri]; finishes with its id, or goes back with a note if Reddit hasn't listed it yet. */
-    fun submitPhoto(context: android.content.Context, subreddit: String, title: String, uri: android.net.Uri, nsfw: Boolean, spoiler: Boolean, sendReplies: Boolean, flair: LinkFlair?) {
-        if (_state.value.sending) return
+    /**
+     * A photo post from the picked image(s) at [uris]: one makes a photo post, more a gallery. Finishes with the post's
+     * id, or goes back with a note if Reddit hasn't listed a photo post yet.
+     */
+    fun submitPhotos(context: android.content.Context, subreddit: String, title: String, uris: List<android.net.Uri>, nsfw: Boolean, spoiler: Boolean, sendReplies: Boolean, flair: LinkFlair?) {
+        if (_state.value.sending || uris.isEmpty()) return
         val me = container.username.value
         if (me == null) {
             _state.value = State(error = t("Log in to post"))
@@ -97,11 +109,14 @@ class SubmitViewModel(private val container: AppContainer) : ViewModel() {
         _state.value = State(sending = true)
         viewModelScope.launch {
             runCatching {
-                val resolver = context.contentResolver
-                val mime = resolver.getType(uri) ?: "image/jpeg"
-                val bytes = withContext(Dispatchers.IO) { resolver.openInputStream(uri)?.use { it.readBytes() } } ?: error(t("Couldn't read that image"))
-                val name = "photo." + (mime.substringAfter('/', "jpg").substringBefore(';').let { if (it == "jpeg") "jpg" else it })
-                container.api.submitImage(subreddit.trim().removePrefix("r/").removePrefix("/r/"), title.trim(), me, name, mime, bytes, nsfw, spoiler, sendReplies, flair)
+                val community = subreddit.trim().removePrefix("r/").removePrefix("/r/")
+                val images = uris.mapIndexed { i, uri -> read(context, uri, if (uris.size == 1) "photo" else "photo${i + 1}") }
+                if (images.size == 1) {
+                    val image = images.single()
+                    container.api.submitImage(community, title.trim(), me, image.filename, image.mime, image.bytes, nsfw, spoiler, sendReplies, flair)
+                } else {
+                    container.api.submitGallery(community, title.trim(), images, nsfw, spoiler, sendReplies, flair)
+                }
             }.onSuccess { id ->
                 container.drafts.clear(SUBMIT_DRAFT)
                 _state.value = if (id != null) State(postId = id) else State(error = t("Posted. Reddit is still processing the photo; check your profile"))
@@ -110,26 +125,36 @@ class SubmitViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    private suspend fun read(context: android.content.Context, uri: android.net.Uri, base: String): GalleryUpload {
+        val resolver = context.contentResolver
+        val mime = resolver.getType(uri) ?: "image/jpeg"
+        val bytes = withContext(Dispatchers.IO) { resolver.openInputStream(uri)?.use { it.readBytes() } } ?: error(t("Couldn't read that image"))
+        val name = "$base." + (mime.substringAfter('/', "jpg").substringBefore(';').let { if (it == "jpeg") "jpg" else it })
+        return GalleryUpload(name, mime, bytes)
+    }
+
     fun errorShown() = _state.update { it.copy(error = null) }
 }
 
-/** Text, link and photo posts. */
+/** Text, link, photo and gallery posts; [route] can prefill one with something shared to Faden. */
 @Composable
-fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
+fun SubmitScreen(route: SubmitRoute, container: AppContainer) {
     val nav = LocalNavigator.current
     val vm = viewModel { SubmitViewModel(container) }
     val state by vm.state.collectAsStateWithLifecycle()
-    var subreddit by rememberSaveable { mutableStateOf(initialSubreddit.orEmpty()) }
-    var title by rememberSaveable { mutableStateOf("") }
-    var isLink by rememberSaveable { mutableStateOf(false) }
-    var isPhoto by rememberSaveable { mutableStateOf(false) }
-    var photo by rememberSaveable { mutableStateOf<String?>(null) }
+    var subreddit by rememberSaveable { mutableStateOf(route.subreddit.orEmpty()) }
+    var title by rememberSaveable { mutableStateOf(route.title) }
+    var isLink by rememberSaveable { mutableStateOf(route.url.isNotEmpty() && route.photos.isEmpty()) }
+    var isPhoto by rememberSaveable { mutableStateOf(route.photos.isNotEmpty()) }
+    // One picture is a photo post, two or more a gallery (up to Reddit's 20).
+    var photos by rememberSaveable { mutableStateOf(ArrayList(route.photos)) }
     val context = androidx.compose.ui.platform.LocalContext.current
-    val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
-        if (uri != null) photo = uri.toString()
+    val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetMultipleContents()) { uris ->
+        if (uris.isNotEmpty()) photos = ArrayList((photos + uris.map { it.toString() }).distinct().take(SharedContent.GALLERY_MAX))
     }
     var body by rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        val draft = container.drafts.get(SUBMIT_DRAFT)?.text.orEmpty()
+        // Shared text starts the post; otherwise the unsent draft comes back.
+        val draft = route.text.ifEmpty { container.drafts.get(SUBMIT_DRAFT)?.text.orEmpty() }
         mutableStateOf(TextFieldValue(draft, TextRange(draft.length)))
     }
     val editBody: (TextFieldValue) -> Unit = {
@@ -137,7 +162,7 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
         container.drafts.save(SUBMIT_DRAFT, it.text, tc("noun", "Post"))
     }
     val imageUpload = rememberComposerImageUpload(container) { uploaded -> editBody(body.insertImageLink(uploaded)) }
-    var url by rememberSaveable { mutableStateOf("") }
+    var url by rememberSaveable { mutableStateOf(route.url) }
     var nsfw by rememberSaveable { mutableStateOf(false) }
     var spoiler by rememberSaveable { mutableStateOf(false) }
     var sendReplies by rememberSaveable { mutableStateOf(true) }
@@ -148,7 +173,7 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
     var rulesOpen by rememberSaveable { mutableStateOf(false) }
     val community = subreddit.trim().removePrefix("r/").removePrefix("/r/")
     val snackbar = remember { SnackbarHostState() }
-    val canPost = subreddit.isNotBlank() && title.isNotBlank() && (isPhoto && photo != null || !isPhoto && (!isLink || url.startsWith("http"))) && !state.sending
+    val canPost = subreddit.isNotBlank() && title.isNotBlank() && (isPhoto && photos.isNotEmpty() || !isPhoto && (!isLink || url.startsWith("http"))) && !state.sending
 
     LaunchedEffect(state.postId) { state.postId?.let { nav.replaceTop(PostRoute(it)) } }
     LaunchedEffect(state.error) {
@@ -183,7 +208,7 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
                             onClick = {
                                 val flair = flairText?.let { LinkFlair(it, flairColor, flairId) }
                                 if (isPhoto) {
-                                    vm.submitPhoto(context, subreddit, title, android.net.Uri.parse(photo), nsfw, spoiler, sendReplies, flair)
+                                    vm.submitPhotos(context, subreddit, title, photos.map(android.net.Uri::parse), nsfw, spoiler, sendReplies, flair)
                                 } else {
                                     vm.submit(subreddit, title, isLink, if (isLink) url else body.text, nsfw, spoiler, sendReplies, flair)
                                 }
@@ -227,7 +252,7 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = !isLink && !isPhoto, onClick = { isLink = false; isPhoto = false }, label = { Text(t("Text")) })
                 FilterChip(selected = isLink && !isPhoto, onClick = { isLink = true; isPhoto = false }, label = { Text(t("Link")) })
-                FilterChip(selected = isPhoto, onClick = { isPhoto = true }, label = { Text(t("Photo")) })
+                FilterChip(selected = isPhoto, onClick = { isPhoto = true }, label = { Text(if (photos.size > 1) t("Gallery") else t("Photo")) })
             }
             OutlinedTextField(
                 value = title,
@@ -237,10 +262,11 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
                 modifier = Modifier.fillMaxWidth(),
             )
             if (isPhoto) {
-                TextButton(onClick = { picker.launch("image/*") }) { Text(if (photo == null) t("Choose a photo") else t("Photo chosen: change")) }
-                photo?.let {
-                    coil3.compose.AsyncImage(model = it, contentDescription = null, modifier = Modifier.fillMaxWidth().heightIn(max = 240.dp))
-                }
+                PhotoPicks(
+                    photos = photos,
+                    onAdd = { picker.launch("image/*") },
+                    onRemove = { uri -> photos = ArrayList(photos - uri) },
+                )
             } else if (isLink) {
                 OutlinedTextField(
                     value = url,
@@ -269,6 +295,42 @@ fun SubmitScreen(initialSubreddit: String?, container: AppContainer) {
                 Checkbox(checked = sendReplies, onCheckedChange = { sendReplies = it })
                 Text(t("Send replies to my inbox"))
             }
+        }
+    }
+}
+
+/** The picked pictures in order, each with a remove button, and Add while there's room for more. */
+@Composable
+private fun PhotoPicks(photos: List<String>, onAdd: () -> Unit, onRemove: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (photos.isNotEmpty()) {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(photos.size, key = { photos[it] }) { i ->
+                    val uri = photos[i]
+                    Box {
+                        coil3.compose.AsyncImage(
+                            model = uri,
+                            contentDescription = t("Picture {0}", i + 1),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(if (photos.size == 1) 200.dp else 112.dp)
+                                .clip(MaterialTheme.shapes.medium),
+                        )
+                        FilledTonalIconButton(
+                            onClick = { onRemove(uri) },
+                            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(32.dp),
+                        ) { Icon(Symbols.Close, t("Remove picture {0}", i + 1), modifier = Modifier.size(18.dp)) }
+                    }
+                }
+            }
+        }
+        if (photos.size < SharedContent.GALLERY_MAX) {
+            TextButton(onClick = onAdd) {
+                Text(if (photos.isEmpty()) t("Choose photos") else t("Add more photos ({0}/{1})", photos.size, SharedContent.GALLERY_MAX))
+            }
+        }
+        if (photos.size > 1) {
+            Text(t("{0} pictures make a gallery post", photos.size), style = MaterialTheme.typography.bodySmall)
         }
     }
 }

@@ -1,5 +1,7 @@
 package io.github.radixtrator.resync.ui.common
 
+import io.github.radixtrator.resync.ui.navigation.YouTube
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -149,11 +151,12 @@ fun CardPreview(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, 
             is PostMedia.Gallery -> CenterBadge(AppIcons.Gallery, t("Gallery"), Modifier.align(Alignment.Center))
             // The play badge steps aside once the clip itself is playing.
             is PostMedia.Video -> if (!autoplaying) CenterBadge(AppIcons.PlayCircle, t("Video"), Modifier.align(Alignment.Center))
+            is PostMedia.Link -> if (YouTube.isVideo(post.url) && !blur) CenterBadge(AppIcons.PlayCircle, t("YouTube video"), Modifier.align(Alignment.Center))
             else -> if (saving && !blur) {
                 Icon(typeIcon(post), null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.align(Alignment.Center).size(32.dp))
             }
         }
-        if (post.media is PostMedia.Link) UrlBand(post.domain, post.url, Modifier.align(Alignment.BottomCenter))
+        (post.media as? PostMedia.Link)?.let { UrlBand(post.domain, post.url, Modifier.align(Alignment.BottomCenter), title = it.title) }
         if (blur) {
             Text(
                 if (post.over18) t("NSFW") else t("Spoiler"),
@@ -182,14 +185,17 @@ private fun CenterBadge(icon: ImageVector, description: String, modifier: Modifi
     }
 }
 
-/** "thehill.com/policy/international/…" over the bottom of a link preview. */
+/**
+ * "thehill.com/policy/international/…" over the bottom of a link preview; with the page's [title] (a YouTube video's
+ * name), "youtube.com · Title" instead.
+ */
 @Composable
-private fun UrlBand(domain: String, url: String, modifier: Modifier) {
+private fun UrlBand(domain: String, url: String, modifier: Modifier, title: String? = null) {
     val path = url.substringAfter("://", url).substringAfter('/', "").let { if (it.isEmpty()) "" else "/$it" }
     Text(
         buildAnnotatedString {
             withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(domain) }
-            append(path)
+            if (title != null) append(" · $title") else append(path)
         },
         color = Color.White,
         style = MaterialTheme.typography.bodyMedium,
@@ -235,7 +241,7 @@ internal fun Thumbnail(post: Post, size: Dp, shape: Shape, onClick: () -> Unit, 
     }
 }
 
-internal fun typeIcon(post: Post): ImageVector = when (post.media) {
+internal fun typeIcon(post: Post): ImageVector = if (post.poll != null) AppIcons.Bars else when (post.media) {
     is PostMedia.Image -> AppIcons.Image
     is PostMedia.Gallery -> AppIcons.Gallery
     is PostMedia.Video -> AppIcons.PlayCircle
@@ -246,7 +252,8 @@ internal fun typeIcon(post: Post): ImageVector = when (post.media) {
 /** Sync's feed preview of a text post: its first paragraph as plain text, then "…" on a line of its own if there's more. */
 @Composable
 internal fun selfTextPreview(post: Post): String? {
-    if (!post.isSelf) return null
+    // A crosspost of a text post shows the original's text.
+    if (!post.isSelf && post.crosspostOf == null) return null
     // Made when the post was parsed; a post built by hand has none, so its plain text stands in.
     return post.previewText ?: if (post.selfTextHtml == null) firstParagraph(post.selfText) else null
 }
