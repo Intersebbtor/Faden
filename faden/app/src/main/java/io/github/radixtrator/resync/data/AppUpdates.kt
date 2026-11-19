@@ -77,6 +77,44 @@ object WhatsNew {
         return 0
     }
 
+    /**
+     * Whether release [a] is newer than [b], counting pre-releases: like [compare], but at equal numbers a pre-release
+     * ("0.14.0-beta.1") is older than its final release ("0.14.0"), and pre-releases order by their suffix
+     * ("beta.2" after "beta.1"). "-debug" isn't a pre-release, so a debug build of 0.14.0 counts as 0.14.0.
+     */
+    fun isNewer(a: String, b: String): Boolean {
+        val byNumber = compare(a, b)
+        if (byNumber != 0) return byNumber > 0
+        val pa = preRelease(a)
+        val pb = preRelease(b)
+        return when {
+            pa == null || pb == null -> pa == null && pb != null
+            else -> comparePreRelease(pa, pb) > 0
+        }
+    }
+
+    /** The "-suffix" of a pre-release, or null for a final release or a "-debug" build. */
+    private fun preRelease(version: String): String? =
+        version.substringAfter('-', "").takeIf { it.isNotEmpty() && !it.startsWith("debug") }
+
+    /** "beta.10" after "beta.2": dot-separated parts, numbers by value, words alphabetically, a longer one last. */
+    private fun comparePreRelease(a: String, b: String): Int {
+        val pa = a.split('.')
+        val pb = b.split('.')
+        for (i in 0 until minOf(pa.size, pb.size)) {
+            val na = pa[i].toIntOrNull()
+            val nb = pb[i].toIntOrNull()
+            val c = when {
+                na != null && nb != null -> na.compareTo(nb)
+                na != null -> -1
+                nb != null -> 1
+                else -> pa[i].compareTo(pb[i])
+            }
+            if (c != 0) return c
+        }
+        return pa.size.compareTo(pb.size)
+    }
+
     private fun numbers(version: String) =
         version.removePrefix("v").substringBefore('-').split('.').map { it.toIntOrNull() ?: 0 }
 
@@ -115,7 +153,8 @@ class AppUpdates(private val prefs: SharedPreferences) {
         if (now - lastCheck < CHECK_EVERY_MS) return@withContext null
         val release = runCatching { fetchLatest() }.getOrNull() ?: return@withContext null
         lastCheck = now
-        release.takeIf { WhatsNew.compare(it.version, current) > 0 && it.version != dismissedVersion }
+        // On a beta, the final release of the same version counts as newer.
+        release.takeIf { WhatsNew.isNewer(it.version, current) && it.version != dismissedVersion }
     }
 
     private fun fetchLatest(): LatestRelease? {
