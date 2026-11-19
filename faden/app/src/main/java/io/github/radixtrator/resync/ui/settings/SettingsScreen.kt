@@ -596,6 +596,8 @@ internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange
         onCheckedChange = onChange,
         supportingContent = subtitle?.let { { Text(it) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = null) },
+        // A checked ListItem tints and rounds its container by default; the switch already shows the state.
+        colors = ListItemDefaults.colors(selectedContainerColor = Color.Transparent),
     ) { Text(title) }
 }
 
