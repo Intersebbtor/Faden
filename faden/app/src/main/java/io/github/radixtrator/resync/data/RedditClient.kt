@@ -93,7 +93,7 @@ class RedditClient(
     }
 
     suspend fun get(path: String, params: Map<String, String?> = emptyMap()): JsonElement {
-        if (configStore.demoMode) return demoResponse(path, isNextPage = params["after"] != null)
+        if (configStore.demoMode) return demoResponse(path, isNextPage = params["after"] != null, focus = params["comment"])
         val url = apiUrl(path).newBuilder().apply {
             params.forEach { (k, v) -> if (v != null) addQueryParameter(k, v) }
         }.build()
@@ -165,7 +165,8 @@ class RedditClient(
             // Parsed off the main thread as well: a big comment thread is megabytes of JSON.
             val (code, json) = withContext(Dispatchers.IO) {
                 http.newCall(request).execute().use { response ->
-                    val ok = response.code in 200..299
+                    // 202 and 204 carry no JSON: /api/read_all_messages answers 202 with an HTML "Accepted" page.
+                    val ok = response.code in 200..299 && response.code != 202 && response.code != 204
                     response.code to if (ok) decodeBody(response) else null
                 }
             }
@@ -228,14 +229,16 @@ class RedditClient(
         return json
     }
 
-    private suspend fun demoResponse(path: String, isNextPage: Boolean): JsonElement = withContext(Dispatchers.IO) {
+    private suspend fun demoResponse(path: String, isNextPage: Boolean, focus: String?): JsonElement = withContext(Dispatchers.IO) {
         if (isNextPage) return@withContext JSON.parseToJsonElement("""{"kind":"Listing","data":{"after":null,"children":[]}}""")
+        // A page focused on one comment (what "load more" reads) is demo/comment_<id>.json where there is one.
+        val focused = focus?.let { "demo/comment_$it.json" }?.takeIf { name -> runCatching { assets.open(name).close() }.isSuccess }
         val file = when {
+            focused != null -> focused
             path.startsWith("/comments/") -> "demo/comments.json"
             path.startsWith("/api/v1/me") -> "demo/me.json"
             path.startsWith("/subreddits/mine") -> "demo/subreddits.json"
             path.startsWith("/subreddits/search") || path.startsWith("/subreddits/popular") -> "demo/subreddit_search.json"
-            path.startsWith("/api/morechildren") -> "demo/morechildren.json"
             path.matches(Regex("/r/[^/]+/about")) -> "demo/subreddit_about.json"
             path.matches(Regex("/user/[^/]+/about")) -> "demo/user_about.json"
             path.startsWith("/user/") -> "demo/user_overview.json"

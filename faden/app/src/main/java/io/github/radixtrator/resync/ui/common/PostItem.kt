@@ -250,7 +250,16 @@ fun PostActionsSheet(
                     is PostMedia.Video -> m.url
                     else -> null
                 }
-                preview?.let { url -> OptionRow(t("Post preview"), AppIcons.Image, onClick = { shareUrl(url) }) }
+                preview?.let { url -> OptionRow(t("Post preview"), AppIcons.Link, onClick = { shareUrl(url) }) }
+                // The image or video itself, downloaded and handed over as a file instead of a link.
+                preview?.let { url ->
+                    val video = post.media is PostMedia.Video
+                    OptionRow(
+                        if (video) t("Video file") else t("Image file"),
+                        if (video) AppIcons.PlayCircle else AppIcons.Image,
+                        onClick = { act { container.downloads.share(url) } },
+                    )
+                }
                 OptionRow(t("Post comments"), AppIcons.Text, onClick = { shareUrl(permalink) })
                 if (!post.isSelf) OptionRow(t("Link"), AppIcons.Link, onClick = { shareUrl(post.url) })
             } else if (copying) {

@@ -1,7 +1,9 @@
 package io.github.radixtrator.resync.data
 
+import android.content.ClipData
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
@@ -11,6 +13,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
+import androidx.core.content.FileProvider
 import io.github.radixtrator.resync.BuildConfig
 import io.github.radixtrator.resync.i18n.t
 import kotlinx.coroutines.CoroutineScope
@@ -28,10 +31,14 @@ import java.nio.ByteBuffer
 private val REDDIT_VIDEO = Regex("""^https?://v\.redd\.it/([a-z0-9]+)""", RegexOption.IGNORE_CASE)
 private val VIDEO_FILE = Regex("""\.(mp4|webm|mov)(\?|$)""", RegexOption.IGNORE_CASE)
 
+/** The cache folder shared files are served from; res/xml/shared_files.xml exposes it to [FileProvider]. */
+private const val SHARED_DIR = "shared"
+
 /**
  * Sync's download button: saves images to Pictures/Faden and videos to Movies/Faden. Reddit videos
  * are separate DASH video and audio files, so those are fetched and muxed into one mp4 first.
- * Saving runs in the background (leaving the viewer doesn't stop it) and reports with toasts.
+ * Saving runs in the background (leaving the viewer doesn't stop it) and reports with toasts. [share] sends the
+ * file itself to another app.
  */
 class MediaDownloads(context: Context) {
     private val context = context.applicationContext
@@ -45,9 +52,41 @@ class MediaDownloads(context: Context) {
     fun save(url: String) {
         toast(t("Downloading…"))
         scope.launch {
-            val result = runCatching { saveNow(url) }
+            // A folder per save, so two saves of same-named files can't overwrite each other.
+            val dir = File(context.cacheDir, "downloads/${System.nanoTime()}")
+            val result = runCatching { store(fetchToCache(url, dir)) }
+            dir.deleteRecursively()
             withContext(Dispatchers.Main) {
                 toast(result.fold({ t("Saved to {0}", it) }, { t("Download failed: {0}", it.message ?: it.javaClass.simpleName) }))
+            }
+        }
+    }
+
+    /**
+     * Shares the image or video itself rather than its link: downloads it into the cache (Reddit videos muxed
+     * as for [save]) and offers it to other apps through [FileProvider]. Only the latest shared file is kept.
+     */
+    fun share(url: String) {
+        toast(t("Getting the file ready…"))
+        scope.launch {
+            val dir = File(context.cacheDir, SHARED_DIR).apply { deleteRecursively() }
+            val result = runCatching { fetchToCache(url, dir) }
+            withContext(Dispatchers.Main) {
+                result.fold(
+                    { file ->
+                        val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file.file)
+                        val send = Intent(Intent.ACTION_SEND)
+                            .setType(file.mime)
+                            .putExtra(Intent.EXTRA_STREAM, uri)
+                            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        send.clipData = ClipData.newRawUri(file.name, uri)
+                        context.startActivity(
+                            Intent.createChooser(send, null)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION),
+                        )
+                    },
+                    { toast(t("Couldn't share the file: {0}", it.message ?: it.javaClass.simpleName)) },
+                )
             }
         }
     }
@@ -59,26 +98,32 @@ class MediaDownloads(context: Context) {
         }.getOrNull()
     }
 
-    private suspend fun saveNow(url: String): String {
-        REDDIT_VIDEO.find(url)?.let { return saveRedditVideo(it.groupValues[1]) }
-        // A RedGifs or Streamable page: save the clip's HD mp4.
-        if (ClipHosts.isHosted(url)) return saveNow(ClipHosts.resolve(url).hd)
+    /** A downloaded file in the cache, with the name and type it's saved or shared under. */
+    private class Fetched(val file: File, val name: String, val mime: String, val video: Boolean)
+
+    /** Downloads [url] into [dir]: a RedGifs or Streamable page as its HD mp4, a Reddit video as one muxed mp4, else the file. */
+    private suspend fun fetchToCache(url: String, dir: File): Fetched {
+        dir.mkdirs()
+        REDDIT_VIDEO.find(url)?.let { return fetchRedditVideo(it.groupValues[1], dir) }
+        if (ClipHosts.isHosted(url)) return fetchToCache(ClipHosts.resolve(url).hd, dir)
         return fetch(url).use { response ->
             val type = response.header("Content-Type")?.substringBefore(';')?.trim()
             val video = type?.startsWith("video/") ?: VIDEO_FILE.containsMatchIn(url)
             val mime = type ?: if (video) "video/mp4" else "image/jpeg"
-            store(fileName(url, mime), mime, video) { out -> response.body.byteStream().use { it.copyTo(out) } }
+            val name = fileName(url, mime)
+            val file = File(dir, name)
+            file.outputStream().use { out -> response.body.byteStream().use { it.copyTo(out) } }
+            Fetched(file, name, mime, video)
         }
     }
 
-    private fun saveRedditVideo(id: String): String {
+    private fun fetchRedditVideo(id: String, dir: File): Fetched {
         val base = "https://v.redd.it/$id/"
         val manifest = fetch(base + "DASHPlaylist.mpd").use { it.body.string() }
         val tracks = dashTracks(manifest) ?: throw IOException(t("no video in the DASH playlist"))
-        val parts = File(context.cacheDir, "downloads").apply { mkdirs() }
-        val video = File(parts, "$id-video.mp4")
-        val audio = tracks.audio?.let { File(parts, "$id-audio.mp4") }
-        val merged = File(parts, "$id.mp4")
+        val video = File(dir, "$id-video.mp4")
+        val audio = tracks.audio?.let { File(dir, "$id-audio.mp4") }
+        val merged = File(dir, "$id.mp4")
         try {
             download(base + tracks.video, video)
             if (audio != null) {
@@ -87,11 +132,13 @@ class MediaDownloads(context: Context) {
             } else {
                 video.copyTo(merged, overwrite = true)
             }
-            return store("$id.mp4", "video/mp4", video = true) { out -> merged.inputStream().use { it.copyTo(out) } }
+            return Fetched(merged, "$id.mp4", "video/mp4", video = true)
+        } catch (e: Exception) {
+            merged.delete()
+            throw e
         } finally {
             video.delete()
             audio?.delete()
-            merged.delete()
         }
     }
 
@@ -136,8 +183,12 @@ class MediaDownloads(context: Context) {
         }
     }
 
-    /** Writes a new shared file and returns the folder it landed in, for the toast. */
-    private fun store(name: String, mime: String, video: Boolean, write: (OutputStream) -> Unit): String {
+    /** Copies [fetched] into the shared Pictures or Movies folder and returns the folder it landed in, for the toast. */
+    private fun store(fetched: Fetched): String {
+        val name = fetched.name
+        val mime = fetched.mime
+        val video = fetched.video
+        val write: (OutputStream) -> Unit = { out -> fetched.file.inputStream().use { it.copyTo(out) } }
         val folder = if (video) Environment.DIRECTORY_MOVIES else Environment.DIRECTORY_PICTURES
         val relative = "$folder/Faden"
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

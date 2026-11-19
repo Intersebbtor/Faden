@@ -96,12 +96,17 @@ comments = [
 ]
 (out / "comments.json").write_text(json.dumps(comments, indent=1))
 
-# /api/morechildren: flat, with a reply listed before its parent to exercise reordering.
-things = [
-    c("cb6", "t1_cb5", 2, "late_reply", "Same, and I stopped doom-scrolling in bed.", 44, 10),
-    c("cb5", "t1_cb1", 1, "second_try", "Week three of this. It works.", 120, 12),
+# "Load more" reads each hidden comment's own page (/comments/<post>?comment=<id>). The "more" row cb9 lists cb5
+# and its reply cb6; cb5's page brings cb6 along, so cb6 needs no page of its own.
+focused_cb5 = [
+    {"kind": "Listing", "data": {"after": None, "children": [thread_post]}},
+    {"kind": "Listing", "data": {"after": None, "children": [
+        c("cb5", "t1_cb1", 0, "second_try", "Week three of this. It works.", 120, 12, replies=[
+            c("cb6", "t1_cb5", 1, "late_reply", "Same, and I stopped doom-scrolling in bed.", 44, 10),
+        ]),
+    ]}},
 ]
-(out / "morechildren.json").write_text(json.dumps({"json": {"errors": [], "data": {"things": things}}}, indent=1))
+(out / "comment_cb5.json").write_text(json.dumps(focused_cb5, indent=1))
 (out / "me.json").write_text(json.dumps({"name": "demo_user", "inbox_count": 2}))
 subs = [{"kind": "t5", "data": {"display_name": n}} for n in ("Android", "aww", "AskReddit", "movies", "pics", "technology")]
 (out / "subreddits.json").write_text(json.dumps({"kind": "Listing", "data": {"after": None, "children": subs}}, indent=1))

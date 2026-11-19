@@ -397,7 +397,7 @@ private fun VideoPlayer(
                     if (panelOpen) {
                         if (settings.videoSpeedControls) SpeedControl(speed, onChange = { speed = it })
                         MediaLinkInfo(url, emptyList())
-                        MediaActionBar(url, postId)
+                        MediaActionBar(url, postId, downloads, video = true, fileUrl = hdStream ?: url)
                     } else {
                         Spacer(Modifier.navigationBarsPadding())
                     }
