@@ -42,6 +42,20 @@ class WhatsNewTest {
     }
 
     @Test
+    fun `a final release is newer than its betas, and betas order by number`() {
+        assertTrue(WhatsNew.isNewer("0.14.0", "0.14.0-beta.1"))
+        assertTrue(!WhatsNew.isNewer("0.14.0-beta.1", "0.14.0"))
+        assertTrue(WhatsNew.isNewer("0.14.0-beta.10", "0.14.0-beta.2"))
+        assertTrue(WhatsNew.isNewer("0.14.0-rc.1", "0.14.0-beta.3"))
+        assertTrue(WhatsNew.isNewer("0.14.0-beta.1", "0.13.0"))
+        assertTrue(!WhatsNew.isNewer("0.13.0", "0.14.0-beta.1"))
+        assertTrue(!WhatsNew.isNewer("0.14.0", "0.14.0"))
+        // A debug build isn't a beta: the release of the same version isn't offered to it.
+        assertTrue(!WhatsNew.isNewer("0.14.0", "0.14.0-debug"))
+        assertTrue(WhatsNew.isNewer("0.14.1", "0.14.0-debug"))
+    }
+
+    @Test
     fun `an update shows every version since the last one seen`() {
         val all = WhatsNew.parse(sample)
         assertEquals(listOf("0.6.0", "0.5.0"), WhatsNew.since(all, "0.4.2", "0.6.0").map { it.version })
