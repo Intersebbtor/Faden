@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,9 +65,12 @@ internal fun MediaLinkInfo(url: String, details: List<String>) {
     }
 }
 
-/** Comments (when the media came from a post), Open in browser, Copy link and Share. */
+/**
+ * Comments (when the media came from a post), Open in browser, Copy link and Share. Share asks whether to send
+ * the image or video itself ([fileUrl], downloaded first) or its link.
+ */
 @Composable
-internal fun MediaActionBar(url: String, postId: String?) {
+internal fun MediaActionBar(url: String, postId: String?, downloads: MediaDownloads, video: Boolean, fileUrl: String = url) {
     val nav = LocalNavigator.current
     val context = LocalContext.current
     val clipboard = LocalClipboardManager.current
@@ -81,7 +87,28 @@ internal fun MediaActionBar(url: String, postId: String?) {
             clipboard.setText(AnnotatedString(url))
             Toast.makeText(context, t("Link copied"), Toast.LENGTH_SHORT).show()
         }) { Icon(AppIcons.Copy, t("Copy link"), tint = Color.White) }
-        IconButton(onClick = { nav.share(url, "") }) { Icon(Symbols.ShareFilled, t("Share"), tint = Color.White) }
+        Box {
+            var asking by remember { mutableStateOf(false) }
+            IconButton(onClick = { asking = true }) { Icon(Symbols.ShareFilled, t("Share"), tint = Color.White) }
+            DropdownMenu(expanded = asking, onDismissRequest = { asking = false }) {
+                DropdownMenuItem(
+                    text = { Text(if (video) t("Share video file") else t("Share image file")) },
+                    leadingIcon = { Icon(if (video) AppIcons.PlayCircle else AppIcons.Image, null) },
+                    onClick = {
+                        asking = false
+                        downloads.share(fileUrl)
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(t("Share link")) },
+                    leadingIcon = { Icon(AppIcons.Link, null) },
+                    onClick = {
+                        asking = false
+                        nav.share(url, "")
+                    },
+                )
+            }
+        }
     }
 }
 

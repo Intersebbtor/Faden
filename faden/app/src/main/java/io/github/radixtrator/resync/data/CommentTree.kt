@@ -26,9 +26,9 @@ object CommentTree {
     }
 
     /**
-     * Replaces [more] in [all] with [loaded] (from /api/morechildren), fixing up depths from the
-     * parent chain since that endpoint's depth values can't be relied on. [remaining] child IDs that
-     * didn't fit in one request stay behind as a smaller "more" row.
+     * Replaces [more] in [all] with [loaded] (from [mergeThreads]), fixing up depths from the parent chain since
+     * the loaded pages count depth from their own root. [remaining] child IDs that weren't loaded stay behind as a
+     * smaller "more" row.
      */
     fun splice(
         all: List<CommentNode>,
@@ -51,5 +51,48 @@ object CommentTree {
         }
         val leftover = if (remaining.isEmpty()) emptyList() else listOf(more.copy(children = remaining, count = remaining.size))
         return all.subList(0, index) + fresh + leftover + all.subList(index + 1, all.size)
+    }
+
+    /** What loading a "more" row gave: comments in depth-first order, and the child IDs still to load. */
+    data class MoreLoaded(val nodes: List<CommentNode>, val remaining: List<String>)
+
+    /** [id]'s comment and everything under it, from a page focused on it; empty if it's gone (deleted, removed). */
+    fun subtree(nodes: List<CommentNode>, id: String): List<CommentNode> {
+        val start = nodes.indexOfFirst { it is Comment && it.id == id }
+        if (start < 0) return emptyList()
+        val depth = nodes[start].depth
+        val end = (start + 1 until nodes.size).firstOrNull { nodes[it].depth <= depth } ?: nodes.size
+        return nodes.subList(start, end)
+    }
+
+    /**
+     * Joins the threads loaded for some of a "more" row's child IDs ([threads]: each ID with its [subtree], or null
+     * if loading it failed) and works out which IDs are left, of those plus the unrequested [rest].
+     *
+     * A row's IDs include replies of other IDs in it, so a thread that turned up inside another (as a reply, or on
+     * one of its own "more" rows) is dropped, and so are such IDs in [rest]. A thread whose parent is still to
+     * load waits until after it, so it isn't shown out of place; failed IDs come first, to be tried again.
+     */
+    fun mergeThreads(threads: List<Pair<String, List<CommentNode>?>>, rest: List<String>): MoreLoaded {
+        // Every comment some loaded thread brings below its root, or leaves on one of its own "more" rows.
+        val within = HashSet<String>()
+        for ((id, nodes) in threads) {
+            for (node in nodes.orEmpty()) {
+                if (node is MoreComments) within.addAll(node.children) else if (node.id != id) within.add(node.id)
+            }
+        }
+        val failed = threads.filter { it.second == null }.map { it.first }
+        val unrequested = rest.filter { it !in within }
+        val pending = (failed + unrequested).toHashSet()
+        val (shown, deferred) = threads
+            .filter { (id, nodes) -> nodes != null && id !in within }
+            .partition { (_, nodes) ->
+                val parent = nodes!!.firstOrNull()?.parentId?.removePrefix("t1_")
+                parent == null || parent !in pending
+            }
+
+        val seen = HashSet<String>()
+        val nodes = shown.flatMap { it.second!! }.filter { seen.add(if (it is Comment) "t1_${it.id}" else "more_${it.id}") }
+        return MoreLoaded(nodes, failed + unrequested + deferred.map { it.first })
     }
 }

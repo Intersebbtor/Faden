@@ -341,12 +341,12 @@ class PostViewModel(
         _state.update { it.copy(loadingMore = it.loadingMore + more.id) }
         viewModelScope.launch {
             try {
-                val loaded = container.api.moreChildren(post.fullname, more.children, _state.value.sort)
-                loadAvatars(loaded)
-                linkColor.value?.let { color -> withContext(Dispatchers.Default) { prepareBodies(loaded.asSequence(), color) } }
+                val loaded = container.api.moreChildren(post.id, more.children, _state.value.sort)
+                loadAvatars(loaded.nodes)
+                linkColor.value?.let { color -> withContext(Dispatchers.Default) { prepareBodies(loaded.nodes.asSequence(), color) } }
                 _state.update {
                     it.copy(
-                        comments = shown(CommentTree.splice(it.comments, more, loaded, remaining = more.children.drop(100))),
+                        comments = shown(CommentTree.splice(it.comments, more, loaded.nodes, remaining = loaded.remaining)),
                         loadingMore = it.loadingMore - more.id,
                     )
                 }

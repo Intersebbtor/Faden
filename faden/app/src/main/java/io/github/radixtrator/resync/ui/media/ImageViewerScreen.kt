@@ -148,7 +148,7 @@ private fun ImageInfoSheet(url: String, postId: String?, downloads: MediaDownloa
             IconButton(onClick = onClose) { Icon(Symbols.Close, t("Close"), tint = Color.White) }
         }
         MediaLinkInfo(url, details)
-        MediaActionBar(url, postId)
+        MediaActionBar(url, postId, downloads, video = false)
     }
 }
 

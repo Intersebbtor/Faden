@@ -122,22 +122,51 @@ class ParserTest {
     }
 
     @Test
-    fun `morechildren is reordered and spliced with fixed depths`() {
+    fun `more rows load each comment's own page and splice in with fixed depths`() {
         val all = Parser.comments(fixture("comments.json")).comments
-        val loaded = Parser.moreChildren(fixture("morechildren.json"))
-        assertEquals(listOf("cb5", "cb6"), loaded.map { it.id }, "parent before reply")
-
         val more = all.first { it.id == "cb9" } as MoreComments
-        val spliced = CommentTree.splice(all, more, loaded, remaining = emptyList())
+        val page = Parser.comments(fixture("comment_cb5.json")).comments
+        val cb5 = CommentTree.subtree(page, "cb5")
+        assertEquals(listOf("cb5", "cb6"), cb5.map { it.id })
+        assertTrue(CommentTree.subtree(page, "gone").isEmpty(), "a deleted comment is missing from its page")
+
+        // The row lists cb6 too, but it came along as cb5's reply.
+        val loaded = CommentTree.mergeThreads(listOf("cb5" to cb5, "cb6" to CommentTree.subtree(page, "cb6")), rest = emptyList())
+        assertEquals(listOf("cb5", "cb6"), loaded.nodes.map { it.id })
+        assertTrue(loaded.remaining.isEmpty())
+
+        val spliced = CommentTree.splice(all, more, loaded.nodes, loaded.remaining)
         val after = spliced.map { it.id to it.depth }
         val at = after.indexOf("cb5" to 1)
         assertTrue(at > 0, "cb5 placed at depth 1: $after")
         assertEquals("cb6" to 2, after[at + 1])
         assertTrue(spliced.none { it is MoreComments && it.id == "cb9" })
 
-        val partial = CommentTree.splice(all, more, loaded.take(1), remaining = listOf("x1"))
+        val partial = CommentTree.splice(all, more, loaded.nodes.take(1), remaining = listOf("x1"))
         val leftover = partial.filterIsInstance<MoreComments>().first { it.id == "cb9" }
         assertEquals(listOf("x1"), leftover.children)
+    }
+
+    @Test
+    fun `merging more threads keeps failures and unloaded parents for later`() {
+        fun c(id: String, parent: String, depth: Int = 0) = Comment(
+            id = id, depth = depth, parentId = parent, fullname = "t1_$id", author = "a", body = "", bodyHtml = "",
+            score = 1, scoreHidden = false, createdUtc = 0, edited = false, isSubmitter = false, distinguished = null,
+            stickied = false, likes = null, flair = null,
+        )
+        val loaded = CommentTree.mergeThreads(
+            listOf(
+                // a's page leaves b and g on its own "more" row: they stay there, not on this one.
+                "a" to listOf(c("a", "t3_p"), MoreComments("m1", 1, "t1_a", 2, listOf("b", "g"))),
+                "b" to listOf(c("b", "t1_a")),
+                "f" to null,
+                // d's parent e hasn't loaded yet, so d waits until after it.
+                "d" to listOf(c("d", "t1_e")),
+            ),
+            rest = listOf("e", "g"),
+        )
+        assertEquals(listOf("a", "m1"), loaded.nodes.map { it.id })
+        assertEquals(listOf("f", "e", "d"), loaded.remaining)
     }
 
     @Test
