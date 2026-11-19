@@ -114,7 +114,7 @@ fun ThemeManagementScreen(container: AppContainer) {
                 )
             },
         ) { padding ->
-            SettingsColumn(padding, highlight = null) {
+            SettingsColumn(padding, highlight = null, page = "themes") {
                 // Sync's ThemePreviewPreference: the theme in light and dark side by side.
                 Row(
                     Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 16.dp),

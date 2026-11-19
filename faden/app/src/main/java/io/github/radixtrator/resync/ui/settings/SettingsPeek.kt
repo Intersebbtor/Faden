@@ -1,5 +1,10 @@
 package io.github.radixtrator.resync.ui.settings
 
+import androidx.compose.material3.TopAppBarState
+import androidx.compose.material3.ExperimentalMaterial3Api
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.ScrollState
 import android.os.Build
 import android.view.RoundedCorner
 import androidx.activity.compose.BackHandler
@@ -50,7 +55,7 @@ import io.github.radixtrator.resync.ui.theme.FadenAccents
 /**
  * Settings › "View in feed": a quick look at the app with the settings just changed, without leaving the settings.
  * It takes the settings pages off the back stack ([stash]), which uncovers the very feed (or page) they were opened
- * from, where it was scrolled to; the pill or back puts them back ([close]).
+ * from, where it was scrolled to; the pill or back puts them back ([close]), each scrolled to where it was ([positions]).
  */
 internal object SettingsPeek {
     /** The settings pages taken off the back stack, bottom first, while peeking; null otherwise. */
@@ -60,11 +65,17 @@ internal object SettingsPeek {
     /** The back stack's size once the settings pages are off: the page the peek shows. */
     private var base = 0
 
-    /** The row to flash on the settings page the peek returns to ([ProvideSettingsJump] takes it). */
-    var returnTo by mutableStateOf<String?>(null)
+    /** A settings page's scroll state, and that of its collapsing title bar if it has one. */
+    class Page(val scroll: ScrollState, val bar: TopAppBarState?)
 
-    /** The setting changed last, on any settings page: the peek flashes it on the way back. */
-    var lastChanged by mutableStateOf<String?>(null)
+    /** Where a page was scrolled to, and how far its title bar had collapsed. */
+    class Position(val scroll: Int, val barOffset: Float?, val barContentOffset: Float?)
+
+    /** Each settings page that is showing, by name ([SettingsColumn]). */
+    val showing = mutableMapOf<String, Page>()
+
+    /** Where the showing pages were scrolled to when the peek opened; each page takes its own back as it returns. */
+    val positions = mutableMapOf<String, Position>()
 
     /** Where the "← Settings" pill sits: false at the top (the default, chosen on a phone), true at the bottom. */
     var pillAtBottom = false
@@ -75,6 +86,10 @@ internal object SettingsPeek {
         val pages = nav.takeWhile { it.isSettingsPage() }
         if (pages.isEmpty()) return
         base = backStackSize()
+        positions.clear()
+        showing.forEach { (name, page) ->
+            positions[name] = Position(page.scroll.value, page.bar?.heightOffset, page.bar?.contentOffset)
+        }
         stash = pages
     }
 
@@ -82,9 +97,8 @@ internal object SettingsPeek {
     fun close(nav: Navigator, backStackSize: () -> Int) {
         val pages = stash ?: return
         nav.popWhile { backStackSize() > base }
-        // The search's jump has been seen; on the way back only the setting changed last flashes.
+        // The search's jump has been seen; the pages go back to where they were scrolled instead.
         nav.pushAll(pages.map { if (it is SettingsRoute) it.copy(highlight = null) else if (it is CustomizeViewRoute) it.copy(highlight = null) else it })
-        returnTo = lastChanged
         stash = null
     }
 
@@ -145,6 +159,13 @@ fun SettingsPeekOverlay(backStack: List<NavKey>) {
                 onClick = { SettingsPeek.open(nav) { backStack.size } },
                 modifier = Modifier.align(Alignment.BottomEnd).navigationBarsPadding().padding(16.dp),
             )
+        }
+    }
+    // Positions no returning page has claimed (the stack was reset meanwhile) shouldn't surprise a later visit.
+    LaunchedEffect(SettingsPeek.active) {
+        if (!SettingsPeek.active) {
+            delay(2000)
+            SettingsPeek.positions.clear()
         }
     }
     if (!SettingsPeek.active) return

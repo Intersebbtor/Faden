@@ -231,7 +231,7 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null, 
                 }
             },
         ) { padding ->
-            SettingsColumn(padding, highlight) {
+            SettingsColumn(padding, highlight, page = category?.name ?: "settings", bar = scrollBehavior.state) {
                 val q = query
                 if (category == null && q != null) {
                     SearchResults(q, settings.layout)
@@ -603,10 +603,7 @@ internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange
     // row takes a tint of the accent, so what's on stands out while scanning a page.
     ListItem(
         checked = checked,
-        onCheckedChange = {
-            SettingsPeek.lastChanged = title
-            onChange(it)
-        },
+        onCheckedChange = onChange,
         modifier = jump.modifier.then(style.modifier),
         colors = style.colors,
         supportingContent = subtitle?.let { { Text(it) } },
@@ -637,7 +634,6 @@ internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T)
                             selected = option == selected,
                             onClick = {
                                 open = false
-                                SettingsPeek.lastChanged = title
                                 onPick(option)
                             },
                             leadingContent = { RadioButton(selected = option == selected, onClick = null) },

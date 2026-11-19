@@ -89,7 +89,7 @@ fun CustomizeViewScreen(initial: PostLayout, container: AppContainer, highlight:
                 )
             },
         ) { padding ->
-            SettingsColumn(padding, highlight) {
+            SettingsColumn(padding, highlight, page = "customize") {
                 // Sync's chip row runs from the richest layout to the plainest.
                 LargeHeader(title = t("View type")) {
                     PostLayout.entries.reversed().forEach { option ->
