@@ -6,6 +6,14 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.13.0
+- Autoplaying videos show how much time is left, and a button turns on their sound. Your music pauses while a clip plays with sound and resumes afterwards
+- Zoomed pictures and videos glide on after you pan them, and stop at the picture's edges
+- Always show download button: the image viewer can keep a download button on screen. Turn it on in Settings › Media
+- The settings search finds settings by everyday English and German words, like "font", "mute" or "dunkel"
+- The settings search shows your last searches when it opens
+- Switch rows in Settings no longer get a tinted background when switched on
+
 ## 0.12.0
 - Share to Faden: links, text and pictures shared from other apps open Create post, filled in
 - Launcher shortcuts: hold Faden's icon for your first favorite community, Search, Inbox and New post
