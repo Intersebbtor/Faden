@@ -128,6 +128,7 @@ fun PostListItem(
             onDismiss = { sheetOpen = false },
             onHide = callbacks.onHide?.let { hide -> { hide(post) } },
             onDelete = { callbacks.onDelete(post) },
+            onToggleSave = { callbacks.onToggleSave(post) },
             onMarkRead = { callbacks.onMarkRead(post) },
         )
     }
@@ -143,6 +144,7 @@ fun PostActionsSheet(
     onDismiss: () -> Unit,
     onHide: (() -> Unit)?,
     onDelete: () -> Unit,
+    onToggleSave: () -> Unit,
     onMarkRead: (() -> Unit)? = null,
 ) {
     val nav = LocalNavigator.current
@@ -290,6 +292,11 @@ fun PostActionsSheet(
                 SheetTitle(t("Post options"), topPadding = 0.dp)
                 onHide?.let { hide -> OptionRow(t("Hide"), Symbols.Close, onClick = { act(hide) }) }
                 onMarkRead?.let { markRead -> OptionRow(t("Mark as read"), Symbols.Check, onClick = { act(markRead) }) }
+                OptionRow(
+                    if (post.saved) t("Unsave") else t("Save"),
+                    if (post.saved) AppIcons.BookmarkFilled else AppIcons.Bookmark,
+                    onClick = { act(onToggleSave) },
+                )
                 OptionRow(t("Share"), Symbols.Share, onClick = { act { nav.share(permalink, post.title) } }, trailing = {
                     IconButton(onClick = { sharing = true }) { Icon(Symbols.MoreVert, t("Share as…")) }
                 })

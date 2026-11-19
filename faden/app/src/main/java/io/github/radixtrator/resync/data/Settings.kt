@@ -114,7 +114,8 @@ data class ViewOptions(
     val saveButton: Boolean = true,
     /**
      * Cards and Small cards: `card_buttons_save` / `small_card_buttons_save`. Sync's default is on; off keeps Faden's
-     * card footer (points, comments, ⋮).
+     * card footer (points, comments, ⋮). List, Compact and Smaller cards use it too, with Hide / Share / Mod tools, for
+     * an optional button row under the post.
      */
     val cardSaveButton: Boolean = false,
     /**

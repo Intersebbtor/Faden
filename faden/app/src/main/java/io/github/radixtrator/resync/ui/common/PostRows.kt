@@ -125,6 +125,17 @@ internal fun RowPost(post: Post, showSubreddit: Boolean, actions: PostActions, o
             // "Align thumbnail right": past ⌄ and the type icon, against the row's end.
             trailing = if (options.thumbnails && right) thumbnail else none,
         )
+        // Customize view › Buttons: off by default, so the dense rows stay as they were.
+        val buttons = PostButtons(options.cardSaveButton, options.hideButton, options.shareButton, options.modButton)
+        if (buttons.save || buttons.hide || buttons.share || buttons.mod) {
+            Row(
+                Modifier.fillMaxWidth().padding(end = 4.dp),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PostButtonIcons(post, actions, buttons, tint = muted)
+            }
+        }
         if (expanded) {
             if (post.thumbnail() != null && !post.isSelf) {
                 CardPreview(post, onClick = actions.onMedia, modifier = Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp).clip(MaterialTheme.shapes.small))

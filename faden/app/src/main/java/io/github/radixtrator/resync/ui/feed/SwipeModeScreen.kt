@@ -184,6 +184,7 @@ private fun SwipeModeScreenContent(subreddit: String?, container: AppContainer) 
             onDismiss = { sheetFor = null },
             onHide = callbacks.onHide?.let { hide -> { hide(post) } },
             onDelete = { callbacks.onDelete(post) },
+            onToggleSave = { callbacks.onToggleSave(post) },
             onMarkRead = { callbacks.onMarkRead(post) },
         )
     }
