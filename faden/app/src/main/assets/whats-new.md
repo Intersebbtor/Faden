@@ -6,6 +6,10 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.14.1
+- Post options has a Save row, so you can save or unsave a post from the ⋮ menu
+- List, Compact and Smaller cards can show Save, Hide, Share and Mod tools buttons under each post. Turn them on in Customize view › Buttons
+
 ## 0.14.0
 - Share images and videos as files: the viewer's Share button asks whether to send the file or its link, and Post options › Share › ⋮ has an Image file or Video file row
 - Load more comments works again: Reddit blocked the way Faden used to load them, so hidden comments are now loaded one by one
