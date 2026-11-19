@@ -193,7 +193,7 @@ private fun SwipeMedia(post: Post, autoplay: Boolean, onMedia: () -> Unit) {
                 modifier = Modifier.fillMaxSize(),
             )
         }
-        if (stream != null) AutoplayVideo(stream, onFirstFrame = { autoplaying = true }, modifier = Modifier.matchParentSize(), fit = true)
+        if (stream != null) AutoplayVideo(stream, onFirstFrame = { autoplaying = true }, modifier = Modifier.matchParentSize(), fit = true, controls = post.media is PostMedia.Video)
         val badge: Pair<ImageVector, String>? = when (post.media) {
             is PostMedia.Gallery -> AppIcons.Gallery to t("Gallery")
             // The play badge steps aside once the clip itself is playing.
