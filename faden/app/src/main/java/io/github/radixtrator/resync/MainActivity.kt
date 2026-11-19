@@ -105,6 +105,7 @@ import io.github.radixtrator.resync.ui.profile.ProfileScreen
 import io.github.radixtrator.resync.ui.search.SearchScreen
 import io.github.radixtrator.resync.ui.settings.CustomizeViewScreen
 import io.github.radixtrator.resync.ui.settings.FilterEditorScreen
+import io.github.radixtrator.resync.ui.settings.SettingsPeekOverlay
 import io.github.radixtrator.resync.ui.settings.SettingsScreen
 import io.github.radixtrator.resync.ui.settings.ThemeManagementScreen
 import io.github.radixtrator.resync.ui.setup.SetupScreen
@@ -327,6 +328,7 @@ private fun FadenNavHost(
         UpdateNotices(container)
         val sceneStrategies = rememberDualPaneSceneStrategies()
         ScreenSnapshotHost {
+        Box(Modifier.fillMaxSize()) {
         NavDisplay(
             entries = entries,
             sceneStrategies = sceneStrategies,
@@ -337,6 +339,9 @@ private fun FadenNavHost(
             // Slide-to-go-back and the system's edge swipe: linear, so the page stays under the finger.
             predictivePopTransitionSpec = { cardPop(GestureSpec) },
         )
+        // Settings › "View in feed": its frame and back pill stay over every page opened from the peek.
+        SettingsPeekOverlay(backStack)
+        }
         }
     }
 }

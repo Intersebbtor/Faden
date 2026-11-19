@@ -28,7 +28,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,7 +36,6 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -233,9 +231,7 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null, 
                 }
             },
         ) { padding ->
-            val scroll = rememberScrollState()
-            ProvideSettingsJump(highlight, scroll) { viewport ->
-            Column(Modifier.padding(padding).fillMaxSize().then(viewport).verticalScroll(scroll)) {
+            SettingsColumn(padding, highlight) {
                 val q = query
                 if (category == null && q != null) {
                     SearchResults(q, settings.layout)
@@ -253,7 +249,6 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null, 
                 } else {
                     CategoryRows(container, category, settings)
                 }
-            }
             }
         }
     }
@@ -608,7 +603,10 @@ internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange
     // row takes a tint of the accent, so what's on stands out while scanning a page.
     ListItem(
         checked = checked,
-        onCheckedChange = onChange,
+        onCheckedChange = {
+            SettingsPeek.lastChanged = title
+            onChange(it)
+        },
         modifier = jump.modifier.then(style.modifier),
         colors = style.colors,
         supportingContent = subtitle?.let { { Text(it) } },
@@ -639,6 +637,7 @@ internal fun <T> Choice(title: String, options: List<T>, selected: T, label: (T)
                             selected = option == selected,
                             onClick = {
                                 open = false
+                                SettingsPeek.lastChanged = title
                                 onPick(option)
                             },
                             leadingContent = { RadioButton(selected = option == selected, onClick = null) },

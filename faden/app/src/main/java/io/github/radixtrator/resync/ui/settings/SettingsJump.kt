@@ -1,5 +1,16 @@
 package io.github.radixtrator.resync.ui.settings
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
@@ -63,13 +74,42 @@ internal val LocalSettingsJump = compositionLocalOf<SettingsJump?> { null }
 /**
  * Provides the jump for a page whose rows scroll in [scroll]; put [viewport] on the scrolling container, before
  * its verticalScroll. [target] null jumps nowhere. It jumps once per visit to the page, not again on the way back.
+ * Back from "View in feed", the row changed last flashes instead ([SettingsPeek.returnTo]).
  */
 @Composable
 internal fun ProvideSettingsJump(target: String?, scroll: ScrollState, content: @Composable (viewport: Modifier) -> Unit) {
     var done by rememberSaveable(target) { mutableStateOf(target == null) }
-    val jump = remember(target, scroll) { SettingsJump(target.takeUnless { done }, scroll) { done = true } }
+    var returning by remember { mutableStateOf<String?>(null) }
+    val pending = SettingsPeek.returnTo
+    LaunchedEffect(pending) {
+        if (pending != null) {
+            returning = pending
+            SettingsPeek.returnTo = null
+        }
+    }
+    val back = returning
+    val jump = remember(target, scroll, back) {
+        SettingsJump(back ?: target.takeUnless { done }, scroll) {
+            if (back != null) returning = null else done = true
+        }
+    }
     CompositionLocalProvider(LocalSettingsJump provides jump) {
         content(Modifier.onGloballyPositioned { jump.viewport = it })
+    }
+}
+
+/** How much room a settings page leaves under its last row for "View in feed" ([SettingsPeekOverlay]). */
+internal val ViewInFeedClearance = 88.dp
+
+/** A settings page's scrolling rows: [content] in a column that can jump to a row, with room for "View in feed". */
+@Composable
+internal fun SettingsColumn(padding: PaddingValues, highlight: String?, content: @Composable ColumnScope.() -> Unit) {
+    val scroll = rememberScrollState()
+    ProvideSettingsJump(highlight, scroll) { viewport ->
+        Column(Modifier.padding(padding).fillMaxSize().then(viewport).verticalScroll(scroll)) {
+            content()
+            Spacer(Modifier.height(ViewInFeedClearance))
+        }
     }
 }
 
