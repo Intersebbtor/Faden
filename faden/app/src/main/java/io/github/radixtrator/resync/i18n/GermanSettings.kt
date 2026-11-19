@@ -82,6 +82,8 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     "Single tap" to "Einmal tippen",
     "Swiping up or down" to "Nach oben oder unten wischen",
     "Swipe to close" to "Wischen zum Schließen",
+    "Always show download button" to "Download-Knopf immer anzeigen",
+    "Keep a download button on screen while viewing an image" to "Beim Betrachten eines Bildes einen Download-Knopf eingeblendet lassen",
     "Fling videos up or down, and images down, to close them" to "Videos nach oben oder unten und Bilder nach unten schnippen, um sie zu schließen",
     "Fling videos up or down to close them" to "Videos nach oben oder unten schnippen, um sie zu schließen",
     "Close videos by" to "Videos schließen durch",

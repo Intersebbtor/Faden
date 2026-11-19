@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -107,6 +108,14 @@ fun ImageViewerScreen(urls: List<String>, start: Int, postId: String?, downloads
                     style = MaterialTheme.typography.labelLarge,
                     modifier = Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(16.dp),
                 )
+            }
+            // Media › "Always show download button": a download button over the image while the bar (which has its own) is closed.
+            if (settings.imageDownloadButton && !infoOpen) {
+                IconButton(
+                    onClick = { download(urls[pager.currentPage]) },
+                    modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(8.dp)
+                        .background(MediaPanelColor, CircleShape),
+                ) { Icon(AppIcons.Download, t("Download"), tint = Color.White) }
             }
             AnimatedVisibility(
                 visible = infoOpen,

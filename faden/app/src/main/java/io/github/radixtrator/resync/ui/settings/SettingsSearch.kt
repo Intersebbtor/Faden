@@ -128,6 +128,7 @@ object SettingsIndex {
                 row(SettingsCategory.MEDIA, t("Close images by"), t("Single tap, or swiping up or down"), "viewer betrachter bildansicht close tap swipe schließen tippen wischen"),
                 row(SettingsCategory.MEDIA, t("Close videos by"), t("Swiping up or down, or a single tap"), "player video tap tippen schließen"),
                 row(SettingsCategory.MEDIA, t("Swipe to close"), t("Fling videos and images to close them"), "viewer betrachter bildansicht fling close schnippen schließen"),
+                row(SettingsCategory.MEDIA, t("Always show download button"), t("Keep a download button on screen while viewing an image"), "save speichern herunterladen download viewer betrachter bildansicht"),
                 row(SettingsCategory.MEDIA, t("Hold to preview"), t("Hold a picture in a feed to see it full screen until you let go"), "peek vorschau long press lange drücken halten"),
                 row(SettingsCategory.MEDIA, t("Unblur NSFW previews"), t("With Hold to preview on: holding a blurred NSFW picture shows it unblurred"), "peek vorschau"),
                 row(SettingsCategory.MEDIA, t("Start videos muted"), keywords = "sound audio ton stumm mute silent lautlos"),
