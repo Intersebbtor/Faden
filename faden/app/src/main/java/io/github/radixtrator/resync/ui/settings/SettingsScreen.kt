@@ -420,6 +420,7 @@ private fun CategoryRows(container: AppContainer, category: SettingsCategory, se
                 },
                 settings.swipeToClose,
             ) { v -> update { it.copy(swipeToClose = v) } }
+            Toggle(t("Always show download button"), t("Keep a download button on screen while viewing an image"), settings.imageDownloadButton) { v -> update { it.copy(imageDownloadButton = v) } }
             Toggle(t("Hold to preview"), t("Hold a picture in a feed to see it full screen until you let go"), settings.holdToPreview) { v -> update { it.copy(holdToPreview = v) } }
             if (settings.holdToPreview) {
                 Toggle(t("Unblur NSFW previews"), t("Holding a blurred NSFW picture shows it unblurred"), settings.peekUnblursNsfw) { v -> update { it.copy(peekUnblursNsfw = v) } }

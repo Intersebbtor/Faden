@@ -455,6 +455,8 @@ data class Settings(
      * videos with [tapToCloseVideos]).
      */
     val swipeToClose: Boolean = true,
+    /** Media › "Always show download button": the image viewer keeps a download button on screen, not only in its bar. */
+    val imageDownloadButton: Boolean = false,
     /** Media › "Hold to preview": holding a post's picture in a feed shows it full screen until the finger lifts. */
     val holdToPreview: Boolean = true,
     /** Media › "Unblur NSFW previews": with [holdToPreview], holding a blurred NSFW picture shows it unblurred. */
