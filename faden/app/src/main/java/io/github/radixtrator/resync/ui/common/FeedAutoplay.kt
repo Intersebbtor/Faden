@@ -235,7 +235,9 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
         if (muted) return@DisposableEffect onDispose {}
         val audio = context.getSystemService(AudioManager::class.java)
         val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
-            .setAudioAttributes(ClipAudio)
+            .setAudioAttributes(
+                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build(),
+            )
             .setOnAudioFocusChangeListener { change -> if (change < 0) muted = true }
             .build()
         if (audio?.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) muted = true
@@ -300,8 +302,6 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
 
 /** Over the picture, so dark whatever the theme, like the full-screen player's controls. */
 private val ClipChromeColor = Color.Black.copy(alpha = 0.6f)
-
-private val ClipAudio = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build()
 
 /** Sizes the video at its own [aspect], centered: to [cover] the box (which clips the overflow), else to fit inside it. */
 private fun Modifier.scaleTo(aspect: Float, cover: Boolean) = layout { measurable, constraints ->
