@@ -1,5 +1,8 @@
 package io.github.radixtrator.resync.ui.common
 
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.view.TextureView
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
@@ -40,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -162,8 +164,9 @@ internal object PlaybackHandoff {
  * It stays invisible until its first frame is drawn ([onFirstFrame]), so the still preview underneath shows meanwhile,
  * and pauses while the app is in the background. SD only, through the player's on-disk cache. Muted, it doesn't take
  * audio focus, so music keeps playing. With [controls] (videos, not GIFs) it shows the time left in the bottom
- * corner and, when the clip has sound, a button to unmute it; unmuted, it takes audio focus like any player, and
- * every clip starts muted again.
+ * corner and, when the clip has sound, a button to unmute it. Unmuted, it holds transient audio focus, as Instagram's
+ * feed does: music pauses, and resumes once the clip is muted again, scrolled away or the app leaves the screen.
+ * Every clip starts muted again.
  */
 @OptIn(UnstableApi::class)
 @Composable
@@ -219,12 +222,24 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
             player.release()
         }
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { player.pause() }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
+        player.pause()
+        muted = true
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { player.play() }
-    // Unmuted, it asks for audio focus (pausing music); muted again, it gives it back.
-    LaunchedEffect(player, muted) {
-        player.setAudioAttributes(ClipAudio, !muted)
+    // Unmuted, it asks for transient audio focus, so music pauses and its app resumes it once the focus is given back
+    // (muted again, scrolled away, app in the background). Media3's own focus handling asks for lasting focus, after
+    // which music apps stay paused, so it's done here. Losing the focus to another app mutes the clip.
+    DisposableEffect(player, muted) {
         player.volume = if (muted) 0f else 1f
+        if (muted) return@DisposableEffect onDispose {}
+        val audio = context.getSystemService(AudioManager::class.java)
+        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(ClipAudio)
+            .setOnAudioFocusChangeListener { change -> if (change < 0) muted = true }
+            .build()
+        if (audio?.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) muted = true
+        onDispose { audio?.abandonAudioFocusRequest(request) }
     }
     // The time left only matters on screen, so it's polled while the clip shows and has a countdown.
     LaunchedEffect(player, shown, controls) {
@@ -286,7 +301,7 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
 /** Over the picture, so dark whatever the theme, like the full-screen player's controls. */
 private val ClipChromeColor = Color.Black.copy(alpha = 0.6f)
 
-private val ClipAudio = AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build()
+private val ClipAudio = AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build()
 
 /** Sizes the video at its own [aspect], centered: to [cover] the box (which clips the overflow), else to fit inside it. */
 private fun Modifier.scaleTo(aspect: Float, cover: Boolean) = layout { measurable, constraints ->
