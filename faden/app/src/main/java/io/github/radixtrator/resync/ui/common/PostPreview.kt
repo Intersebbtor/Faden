@@ -146,7 +146,7 @@ fun CardPreview(post: Post, onClick: () -> Unit, modifier: Modifier = Modifier, 
                 modifier = Modifier.matchParentSize(),
             )
         }
-        if (autoplay != null) AutoplayVideo(autoplay, onFirstFrame = { autoplaying = true }, modifier = Modifier.matchParentSize())
+        if (autoplay != null) AutoplayVideo(autoplay, onFirstFrame = { autoplaying = true }, modifier = Modifier.matchParentSize(), controls = post.media is PostMedia.Video)
         when (post.media) {
             is PostMedia.Gallery -> CenterBadge(AppIcons.Gallery, t("Gallery"), Modifier.align(Alignment.Center))
             // The play badge steps aside once the clip itself is playing.

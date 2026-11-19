@@ -6,6 +6,7 @@ internal fun germanSettings(): Map<String, String> = mapOf(
     // Settings screen and search
     "Search settings" to "Einstellungen durchsuchen",
     "Clear" to "Leeren",
+    "Recent searches" to "Letzte Suchen",
     "No settings match \"{0}\"" to "Keine Einstellung passt zu „{0}“",
     "Navigation" to "Navigation",
     "Drawer navigation" to "Seitenmenü-Navigation",

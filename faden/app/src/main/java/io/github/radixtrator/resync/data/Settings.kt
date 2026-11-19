@@ -440,6 +440,8 @@ data class Settings(
     val readerReplies: Boolean = false,
     /** The comment reader's ⋮ speed: TextToSpeech's speech rate, 1.0 being the engine's normal pace. */
     val readerSpeechRate: Float = 1.0f,
+    /** Settings › search: the last searches a result was picked from, newest first ([rememberSettingsSearch]). */
+    val recentSettingsSearches: List<String> = emptyList(),
     /**
      * Media › "Close images by": a single tap (true; swiping up then slides in the control bar) or swiping up or
      * down (false; a tap then shows and hides the bar).
@@ -547,4 +549,15 @@ class SettingsStore(private val prefs: SharedPreferences) {
     private companion object {
         const val KEY = "settings.v1"
     }
+}
+
+/** How many settings searches [Settings.recentSettingsSearches] keeps. */
+const val RECENT_SETTINGS_SEARCHES = 5
+
+/** [query] as the newest recent settings search: trimmed, once (whatever its case), at most [RECENT_SETTINGS_SEARCHES]. */
+fun Settings.rememberSettingsSearch(query: String): Settings {
+    val q = query.trim()
+    if (q.isEmpty()) return this
+    val recents = (listOf(q) + recentSettingsSearches.filterNot { it.equals(q, ignoreCase = true) }).take(RECENT_SETTINGS_SEARCHES)
+    return copy(recentSettingsSearches = recents)
 }

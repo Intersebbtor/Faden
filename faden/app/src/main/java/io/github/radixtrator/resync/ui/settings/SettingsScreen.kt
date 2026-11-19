@@ -112,6 +112,7 @@ import io.github.radixtrator.resync.data.Settings
 import io.github.radixtrator.resync.i18n.AppLanguage
 import io.github.radixtrator.resync.i18n.I18n
 import io.github.radixtrator.resync.i18n.t
+import io.github.radixtrator.resync.data.rememberSettingsSearch
 import io.github.radixtrator.resync.ui.common.AppIcons
 import io.github.radixtrator.resync.ui.navigation.ThemeManagementRoute
 import io.github.radixtrator.resync.watch.WatchWorker
@@ -236,7 +237,14 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
             Column(Modifier.padding(padding).fillMaxSize().verticalScroll(rememberScrollState())) {
                 val q = query
                 if (category == null && q != null) {
-                    SearchResults(q, settings.layout)
+                    SearchResults(
+                        q,
+                        settings.layout,
+                        recents = settings.recentSettingsSearches,
+                        onPick = { container.settings.update { it.rememberSettingsSearch(q) } },
+                        onRecent = { query = it },
+                        onClearRecents = { container.settings.update { it.copy(recentSettingsSearches = emptyList()) } },
+                    )
                 } else if (category == null) {
                     SettingsCategory.entries.groupBy { it.group }.entries.forEachIndexed { i, (group, entries) ->
                         Section(group, divider = i > 0)
@@ -256,11 +264,39 @@ fun SettingsScreen(container: AppContainer, category: SettingsCategory? = null) 
     }
 }
 
-/** Settings rows matching [query]; tapping one opens the page it's on. */
+/**
+ * Settings rows matching [query]; tapping one opens the page it's on and keeps the query as a recent search
+ * ([onPick]). With nothing typed yet, the [recents] are offered instead, to get back quickly while fine-tuning.
+ */
 @Composable
-private fun SearchResults(query: String, layout: PostLayout) {
+private fun SearchResults(
+    query: String,
+    layout: PostLayout,
+    recents: List<String>,
+    onPick: () -> Unit,
+    onRecent: (String) -> Unit,
+    onClearRecents: () -> Unit,
+) {
     val nav = LocalNavigator.current
-    if (query.isBlank()) return
+    if (query.isBlank()) {
+        if (recents.isEmpty()) return
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                t("Recent searches"),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onClearRecents) { Text(t("Clear")) }
+        }
+        recents.forEach { recent ->
+            ListItem(
+                onClick = { onRecent(recent) },
+                leadingContent = { Icon(AppIcons.Clock, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+            ) { Text(recent) }
+        }
+        return
+    }
     val results = remember(query) { SettingsIndex.search(query) }
     if (results.isEmpty()) {
         Text(
@@ -272,7 +308,10 @@ private fun SearchResults(query: String, layout: PostLayout) {
     }
     results.forEach { entry ->
         ListItem(
-            onClick = { nav.push(entry.open(layout)) },
+            onClick = {
+                onPick()
+                nav.push(entry.open(layout))
+            },
             overlineContent = { Text(entry.place) },
             supportingContent = entry.summary?.let { { Text(it, maxLines = 2, overflow = TextOverflow.Ellipsis) } },
         ) { Text(entry.title) }
@@ -597,6 +636,8 @@ internal fun Toggle(title: String, subtitle: String?, checked: Boolean, onChange
         onCheckedChange = onChange,
         supportingContent = subtitle?.let { { Text(it) } },
         trailingContent = { Switch(checked = checked, onCheckedChange = null) },
+        // A checked ListItem tints and rounds its container by default; the switch already shows the state.
+        colors = ListItemDefaults.colors(selectedContainerColor = Color.Transparent),
     ) { Text(title) }
 }
 

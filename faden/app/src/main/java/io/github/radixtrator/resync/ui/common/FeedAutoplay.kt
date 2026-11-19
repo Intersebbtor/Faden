@@ -1,9 +1,21 @@
 package io.github.radixtrator.resync.ui.common
 
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
+import android.media.AudioManager
 import android.view.TextureView
 import androidx.annotation.OptIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -11,23 +23,31 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
+import androidx.media3.common.Tracks
 import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -35,7 +55,10 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import io.github.radixtrator.resync.data.Post
 import io.github.radixtrator.resync.data.PostMedia
 import io.github.radixtrator.resync.data.ClipHosts
+import io.github.radixtrator.resync.i18n.t
 import io.github.radixtrator.resync.ui.media.VideoCache
+import io.github.radixtrator.resync.ui.media.clock
+import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
@@ -139,15 +162,21 @@ internal object PlaybackHandoff {
  * A muted, looping clip filling its box, cropped to cover it as the preview image is ([androidx.compose.ui.layout.ContentScale.Crop]),
  * or with [fit] shown whole and centered, as Swipe mode's image is ([androidx.compose.ui.layout.ContentScale.Fit]).
  * It stays invisible until its first frame is drawn ([onFirstFrame]), so the still preview underneath shows meanwhile,
- * and pauses while the app is in the background. SD only, through the player's on-disk cache; it doesn't take audio
- * focus, so music keeps playing.
+ * and pauses while the app is in the background. SD only, through the player's on-disk cache. Muted, it doesn't take
+ * audio focus, so music keeps playing. With [controls] (videos, not GIFs) it shows the time left in the bottom
+ * corner and, when the clip has sound, a button to unmute it. Unmuted, it holds transient audio focus, as Instagram's
+ * feed does: music pauses, and resumes once the clip is muted again, scrolled away or the app leaves the screen.
+ * Every clip starts muted again.
  */
 @OptIn(UnstableApi::class)
 @Composable
-fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier = Modifier, fit: Boolean = false) {
+fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier = Modifier, fit: Boolean = false, controls: Boolean = false) {
     val context = LocalContext.current
     var aspect by remember(stream) { mutableFloatStateOf(0f) }
     var shown by remember(stream) { mutableStateOf(false) }
+    var muted by remember(stream) { mutableStateOf(true) }
+    var hasAudio by remember(stream) { mutableStateOf(false) }
+    var remaining by remember(stream) { mutableLongStateOf(-1L) }
     val player = remember(stream) {
         ExoPlayer.Builder(context)
             .setMediaSourceFactory(DefaultMediaSourceFactory(VideoCache.dataSourceFactory(context, null)))
@@ -180,6 +209,10 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
                 shown = true
                 firstFrame()
             }
+
+            override fun onTracksChanged(tracks: Tracks) {
+                hasAudio = tracks.groups.any { it.type == C.TRACK_TYPE_AUDIO }
+            }
         }
         player.addListener(listener)
         PlaybackHandoff.attach(stream, player)
@@ -189,8 +222,36 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
             player.release()
         }
     }
-    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { player.pause() }
+    LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) {
+        player.pause()
+        muted = true
+    }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { player.play() }
+    // Unmuted, it asks for transient audio focus, so music pauses and its app resumes it once the focus is given back
+    // (muted again, scrolled away, app in the background). Media3's own focus handling asks for lasting focus, after
+    // which music apps stay paused, so it's done here. Losing the focus to another app mutes the clip.
+    DisposableEffect(player, muted) {
+        player.volume = if (muted) 0f else 1f
+        if (muted) return@DisposableEffect onDispose {}
+        val audio = context.getSystemService(AudioManager::class.java)
+        val request = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+            .setAudioAttributes(
+                AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).setContentType(AudioAttributes.CONTENT_TYPE_MOVIE).build(),
+            )
+            .setOnAudioFocusChangeListener { change -> if (change < 0) muted = true }
+            .build()
+        if (audio?.requestAudioFocus(request) != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) muted = true
+        onDispose { audio?.abandonAudioFocusRequest(request) }
+    }
+    // The time left only matters on screen, so it's polled while the clip shows and has a countdown.
+    LaunchedEffect(player, shown, controls) {
+        if (!shown || !controls) return@LaunchedEffect
+        while (true) {
+            val duration = player.duration
+            remaining = if (duration > 0) (duration - player.currentPosition).coerceAtLeast(0L) else -1L
+            delay(250)
+        }
+    }
     Box(modifier.clipToBounds().graphicsLayer { alpha = if (shown) 1f else 0f }) {
         AndroidView(
             factory = { ctx -> TextureView(ctx) },
@@ -202,8 +263,45 @@ fun AutoplayVideo(stream: String, onFirstFrame: () -> Unit, modifier: Modifier =
             },
             modifier = Modifier.fillMaxSize().scaleTo(aspect, cover = !fit),
         )
+        if (controls && shown && hasAudio) {
+            // Small, so it hides little of the clip; the 6dp around it still takes the tap.
+            Box(
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .clip(CircleShape)
+                    .clickable(onClickLabel = if (muted) t("Unmute") else t("Mute")) { muted = !muted }
+                    .padding(6.dp)
+                    .size(24.dp)
+                    .clip(CircleShape)
+                    .background(ClipChromeColor),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    if (muted) AppIcons.VolumeOff else AppIcons.VolumeOn,
+                    if (muted) t("Unmute") else t("Mute"),
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+        if (controls && shown && remaining >= 0) {
+            Text(
+                clock(remaining),
+                color = Color.White,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(6.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(ClipChromeColor)
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
+            )
+        }
     }
 }
+
+/** Over the picture, so dark whatever the theme, like the full-screen player's controls. */
+private val ClipChromeColor = Color.Black.copy(alpha = 0.6f)
 
 /** Sizes the video at its own [aspect], centered: to [cover] the box (which clips the overflow), else to fit inside it. */
 private fun Modifier.scaleTo(aspect: Float, cover: Boolean) = layout { measurable, constraints ->
