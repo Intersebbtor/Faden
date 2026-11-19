@@ -278,6 +278,7 @@ private fun sectionsFor(layout: PostLayout): List<Pair<String, List<ViewRow>>> =
             ViewRow.Switch(ViewOption.SINGLE_LINE_TITLE),
             ViewRow.FontSize(ViewFontSize.DESCRIPTION),
         ),
+        t("Buttons") to switches(ViewOption.CARD_SAVE_BUTTON, ViewOption.HIDE_BUTTON, ViewOption.SHARE_BUTTON, ViewOption.MOD_BUTTON),
     )
 }
 

@@ -488,7 +488,7 @@ fun PostScreen(route: PostRoute, container: AppContainer) {
 
     val post = state.post
     if (postSheet && post != null) {
-        PostActionsSheet(post = post, onDismiss = { postSheet = false }, onHide = null, onDelete = { vm.delete(post.fullname) })
+        PostActionsSheet(post = post, onDismiss = { postSheet = false }, onHide = null, onDelete = { vm.delete(post.fullname) }, onToggleSave = vm::toggleSavePost)
     }
     if (sortOpen) CommentSortSheet(state.sort, onDismiss = { sortOpen = false }, onPick = vm::setSort)
     if (actionsOpen && post != null) {
