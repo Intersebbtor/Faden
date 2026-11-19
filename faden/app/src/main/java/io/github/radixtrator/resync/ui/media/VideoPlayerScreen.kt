@@ -492,7 +492,7 @@ private fun SpeedControl(speed: Float, onChange: (Float) -> Unit) {
 private fun speedLabel(speed: Float): String = (if (speed % 1f == 0f) speed.toInt().toString() else speed.toString().trimEnd('0')) + "x"
 
 /** "00:05", or "1:02:03" past an hour. */
-private fun clock(ms: Long): String {
+internal fun clock(ms: Long): String {
     val total = ms / 1000
     val h = total / 3600
     val m = total % 3600 / 60
