@@ -6,6 +6,12 @@
   what the in-app update notice reads. Add a "## x.y.z" section before tagging vx.y.z.
 -->
 
+## 0.14.0
+- Share images and videos as files: the viewer's Share button asks whether to send the file or its link, and Post options › Share › ⋮ has an Image file or Video file row
+- Load more comments works again: Reddit blocked the way Faden used to load them, so hidden comments are now loaded one by one
+- Mark all as read no longer shows an error after marking your inbox read
+- On a beta, the update notice offers the final release once it's out
+
 ## 0.13.0
 - Autoplaying videos show how much time is left, and a button turns on their sound. Your music pauses while a clip plays with sound and resumes afterwards
 - Zoomed pictures and videos glide on after you pan them, and stop at the picture's edges
